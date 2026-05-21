@@ -1,5 +1,7 @@
 "use client";
 import useSWR from "swr";
+import Link from "next/link";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
 import { formatUSD, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -87,6 +89,112 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Phase 7 — inventory + AP pulse */}
+      {(data.inventory || data.accounts_payable) && (
+        <div className="grid grid-cols-3 gap-4">
+          {data.inventory && (
+            <Link
+              href="/admin/inventory/lots"
+              className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm hover:border-gold/40 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold text-gray-700">Pure-Gold Pools</div>
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gold transition-colors" />
+              </div>
+              {data.inventory.pure_gold_by_karat.length === 0 ? (
+                <div className="text-sm text-gray-400">No active lots</div>
+              ) : (
+                <div className="space-y-2">
+                  {data.inventory.pure_gold_by_karat.map((row) => (
+                    <div key={row.karat} className="flex items-baseline justify-between">
+                      <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium">
+                        {row.karat}
+                      </span>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-800">
+                          {row.grams_remaining.toFixed(3)}
+                          <span className="text-xs text-gray-400 ml-1">g</span>
+                        </div>
+                        <div className="text-[10px] text-gray-400">
+                          {row.lot_count} lot{row.lot_count !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Link>
+          )}
+
+          {data.inventory && (
+            <Link
+              href="/admin/inventory/coins"
+              className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm hover:border-gold/40 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold text-gray-700">Coins & Ounces</div>
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gold transition-colors" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Coins</div>
+                  <div className="text-xl font-semibold text-gray-800">
+                    {data.inventory.coins.on_hand_total}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {data.inventory.coins.distinct_types} type{data.inventory.coins.distinct_types !== 1 ? "s" : ""}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Ounces</div>
+                  <div className="text-xl font-semibold text-gray-800">
+                    {data.inventory.ounces.on_hand_total}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {data.inventory.ounces.distinct_types} type{data.inventory.ounces.distinct_types !== 1 ? "s" : ""}
+                  </div>
+                </div>
+              </div>
+              {data.inventory.low_stock_alerts > 0 && (
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-600">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {data.inventory.low_stock_alerts} below threshold
+                </div>
+              )}
+            </Link>
+          )}
+
+          {data.accounts_payable && (
+            <Link
+              href="/admin/accounts-payable"
+              className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm hover:border-gold/40 transition-colors group"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold text-gray-700">Accounts Payable</div>
+                <span className="text-[10px] text-gray-300">{data.accounts_payable.supplier_count} supplier(s)</span>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Cash owed</div>
+                <div className="text-xl font-semibold text-gray-800">
+                  {formatUSD(data.accounts_payable.total_cash_owed)}
+                </div>
+              </div>
+              {Object.keys(data.accounts_payable.total_grams_owed_by_karat).length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <div className="text-xs text-gray-400 uppercase tracking-widest">Gold owed</div>
+                  {Object.entries(data.accounts_payable.total_grams_owed_by_karat).map(([karat, grams]) => (
+                    <div key={karat} className="flex items-baseline justify-between text-sm">
+                      <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium">{karat}</span>
+                      <span className="font-mono text-gray-800">{Number(grams).toFixed(3)}g</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Recent orders */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm">

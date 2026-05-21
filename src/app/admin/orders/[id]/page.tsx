@@ -6,7 +6,20 @@ import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD, formatLBP, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
-import type { Order } from "@/types/api";
+import type { Order, OrderItemKind } from "@/types/api";
+
+function KindPill({ kind }: { kind: OrderItemKind }) {
+  const map: Record<OrderItemKind, string> = {
+    PRODUCT: "bg-gold/10 text-gold",
+    COIN: "bg-indigo-50 text-indigo-700",
+    OUNCE: "bg-blue-50 text-blue-700",
+  };
+  return (
+    <span className={`text-[11px] px-2 py-0.5 rounded font-mono ${map[kind]}`}>
+      {kind}
+    </span>
+  );
+}
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,7 +91,7 @@ export default function OrderDetailPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
-              {["Item", "Karat", "Weight", "Rate at Sale", "Margin", "Making", "Price"].map((h) => (
+              {["Item", "Kind", "Qty", "Karat", "Weight", "Rate at Sale", "Margin", "Making", "Price"].map((h) => (
                 <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
               ))}
             </tr>
@@ -90,11 +103,21 @@ export default function OrderDetailPage() {
                   <div className="font-medium text-gray-800">{item.product_name}</div>
                   <div className="text-xs text-gray-400 font-mono">{item.product_code}</div>
                 </td>
+                <td className="px-4 py-3">
+                  <KindPill kind={item.item_kind} />
+                </td>
+                <td className="px-4 py-3 text-gray-700 font-semibold">×{item.quantity}</td>
                 <td className="px-4 py-3"><KaratBadge karat={item.karat} /></td>
-                <td className="px-4 py-3 text-gray-600">{item.weight_grams}g</td>
+                <td className="px-4 py-3 text-gray-600">{Number(item.weight_grams).toFixed(3)}g</td>
                 <td className="px-4 py-3 text-gray-600">${Number(item.gold_rate_at_sale).toFixed(2)}/g</td>
-                <td className="px-4 py-3 text-gray-500">{item.margin_percent}%</td>
-                <td className="px-4 py-3 text-gray-500">{formatUSD(item.making_charge)}</td>
+                <td className="px-4 py-3 text-gray-500">
+                  {item.item_kind === "PRODUCT" ? `${item.margin_percent}%` : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-gray-500">
+                  {Number(item.making_charge) > 0 ? formatUSD(item.making_charge) : <span className="text-gray-300">—</span>}
+                </td>
                 <td className="px-4 py-3 font-semibold">{formatUSD(item.final_price)}</td>
               </tr>
             ))}

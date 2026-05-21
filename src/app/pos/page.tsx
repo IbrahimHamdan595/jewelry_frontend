@@ -1,47 +1,63 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Coins, Layers } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useScanner } from "@/hooks/useScanner";
 import { ScanPanel } from "@/components/pos/ScanPanel";
 import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
+import { GoldRateCard } from "@/components/shared/GoldRateCard";
+import { PosModeTabs } from "@/components/pos/PosModeTabs";
+import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
 import { api } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
-import type { ProductLookup } from "@/types/api";
+import type { OrderItemKind, ProductLookup } from "@/types/api";
 
 export default function POSPage() {
   const router = useRouter();
-  const user = getStoredUser();
+  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setUser(getStoredUser());
+    setMounted(true);
+  }, []);
+
   const { items, paymentMethod, addItem, clear } = useCart();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  const [addUnit, setAddUnit] = useState<"COIN" | "OUNCE" | null>(null);
 
   async function handleSignOut() {
     await logout();
     router.push("/login");
   }
 
-  const handleScan = useCallback(async (code: string) => {
-    setScanError(null);
-    try {
-      const product = await api.get<ProductLookup>(`/products/lookup/${code}`);
-      addItem({
-        cartId: `${product.id}-${Date.now()}`,
-        productId: product.id,
-        code: product.code,
-        nameEn: product.name_en,
-        karat: product.karat,
-        weightGrams: Number(product.weight_grams),
-        goldRate24k: product.gold_rate_24k,
-        finalPrice: Number(product.final_price),
-      });
-    } catch {
-      setScanError(code);
-      setTimeout(() => setScanError(null), 5000);
-    }
-  }, [addItem]);
+  const handleScan = useCallback(
+    async (code: string) => {
+      setScanError(null);
+      try {
+        const product = await api.get<ProductLookup>(`/products/lookup/${code}`);
+        addItem({
+          cartId: `${product.id}-${Date.now()}`,
+          kind: "PRODUCT",
+          productId: product.id,
+          code: product.code,
+          nameEn: product.name_en,
+          karat: product.karat,
+          weightGrams: Number(product.weight_grams),
+          quantity: 1,
+          goldRate24k: product.gold_rate_24k,
+          unitPrice: Number(product.final_price),
+          finalPrice: Number(product.final_price),
+        });
+      } catch {
+        setScanError(code);
+        setTimeout(() => setScanError(null), 5000);
+      }
+    },
+    [addItem]
+  );
 
   useScanner(handleScan);
 
@@ -50,7 +66,15 @@ export default function POSPage() {
     setCheckingOut(true);
     try {
       const order = await api.post<{ id: string }>("/orders", {
-        items: items.map((i) => ({ product_id: i.productId, quantity: 1 })),
+        items: items.map((i) => {
+          if (i.kind === "COIN") {
+            return { item_kind: "COIN", coin_type_id: i.coinTypeId, quantity: i.quantity };
+          }
+          if (i.kind === "OUNCE") {
+            return { item_kind: "OUNCE", ounce_type_id: i.ounceTypeId, quantity: i.quantity };
+          }
+          return { item_kind: "PRODUCT", product_id: i.productId, quantity: 1 };
+        }),
         payment_method: paymentMethod,
         customer_name: customerName || null,
       });
@@ -62,43 +86,92 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="h-14 bg-pos-bg border-b border-white/10 flex items-center justify-between px-6 shrink-0">
-        <span className="font-serif text-gold text-xl tracking-widest">MAISON ZAHAB</span>
-        <span className="text-pos-gray text-xs hidden sm:block">
-          {new Date().toLocaleDateString("en-GB", {
-            weekday: "long", day: "2-digit", month: "long", year: "numeric",
-          })}
-        </span>
-        <div className="flex items-center gap-4">
-          {user && <span className="text-pos-gray text-xs">{user.name}</span>}
+    <div className="flex flex-col h-screen bg-pos-bg">
+      {/* Top bar */}
+      <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="font-serif text-gold text-xl tracking-widest">MAISON ZAHAB</span>
+          <span className="text-pos-gray/40 text-xs">·</span>
+          <span className="text-pos-gray text-xs uppercase tracking-widest">Point of Sale</span>
+        </div>
+
+        <PosModeTabs />
+
+        <div className="hidden lg:flex flex-1 justify-center">
+          <GoldRateCard compact />
+        </div>
+
+        <div className="ml-auto flex items-center gap-5 shrink-0">
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-pos-gray text-[10px] uppercase tracking-widest">
+              {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" })}
+            </span>
+            {mounted && user && (
+              <span className="text-pos-cream text-xs mt-0.5">{user.name}</span>
+            )}
+          </div>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-1.5 text-pos-gray hover:text-pos-cream text-xs transition-colors"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign out
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign out</span>
           </button>
         </div>
       </header>
 
+      {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-96 border-r border-white/10 p-6 shrink-0 overflow-y-auto">
+        {/* Left: scan/capture */}
+        <aside className="w-[22rem] border-r border-white/10 p-6 shrink-0 overflow-y-auto">
           <ScanPanel onScan={handleScan} scanError={scanError} />
-        </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 pt-6 pb-0 shrink-0">
-            <p className="text-pos-gray text-[10px] uppercase tracking-widest">Current Sale</p>
+          {/* Add coin / ounce */}
+          <div className="mt-8 space-y-2">
+            <p className="text-pos-gray text-[10px] uppercase tracking-widest">
+              Add bullion
+            </p>
+            <button
+              onClick={() => setAddUnit("COIN")}
+              className="flex items-center gap-2 w-full px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-pos-cream text-sm transition-colors"
+            >
+              <Coins className="w-4 h-4 text-gold" />
+              Add coin
+            </button>
+            <button
+              onClick={() => setAddUnit("OUNCE")}
+              className="flex items-center gap-2 w-full px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-pos-cream text-sm transition-colors"
+            >
+              <Layers className="w-4 h-4 text-gold" />
+              Add ounce bar
+            </button>
           </div>
+
+          <div className="lg:hidden mt-8">
+            <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-3">
+              Live gold rate
+            </p>
+            <GoldRateCard />
+          </div>
+        </aside>
+
+        <main className="flex-1 flex flex-col overflow-hidden">
           <CheckoutPanel
             customerName={customerName}
             onCustomerNameChange={setCustomerName}
             onCheckout={handleCheckout}
             checkingOut={checkingOut}
           />
-        </div>
+        </main>
       </div>
+
+      {addUnit && (
+        <AddUnitDialog
+          kind={addUnit}
+          onClose={() => setAddUnit(null)}
+          onAdded={() => setAddUnit(null)}
+        />
+      )}
     </div>
   );
 }

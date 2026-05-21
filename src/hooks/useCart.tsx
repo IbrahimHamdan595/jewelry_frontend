@@ -1,18 +1,29 @@
 "use client";
 import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
-import type { Karat, PaymentMethod } from "@/types/api";
+import type { Karat, OrderItemKind, PaymentMethod } from "@/types/api";
 
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "CASH";
 
 export interface CartItem {
-  /** Unique cart-row ID (allows same product added multiple times at different gold rates) */
+  /** Unique cart-row ID (allows same SKU added multiple times) */
   cartId: string;
-  productId: string;
+  kind: OrderItemKind;
+  /** Set when kind === "PRODUCT" */
+  productId?: string;
+  /** Set when kind === "COIN" */
+  coinTypeId?: string;
+  /** Set when kind === "OUNCE" */
+  ounceTypeId?: string;
   code: string;
   nameEn: string;
   karat: Karat;
   weightGrams: number;
+  /** Always 1 for PRODUCT; user-set (capped 100 server-side) for COIN/OUNCE */
+  quantity: number;
   goldRate24k: number;
+  /** Per-unit price (one piece / one coin / one ounce) */
+  unitPrice: number;
+  /** unitPrice × quantity */
   finalPrice: number;
 }
 

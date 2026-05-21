@@ -13,7 +13,17 @@ export function CartItem({ item, onRemove }: Props) {
     <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3 animate-slide-in">
       <KaratBadge karat={item.karat} />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-pos-cream truncate">{item.nameEn}</div>
+        <div className="text-sm font-medium text-pos-cream truncate flex items-center gap-2">
+          {item.nameEn}
+          {item.kind !== "PRODUCT" && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/15 text-gold font-mono">
+              {item.kind}
+            </span>
+          )}
+          {item.quantity > 1 && (
+            <span className="text-[11px] text-pos-cream/70">×{item.quantity}</span>
+          )}
+        </div>
         <div className="text-xs text-pos-gray mt-0.5">
           {item.code} · {item.weightGrams}g @ ${item.goldRate24k.toFixed(2)}/g
         </div>

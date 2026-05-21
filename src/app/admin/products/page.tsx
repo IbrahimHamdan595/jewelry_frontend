@@ -43,7 +43,7 @@ export default function ProductsPage() {
           className="flex-1 max-w-xs border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
         />
         <div className="flex gap-1">
-          {["", "K18", "K21", "K24"].map((k) => (
+          {["", "K18", "K21", "K22", "K24"].map((k) => (
             <button
               key={k}
               onClick={() => { setKarat(k); setPage(1); }}
@@ -74,7 +74,22 @@ export default function ProductsPage() {
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.code}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{p.name_en}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800">
+                    <div className="flex items-center gap-2">
+                      <span>{p.name_en}</span>
+                      {p.is_used && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">USED</span>
+                      )}
+                      {p.status !== "AVAILABLE" && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          p.status === "SOLD" ? "bg-blue-50 text-blue-700" :
+                          p.status === "MELTED" ? "bg-amber-50 text-amber-800" :
+                          p.status === "RESERVED" ? "bg-indigo-50 text-indigo-700" :
+                          "bg-gray-100 text-gray-500"
+                        }`}>{p.status}</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{p.category}</td>
                   <td className="px-4 py-3"><KaratBadge karat={p.karat} /></td>
                   <td className="px-4 py-3 text-gray-600">{p.weight_grams}g</td>

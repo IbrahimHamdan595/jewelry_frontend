@@ -13,6 +13,29 @@ export default function ReceiptPage() {
 
   return (
     <div className="min-h-screen bg-pos-bg flex flex-col items-center justify-center py-8 print:bg-white print:min-h-0 print:py-0">
+      <style jsx global>{`
+        @page {
+          size: A5 portrait;
+          margin: 8mm;
+        }
+        @media print {
+          html, body {
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #receipt {
+            width: 129mm !important;
+            font-size: 14px !important;
+            margin: 0 auto;
+          }
+          #receipt .text-\\[10px\\] { font-size: 12px !important; }
+          #receipt .text-\\[9px\\] { font-size: 11px !important; }
+          #receipt .text-xs { font-size: 13px !important; }
+          #receipt .text-sm { font-size: 16px !important; }
+          #receipt .text-lg { font-size: 22px !important; }
+        }
+      `}</style>
       <div className="mb-4 flex gap-3 print:hidden">
         <button onClick={() => window.print()} className="px-5 py-2.5 bg-gold text-pos-bg rounded text-sm font-medium hover:bg-gold-dark transition-colors">Print Receipt</button>
         <button onClick={() => window.history.back()} className="px-5 py-2.5 border border-white/20 rounded text-sm text-pos-cream hover:bg-white/5 transition-colors">Back</button>

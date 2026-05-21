@@ -1,8 +1,8 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { ScanLine, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GoldRateCard } from "@/components/shared/GoldRateCard";
 
 interface Props {
   onScan: (code: string) => Promise<void>;
@@ -11,7 +11,6 @@ interface Props {
 
 export function ScanPanel({ onScan, scanError }: Props) {
   const [manual, setManual] = useState("");
-  const hiddenRef = useRef<HTMLInputElement>(null);
 
   async function handleManual() {
     const code = manual.trim();
@@ -22,65 +21,70 @@ export function ScanPanel({ onScan, scanError }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Capture section */}
       <div>
-        <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-3">
-          01 · CAPTURE
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-pos-gray text-[10px] uppercase tracking-widest">
+            Capture
+          </p>
+          <p className="text-pos-gray/60 text-[10px] uppercase tracking-widest">
+            Step 01
+          </p>
+        </div>
 
-        {/* Hidden input that captures barcode scanner keystrokes */}
-        <input
-          ref={hiddenRef}
-          autoFocus
-          onBlur={(e) => e.target.focus()}
-          onChange={() => {}}
-          className="sr-only"
-          aria-label="Barcode scanner input"
-        />
-
-        {/* Visual feedback box */}
         <div
-          className={`border-2 rounded-lg p-5 text-center transition-colors ${
+          className={`relative border rounded-xl px-6 py-10 text-center transition-colors ${
             scanError
               ? "border-red-500/60 bg-red-900/10"
-              : "border-gold/40 bg-white/3"
+              : "border-gold/30 bg-gold/5"
           }`}
         >
           {scanError ? (
             <>
-              <p className="text-red-400 text-xs uppercase tracking-widest mb-1">
-                ITEM NOT FOUND
+              <p className="text-red-400 text-xs uppercase tracking-widest mb-2">
+                Item not found
               </p>
-              <p className="text-red-300/60 text-xs italic font-mono">{scanError}</p>
+              <p className="text-red-300/70 text-sm font-mono break-all">
+                {scanError}
+              </p>
             </>
           ) : (
-            <p className="text-pos-gray text-sm tracking-wider">READY TO SCAN</p>
+            <>
+              <ScanLine className="w-10 h-10 mx-auto text-gold/60 mb-3" />
+              <p className="text-pos-cream text-sm tracking-widest uppercase">
+                Ready to scan
+              </p>
+              <p className="text-pos-gray text-xs mt-1.5">
+                Point scanner at barcode or enter code below
+              </p>
+            </>
           )}
-        </div>
-
-        {/* Manual fallback */}
-        <div className="flex gap-2 mt-3">
-          <Input
-            dark
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleManual()}
-            placeholder="Manual code…"
-          />
-          <Button variant="outline" size="sm" onClick={handleManual}
-            className="border-white/15 text-pos-gray hover:text-white hover:border-white/30 shrink-0"
-          >
-            FIND
-          </Button>
         </div>
       </div>
 
-      {/* Gold rate section */}
       <div>
-        <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-3">
-          02 · LIVE GOLD RATE
+        <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
+          Manual entry
         </p>
-        <GoldRateCard />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-gray/60 pointer-events-none" />
+            <Input
+              dark
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleManual()}
+              placeholder="Product code…"
+              className="pl-9"
+            />
+          </div>
+          <Button
+            onClick={handleManual}
+            disabled={!manual.trim()}
+            className="shrink-0 px-5"
+          >
+            Find
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ export default function GoldPricePage() {
   const [range, setRange] = useState<Range>("24h");
   const [overrideInput, setOverrideInput] = useState("");
 
-  const { data: history } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?range=${range}`, apiFetcher, { refreshInterval: 60000 });
+  const { data: history } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?range=${range}`, apiFetcher, { refreshInterval: 30000 });
 
   async function handleSetOverride() {
     if (!overrideInput) return;
@@ -30,7 +30,7 @@ export default function GoldPricePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       {/* Hero card */}
       <div className="bg-admin-sidebar rounded-xl p-6">
         <div className="flex items-start justify-between">
@@ -61,8 +61,11 @@ export default function GoldPricePage() {
 
       {/* TradingView real-time chart */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
-        <div className="text-sm font-semibold text-gray-700 mb-4">XAU/USD — Live Chart (TradingView)</div>
-        <TradingViewChart />
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm font-semibold text-gray-700">XAU/USD — Live Chart (TradingView)</div>
+          <div className="text-[10px] uppercase tracking-widest text-gray-400">Real-time market data</div>
+        </div>
+        <TradingViewChart height={720} />
       </div>
 
       {/* Internal rate history */}

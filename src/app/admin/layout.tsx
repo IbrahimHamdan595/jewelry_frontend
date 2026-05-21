@@ -1,9 +1,10 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, QrCode, ShoppingCart,
-  TrendingUp, Settings, LogOut, Gem, Tag,
+  TrendingUp, Settings, LogOut, Gem, Tag, Boxes, Truck, Wallet,
 } from "lucide-react";
 import { logout, getStoredUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,9 @@ const NAV = [
   { href: "/admin/categories", icon: Tag, label: "Categories" },
   { href: "/admin/qr-labels", icon: QrCode, label: "QR Labels" },
   { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
+  { href: "/admin/inventory", icon: Boxes, label: "Inventory" },
+  { href: "/admin/suppliers", icon: Truck, label: "Suppliers" },
+  { href: "/admin/accounts-payable", icon: Wallet, label: "Accounts Payable" },
   { href: "/admin/gold-price", icon: TrendingUp, label: "Gold Price" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
@@ -21,7 +25,8 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const user = getStoredUser();
+  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  useEffect(() => { setUser(getStoredUser()); }, []);
 
   async function handleLogout() {
     await logout();
