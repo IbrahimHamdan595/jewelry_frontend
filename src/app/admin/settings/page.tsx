@@ -111,6 +111,46 @@ export default function SettingsPage() {
             ))}
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
+              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Buyback Pricing</div>
+              <p className="text-xs text-gray-400">Default spread the shop applies when buying gold back from customers. Per-transaction override is available on the buyback POS form.</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin Mode</label>
+                  <select
+                    value={form.default_buyback_margin_mode ?? "USD_PER_GRAM"}
+                    onChange={(e) => setForm({ ...form, default_buyback_margin_mode: e.target.value as "USD_PER_GRAM" | "PERCENT" })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold bg-white"
+                  >
+                    <option value="USD_PER_GRAM">USD per gram</option>
+                    <option value="PERCENT">Percent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin Value</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={(form.default_buyback_margin_value as any) ?? ""}
+                    onChange={(e) => setForm({ ...form, default_buyback_margin_value: e.target.value })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Max Drift %</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={(form.buyback_rate_drift_pct_max as any) ?? ""}
+                    onChange={(e) => setForm({ ...form, buyback_rate_drift_pct_max: e.target.value })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4 space-y-3">
               <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Per-Karat Gold Markup (USD / gram)</div>
               <p className="text-xs text-gray-400">Added to the karat purity rate before calculating metal value. Example: K21 markup = $5 means the K21 rate used in pricing is (market × 87.5%) + $5/g.</p>
               <div className="grid grid-cols-3 gap-3">

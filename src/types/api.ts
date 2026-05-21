@@ -150,6 +150,9 @@ export interface Settings {
   lbp_exchange_rate: number;
   receipt_footer: string | null;
   gold_refresh_minutes: number;
+  default_buyback_margin_mode: "USD_PER_GRAM" | "PERCENT";
+  default_buyback_margin_value: number | string;
+  buyback_rate_drift_pct_max: number | string;
   updated_at: string;
 }
 
