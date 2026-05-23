@@ -9,12 +9,15 @@ import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { api } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
+import { useLang } from "@/context/LanguageContext";
 import type { OrderItemKind, ProductLookup } from "@/types/api";
 
 export default function POSPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -90,9 +93,9 @@ export default function POSPage() {
       {/* Top bar */}
       <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-serif text-gold text-xl tracking-widest">MAISON ZAHAB</span>
+          <span className="font-serif text-gold text-xl tracking-widest">{t.appName}</span>
           <span className="text-pos-gray/40 text-xs">·</span>
-          <span className="text-pos-gray text-xs uppercase tracking-widest">Point of Sale</span>
+          <span className="text-pos-gray text-xs uppercase tracking-widest">{t.pos.pointOfSale}</span>
         </div>
 
         <PosModeTabs />
@@ -101,7 +104,7 @@ export default function POSPage() {
           <GoldRateCard compact />
         </div>
 
-        <div className="ml-auto flex items-center gap-5 shrink-0">
+        <div className="ms-auto flex items-center gap-5 shrink-0">
           <div className="hidden md:flex flex-col items-end">
             <span className="text-pos-gray text-[10px] uppercase tracking-widest">
               {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" })}
@@ -110,46 +113,46 @@ export default function POSPage() {
               <span className="text-pos-cream text-xs mt-0.5">{user.name}</span>
             )}
           </div>
+          <LanguageSwitcher variant="dark" />
           <button
             onClick={handleSignOut}
             className="flex items-center gap-1.5 text-pos-gray hover:text-pos-cream text-xs transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign out</span>
+            <span className="hidden sm:inline">{t.pos.signOut}</span>
           </button>
         </div>
       </header>
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: scan/capture */}
-        <aside className="w-[22rem] border-r border-white/10 p-6 shrink-0 overflow-y-auto">
+      {/* Body — rtl:flex-row-reverse flips scan panel to the right side */}
+      <div className="flex flex-1 overflow-hidden rtl:flex-row-reverse">
+        {/* Scan/capture panel */}
+        <aside className="w-[22rem] border-e border-white/10 p-6 shrink-0 overflow-y-auto">
           <ScanPanel onScan={handleScan} scanError={scanError} />
 
-          {/* Add coin / ounce */}
           <div className="mt-8 space-y-2">
             <p className="text-pos-gray text-[10px] uppercase tracking-widest">
-              Add bullion
+              {t.pos.addBullion}
             </p>
             <button
               onClick={() => setAddUnit("COIN")}
               className="flex items-center gap-2 w-full px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-pos-cream text-sm transition-colors"
             >
-              <Coins className="w-4 h-4 text-gold" />
-              Add coin
+              <Coins className="w-4 h-4 text-gold shrink-0" />
+              {t.pos.addCoin}
             </button>
             <button
               onClick={() => setAddUnit("OUNCE")}
               className="flex items-center gap-2 w-full px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-pos-cream text-sm transition-colors"
             >
-              <Layers className="w-4 h-4 text-gold" />
-              Add ounce bar
+              <Layers className="w-4 h-4 text-gold shrink-0" />
+              {t.pos.addOunceBar}
             </button>
           </div>
 
           <div className="lg:hidden mt-8">
             <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-3">
-              Live gold rate
+              {t.pos.liveGoldRate}
             </p>
             <GoldRateCard />
           </div>

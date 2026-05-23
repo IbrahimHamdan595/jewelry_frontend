@@ -2,12 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500;600;700&display=swap");
 
 @layer base {
   * { box-sizing: border-box; }
   html { -webkit-font-smoothing: antialiased; }
   body { font-family: "Jost", sans-serif; }
+
+  /* Arabic: switch body and display fonts to Cairo */
+  [dir="rtl"] body { font-family: "Cairo", sans-serif; }
+  [dir="rtl"] .font-serif { font-family: "Cairo", sans-serif; font-weight: 600; }
+  [dir="rtl"] .font-sans { font-family: "Cairo", sans-serif; }
+
+  /* Ensure Arabic numerals render correctly in Arabic locale */
+  [dir="rtl"] input[type="number"] { text-align: start; }
 }
 
 @media print {

@@ -3,9 +3,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { login } from "@/lib/auth";
+import { useLang } from "@/context/LanguageContext";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,39 +31,50 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-pos-bg flex items-center justify-center px-4">
+      {/* Language switcher — top-right corner */}
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher variant="dark" />
+      </div>
+
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <h1 className="font-serif text-4xl text-gold tracking-widest">MAISON ZAHAB</h1>
-          <p className="text-pos-gray text-sm mt-2 tracking-wider">GOLD JEWELLERY</p>
+          <h1 className="font-serif text-4xl text-gold tracking-widest">{t.appName}</h1>
+          <p className="text-pos-gray text-sm mt-2 tracking-wider">{t.appSubtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-lg p-8 space-y-5">
           <div>
-            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">Email</label>
+            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
+              {t.login.email}
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              dir="ltr"
               className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
               placeholder="owner@maisonzahab.com"
             />
           </div>
           <div>
-            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">Password</label>
+            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
+              {t.login.password}
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 pr-10 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
+                dir="ltr"
+                className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 pe-10 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
                 placeholder="••••••••"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-3 flex items-center text-pos-gray hover:text-pos-cream transition-colors"
+                className="absolute inset-y-0 end-3 flex items-center text-pos-gray hover:text-pos-cream transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -75,7 +89,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-gold hover:bg-gold-dark disabled:opacity-60 text-pos-bg font-semibold py-3 rounded tracking-wider text-sm transition-colors"
           >
-            {loading ? "SIGNING IN…" : "SIGN IN"}
+            {loading ? t.login.signingIn : t.login.signIn}
           </button>
         </form>
       </div>
