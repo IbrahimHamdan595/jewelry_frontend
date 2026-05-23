@@ -19,9 +19,60 @@ export interface Translations {
     suppliers: string;
     accountsPayable: string;
     goldPrice: string;
+    zakat: string;
     settings: string;
     signOut: string;
     admin: string;
+  };
+
+  zakat: {
+    title: string;
+    subtitle: string;
+    refresh: string;
+    totalAuCardTitle: string;
+    cashValue: string;
+    zakatDueCardTitle: string;
+    zakatDueGrams: string;
+    zakatDueCash: string;
+    nisabCardTitle: string;
+    meetsNisab: string;
+    belowNisab: string;
+    nisabHint: string;
+    rateLabel: string;
+    sourceLabel: string;
+    staleBadge: string;
+    perKarat: string;
+    perKaratHint: string;
+    karat: string;
+    products: string;
+    coins: string;
+    ounces: string;
+    lots: string;
+    totalWeight: string;
+    auGrams: string;
+    grandTotal: string;
+    snapshotsTitle: string;
+    snapshotsHint: string;
+    saveSnapshot: string;
+    saveSnapshotModalTitle: string;
+    assessmentDate: string;
+    notesOptional: string;
+    save: string;
+    cancel: string;
+    saving: string;
+    latestPerDate: string;
+    allSnapshots: string;
+    snapTaken: string;
+    snapAssessment: string;
+    snapTotalAu: string;
+    snapZakatGrams: string;
+    snapZakatCash: string;
+    snapRate: string;
+    snapSource: string;
+    snapIntegrityOk: string;
+    snapIntegrityBad: string;
+    noSnapshotsYet: string;
+    rateUnavailable: string;
   };
 
   dashboard: {
@@ -130,9 +181,60 @@ const en: Translations = {
     suppliers: "Suppliers",
     accountsPayable: "Accounts Payable",
     goldPrice: "Gold Price",
+    zakat: "Zakat",
     settings: "Settings",
     signOut: "Sign out",
     admin: "Admin",
+  },
+
+  zakat: {
+    title: "Zakat & Pure Gold",
+    subtitle: "Live total Au held across products, coins, ounces, and pure-gold lots.",
+    refresh: "Refresh",
+    totalAuCardTitle: "Total Pure Au On Hand",
+    cashValue: "Cash value",
+    zakatDueCardTitle: "Zakat Due (2.5%)",
+    zakatDueGrams: "Grams of pure Au",
+    zakatDueCash: "Cash equivalent",
+    nisabCardTitle: "Nisab Threshold",
+    meetsNisab: "Meets nisab — zakat is due",
+    belowNisab: "Below nisab — zakat not due",
+    nisabHint: "Edit nisab from Settings → Default Pricing → Zakat.",
+    rateLabel: "Gold rate (24K)",
+    sourceLabel: "Source",
+    staleBadge: "stale",
+    perKarat: "Per-Karat Breakdown",
+    perKaratHint: "Every gram counted, by karat and by where it sits in inventory.",
+    karat: "Karat",
+    products: "Products",
+    coins: "Coins",
+    ounces: "Ounces",
+    lots: "Lots",
+    totalWeight: "Total weight (g)",
+    auGrams: "Au (g)",
+    grandTotal: "Total",
+    snapshotsTitle: "Snapshots",
+    snapshotsHint: "Save a dated, immutable snapshot for annual assessment.",
+    saveSnapshot: "Save snapshot",
+    saveSnapshotModalTitle: "Save zakat snapshot",
+    assessmentDate: "Assessment date",
+    notesOptional: "Notes (optional)",
+    save: "Save",
+    cancel: "Cancel",
+    saving: "Saving…",
+    latestPerDate: "Latest per date",
+    allSnapshots: "All snapshots",
+    snapTaken: "Taken",
+    snapAssessment: "Assessment",
+    snapTotalAu: "Total Au (g)",
+    snapZakatGrams: "Zakat (g)",
+    snapZakatCash: "Zakat (USD)",
+    snapRate: "Rate (USD/g)",
+    snapSource: "Source",
+    snapIntegrityOk: "OK",
+    snapIntegrityBad: "TAMPERED",
+    noSnapshotsYet: "No snapshots yet.",
+    rateUnavailable: "Gold rate is unavailable. The poller may be down or no rate has ever been recorded.",
   },
 
   dashboard: {

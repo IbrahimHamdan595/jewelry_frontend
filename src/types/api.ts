@@ -153,6 +153,7 @@ export interface Settings {
   default_buyback_margin_mode: "USD_PER_GRAM" | "PERCENT";
   default_buyback_margin_value: number | string;
   buyback_rate_drift_pct_max: number | string;
+  nisab_grams: number | string;
   updated_at: string;
 }
 

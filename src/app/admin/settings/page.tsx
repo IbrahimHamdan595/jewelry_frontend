@@ -174,6 +174,24 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Zakat</div>
+              <p className="text-xs text-gray-400">
+                Threshold (in grams of pure gold) above which zakat is due. Conventionally ~85g. Editable so the owner can match the rule their scholar prescribes.
+              </p>
+              <div className="max-w-xs">
+                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Nisab (grams)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={(form.nisab_grams as any) ?? ""}
+                  onChange={(e) => setForm({ ...form, nisab_grams: e.target.value })}
+                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+            </div>
           </>
         )}
 
