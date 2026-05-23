@@ -13,11 +13,12 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { api } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
+import { cn } from "@/lib/utils";
 import type { OrderItemKind, ProductLookup } from "@/types/api";
 
 export default function POSPage() {
   const router = useRouter();
-  const { t } = useLang();
+  const { t, isRTL } = useLang();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -125,7 +126,7 @@ export default function POSPage() {
       </header>
 
       {/* Body — stacks vertically on mobile, side-by-side on md+ */}
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden rtl:md:flex-row-reverse">
+      <div className={cn("flex flex-col md:flex-row flex-1 overflow-hidden", isRTL && "md:flex-row-reverse")}>
         {/* Scan/capture panel */}
         <aside className="w-full md:w-[22rem] border-b md:border-b-0 md:border-e border-white/10 p-4 md:p-6 shrink-0 overflow-y-auto">
           <ScanPanel onScan={handleScan} scanError={scanError} />

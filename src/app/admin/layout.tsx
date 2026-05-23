@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { t } = useLang();
+  const { t, isRTL } = useLang();
 
   useEffect(() => { setUser(getStoredUser()); }, []);
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
@@ -93,7 +93,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="flex h-screen bg-admin-canvas overflow-hidden rtl:flex-row-reverse">
+    <div className={cn("flex h-screen bg-admin-canvas overflow-hidden", isRTL && "flex-row-reverse")}>
 
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (
@@ -106,9 +106,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar — always visible on md+, drawer on mobile */}
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-30 w-64 bg-admin-sidebar flex flex-col transition-transform duration-200",
+          "fixed inset-y-0 z-30 w-64 bg-admin-sidebar flex flex-col transition-transform duration-200",
           "md:static md:translate-x-0 md:w-60 md:shrink-0",
-          sidebarOpen ? "translate-x-0 rtl:translate-x-0" : "-translate-x-full rtl:translate-x-full md:translate-x-0"
+          isRTL ? "right-0" : "left-0",
+          sidebarOpen
+            ? "translate-x-0"
+            : isRTL
+              ? "translate-x-full md:translate-x-0"
+              : "-translate-x-full md:translate-x-0"
         )}
       >
         {SidebarContent}
