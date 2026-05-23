@@ -1,4 +1,115 @@
-const en = {
+export interface Translations {
+  appName: string;
+  appSubtitle: string;
+
+  login: {
+    email: string;
+    password: string;
+    signIn: string;
+    signingIn: string;
+  };
+
+  nav: {
+    dashboard: string;
+    products: string;
+    categories: string;
+    qrLabels: string;
+    orders: string;
+    inventory: string;
+    suppliers: string;
+    accountsPayable: string;
+    goldPrice: string;
+    settings: string;
+    signOut: string;
+    admin: string;
+  };
+
+  dashboard: {
+    todayOrders: string;
+    todayRevenue: string;
+    weekRevenue: string;
+    goldRate24k: string;
+    usdPerGram: string;
+    vsLastWeek: string;
+    topSellers: string;
+    noSales: string;
+    units: string;
+    purePools: string;
+    noActiveLots: string;
+    lots: string;
+    lot: string;
+    coinsOunces: string;
+    coins: string;
+    ounces: string;
+    types: string;
+    type: string;
+    belowThreshold: string;
+    accountsPayable: string;
+    supplierCount: (n: number) => string;
+    cashOwed: string;
+    goldOwed: string;
+    recentOrders: string;
+    orderNum: string;
+    cashier: string;
+    total: string;
+    status: string;
+    date: string;
+    lotCount: (n: number) => string;
+    distinctTypes: (n: number) => string;
+  };
+
+  pos: {
+    pointOfSale: string;
+    addBullion: string;
+    addCoin: string;
+    addOunceBar: string;
+    liveGoldRate: string;
+    signOut: string;
+    buyback: string;
+    sale: string;
+  };
+
+  common: {
+    save: string;
+    cancel: string;
+    add: string;
+    edit: string;
+    delete: string;
+    search: string;
+    loading: string;
+    noResults: string;
+    actions: string;
+    name: string;
+    nameEn: string;
+    nameAr: string;
+    description: string;
+    price: string;
+    quantity: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    confirm: string;
+    close: string;
+    submit: string;
+    back: string;
+    next: string;
+    yes: string;
+    no: string;
+    required: string;
+    optional: string;
+    total: string;
+    subtotal: string;
+    vat: string;
+    cash: string;
+    card: string;
+    transfer: string;
+    customer: string;
+    customerName: string;
+    checkout: string;
+  };
+}
+
+const en: Translations = {
   appName: "MAISON ZAHAB",
   appSubtitle: "GOLD JEWELLERY",
 
@@ -45,7 +156,7 @@ const en = {
     type: "type",
     belowThreshold: "below threshold",
     accountsPayable: "Accounts Payable",
-    supplierCount: (n: number) => `${n} supplier${n !== 1 ? "s" : ""}`,
+    supplierCount: (n) => `${n} supplier${n !== 1 ? "s" : ""}`,
     cashOwed: "Cash owed",
     goldOwed: "Gold owed",
     recentOrders: "Recent Orders",
@@ -54,8 +165,8 @@ const en = {
     total: "Total",
     status: "Status",
     date: "Date",
-    lotCount: (n: number) => `${n} lot${n !== 1 ? "s" : ""}`,
-    distinctTypes: (n: number) => `${n} type${n !== 1 ? "s" : ""}`,
+    lotCount: (n) => `${n} lot${n !== 1 ? "s" : ""}`,
+    distinctTypes: (n) => `${n} type${n !== 1 ? "s" : ""}`,
   },
 
   pos: {
@@ -107,7 +218,6 @@ const en = {
     customerName: "Customer Name",
     checkout: "Checkout",
   },
-} as const;
+};
 
 export default en;
-export type Translations = typeof en;
