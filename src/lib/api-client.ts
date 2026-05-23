@@ -9,32 +9,27 @@ function getBase(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api";
 }
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("mz_token");
-}
+// Kept as no-ops for callers that still import these symbols. Auth is now
+// driven by the HttpOnly cookie the backend sets on /auth/login.
+export function saveToken(_token: string) {}
+export function clearToken() {}
 
-export function saveToken(token: string) {
-  localStorage.setItem("mz_token", token);
-}
-
-export function clearToken() {
-  localStorage.removeItem("mz_token");
+function handleUnauthorized() {
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...((init.headers as Record<string, string>) ?? {}),
   };
 
-  const res = await fetch(`${getBase()}${path}`, { ...init, headers });
+  const res = await fetch(`${getBase()}${path}`, { ...init, headers, credentials: "include" });
 
   if (res.status === 401) {
-    clearToken();
-    window.location.href = "/login";
+    handleUnauthorized();
     throw new Error("Unauthorized");
   }
   if (!res.ok) {
@@ -57,15 +52,14 @@ export async function apiFetcher<T>(path: string): Promise<T> {
 }
 
 export async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
-  const token = getToken();
-  const headers: HeadersInit = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    // No Content-Type — browser sets it with multipart boundary automatically
-  };
-  const res = await fetch(`${getBase()}${path}`, { method: "POST", headers, body: formData });
+  const res = await fetch(`${getBase()}${path}`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+    // No Content-Type — browser sets it with multipart boundary automatically.
+  });
   if (res.status === 401) {
-    clearToken();
-    window.location.href = "/login";
+    handleUnauthorized();
     throw new Error("Unauthorized");
   }
   if (!res.ok) {

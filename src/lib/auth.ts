@@ -1,4 +1,4 @@
-import { api, saveToken, clearToken } from "./api-client";
+import { api } from "./api-client";
 
 export interface AuthUser {
   id: string;
@@ -15,24 +15,30 @@ interface LoginResponse {
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
+  // Backend sets the auth cookie (HttpOnly). We only cache the user object
+  // in sessionStorage for non-sensitive UI display (name, role badge).
   const data = await api.post<LoginResponse>("/auth/login", { email, password });
-  saveToken(data.access_token);
   sessionStorage.setItem("mz_user", JSON.stringify(data.user));
-  // Set cookies so the middleware can read role without hitting the API
-  document.cookie = `mz_token=${data.access_token}; path=/; SameSite=Lax`;
-  document.cookie = `mz_role=${data.user.role}; path=/; SameSite=Lax`;
   return data.user;
 }
 
 export async function logout() {
-  clearToken();
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // Even if the request fails, clear local UI state.
+  }
   sessionStorage.removeItem("mz_user");
-  document.cookie = "mz_token=; Max-Age=0; path=/";
-  document.cookie = "mz_role=; Max-Age=0; path=/";
 }
 
 export function getStoredUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem("mz_user");
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    sessionStorage.removeItem("mz_user");
+    return null;
+  }
 }
