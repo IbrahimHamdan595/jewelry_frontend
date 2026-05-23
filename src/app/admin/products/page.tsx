@@ -35,14 +35,14 @@ export default function ProductsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <input
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search by name or code…"
-          className="flex-1 max-w-xs border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
+          className="w-full sm:w-auto sm:flex-1 sm:max-w-xs border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
         />
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {["", "K18", "K21", "K22", "K24"].map((k) => (
             <button
               key={k}
@@ -57,7 +57,8 @@ export default function ProductsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
               {["Code", "Name", "Category", "Karat", "Weight", "Live Price", "Status", "Actions"].map((h) => (
@@ -110,6 +111,7 @@ export default function ProductsPage() {
           </tbody>
         </table>
 
+        </div>
         {data && data.total > data.page_size && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-xs text-gray-400">Showing {(page - 1) * data.page_size + 1}–{Math.min(page * data.page_size, data.total)} of {data.total}</span>

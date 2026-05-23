@@ -29,7 +29,7 @@ export default function OrdersPage() {
 
       {/* Summary strip */}
       {data && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-100 rounded-lg p-4">
             <div className="text-xs text-gray-400 uppercase tracking-widest">Total Orders</div>
             <div className="text-2xl font-bold mt-1">{data.total}</div>
@@ -56,7 +56,8 @@ export default function OrdersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[680px] text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
               {["Order #", "Date", "Cashier", "Items", "Total", "Payment", "Status", ""].map((h) => (
@@ -82,6 +83,7 @@ export default function OrdersPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {data && data.total > 20 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-xs text-gray-400">Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, data.total)} of {data.total}</span>

@@ -91,7 +91,7 @@ export default function POSPage() {
   return (
     <div className="flex flex-col h-screen bg-pos-bg">
       {/* Top bar */}
-      <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
+      <header className="min-h-14 border-b border-white/10 flex flex-wrap items-center px-4 md:px-6 py-2 shrink-0 gap-3 md:gap-6">
         <div className="flex items-center gap-3 shrink-0">
           <span className="font-serif text-gold text-xl tracking-widest">{t.appName}</span>
           <span className="text-pos-gray/40 text-xs">·</span>
@@ -124,10 +124,10 @@ export default function POSPage() {
         </div>
       </header>
 
-      {/* Body — rtl:flex-row-reverse flips scan panel to the right side */}
-      <div className="flex flex-1 overflow-hidden rtl:flex-row-reverse">
+      {/* Body — stacks vertically on mobile, side-by-side on md+ */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden rtl:md:flex-row-reverse">
         {/* Scan/capture panel */}
-        <aside className="w-[22rem] border-e border-white/10 p-6 shrink-0 overflow-y-auto">
+        <aside className="w-full md:w-[22rem] border-b md:border-b-0 md:border-e border-white/10 p-4 md:p-6 shrink-0 overflow-y-auto">
           <ScanPanel onScan={handleScan} scanError={scanError} />
 
           <div className="mt-8 space-y-2">

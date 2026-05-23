@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
 import { useGoldRate } from "@/hooks/useGoldRate";
@@ -14,6 +14,17 @@ export default function GoldPricePage() {
   const { rate, refresh } = useGoldRate();
   const [range, setRange] = useState<Range>("24h");
   const [overrideInput, setOverrideInput] = useState("");
+  const [chartHeight, setChartHeight] = useState(520);
+
+  useEffect(() => {
+    function updateHeight() {
+      const w = window.innerWidth;
+      setChartHeight(w < 640 ? 300 : w < 1024 ? 420 : 520);
+    }
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
   const { data: history } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?range=${range}`, apiFetcher, { refreshInterval: 30000 });
 
@@ -33,7 +44,7 @@ export default function GoldPricePage() {
     <div className="space-y-6">
       {/* Hero card */}
       <div className="bg-admin-sidebar rounded-xl p-6">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-white/40 text-xs uppercase tracking-widest mb-2">24K Gold — USD/gram</div>
             <div className="font-serif text-kpi text-gold leading-none">{rate ? `$${rate.rate_24k.toFixed(2)}` : "—"}</div>
@@ -65,7 +76,7 @@ export default function GoldPricePage() {
           <div className="text-sm font-semibold text-gray-700">XAU/USD — Live Chart (TradingView)</div>
           <div className="text-[10px] uppercase tracking-widest text-gray-400">Real-time market data</div>
         </div>
-        <TradingViewChart height={720} />
+        <TradingViewChart height={chartHeight} />
       </div>
 
       {/* Internal rate history */}

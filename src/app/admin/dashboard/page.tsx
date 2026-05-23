@@ -25,7 +25,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* KPI cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
           <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.todayOrders}</div>
           <div className="text-kpi font-bold text-gray-900">{data.today_orders}</div>
@@ -52,9 +52,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue chart */}
-        <div className="col-span-2 bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
           <div className="text-sm font-semibold text-gray-700 mb-4">{t.dashboard.weekRevenue}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={data.chart_data} barSize={28}>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
 
       {/* Inventory + AP pulse */}
       {(data.inventory || data.accounts_payable) && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.inventory && (
             <Link
               href="/admin/inventory/lots"
@@ -205,7 +205,8 @@ export default function DashboardPage() {
         <div className="p-5 border-b border-gray-100">
           <div className="text-sm font-semibold text-gray-700">{t.dashboard.recentOrders}</div>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[540px] text-sm">
           <thead>
             <tr className="border-b border-gray-100">
               {[t.dashboard.orderNum, t.dashboard.cashier, t.dashboard.total, t.dashboard.status, t.dashboard.date].map((h) => (
@@ -225,6 +226,7 @@ export default function DashboardPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

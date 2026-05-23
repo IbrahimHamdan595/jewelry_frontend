@@ -71,7 +71,7 @@ export default function CategoriesPage() {
       {showForm && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
           <div className="text-sm font-medium text-gray-700">{editing ? "Edit Category" : "New Category"}</div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Name (English)</label>
               <input
@@ -121,7 +121,8 @@ export default function CategoriesPage() {
         {!categories?.length ? (
           <div className="p-8 text-center text-gray-400 text-sm">No categories yet</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Name</th>
@@ -157,6 +158,7 @@ export default function CategoriesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

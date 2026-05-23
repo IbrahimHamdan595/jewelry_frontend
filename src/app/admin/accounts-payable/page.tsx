@@ -24,7 +24,7 @@ export default function AccountsPayablePage() {
       <h2 className="text-lg font-semibold text-gray-800">Accounts Payable</h2>
 
       {/* Headline totals */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
           icon={<Banknote className="w-5 h-5" />}
           label="Cash owed (store-wide)"
@@ -65,7 +65,8 @@ export default function AccountsPayablePage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[440px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
@@ -126,6 +127,7 @@ export default function AccountsPayablePage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
