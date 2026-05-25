@@ -14,6 +14,8 @@ export default function GoldPricePage() {
   const { rate, refresh } = useGoldRate();
   const [range, setRange] = useState<Range>("24h");
   const [overrideInput, setOverrideInput] = useState("");
+  const [reasonInput, setReasonInput] = useState("");
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   const [chartHeight, setChartHeight] = useState(520);
 
   useEffect(() => {
@@ -29,15 +31,33 @@ export default function GoldPricePage() {
   const { data: history } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?range=${range}`, apiFetcher, { refreshInterval: 30000 });
 
   async function handleSetOverride() {
+    setOverrideError(null);
     if (!overrideInput) return;
-    await api.post("/gold-price/override", { rate_24k: parseFloat(overrideInput) });
-    refresh();
-    setOverrideInput("");
+    if (reasonInput.trim().length < 3) {
+      setOverrideError("Reason is required (min 3 characters).");
+      return;
+    }
+    try {
+      await api.post("/gold-price/override", {
+        rate_24k: parseFloat(overrideInput),
+        reason: reasonInput.trim(),
+      });
+      refresh();
+      setOverrideInput("");
+      setReasonInput("");
+    } catch (e: any) {
+      setOverrideError(e.message ?? "Failed to set override");
+    }
   }
 
   async function handleClearOverride() {
-    await api.delete("/gold-price/override");
-    refresh();
+    setOverrideError(null);
+    try {
+      await api.delete("/gold-price/override");
+      refresh();
+    } catch (e: any) {
+      setOverrideError(e.message ?? "Failed to clear override");
+    }
   }
 
   return (
@@ -118,16 +138,36 @@ export default function GoldPricePage() {
         ) : (
           <div className="text-xs text-gray-400">No override active — using live feed</div>
         )}
-        <div className="flex gap-3">
+        <div className="space-y-2">
           <input
             type="number"
             step="0.01"
             value={overrideInput}
             onChange={(e) => setOverrideInput(e.target.value)}
             placeholder="Enter rate USD/g…"
-            className="flex-1 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
+            className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
           />
-          <button onClick={handleSetOverride} className="px-4 py-2 bg-gold text-white text-sm rounded hover:bg-gold-dark transition-colors">Set Override</button>
+          <input
+            type="text"
+            value={reasonInput}
+            onChange={(e) => setReasonInput(e.target.value)}
+            maxLength={500}
+            placeholder="Reason (required, recorded in audit log)…"
+            className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
+          />
+          <p className="text-[11px] text-gray-400">
+            Every override is logged with actor, rate, prior rate, and reason. Reason is mandatory.
+          </p>
+          {overrideError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">{overrideError}</p>
+          )}
+          <button
+            onClick={handleSetOverride}
+            disabled={!overrideInput || reasonInput.trim().length < 3}
+            className="w-full px-4 py-2 bg-gold text-white text-sm rounded hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Set Override
+          </button>
         </div>
       </div>
     </div>
