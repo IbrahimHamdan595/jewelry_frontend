@@ -16,6 +16,7 @@ export interface Translations {
     qrLabels: string;
     orders: string;
     inventory: string;
+    stockTake: string;
     suppliers: string;
     accountsPayable: string;
     goldPrice: string;
@@ -178,6 +179,7 @@ const en: Translations = {
     qrLabels: "QR Labels",
     orders: "Orders",
     inventory: "Inventory",
+    stockTake: "Stock-take",
     suppliers: "Suppliers",
     accountsPayable: "Accounts Payable",
     goldPrice: "Gold Price",

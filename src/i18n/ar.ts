@@ -19,6 +19,7 @@ const ar: Translations = {
     qrLabels: "رموز QR",
     orders: "الطلبات",
     inventory: "المخزون",
+    stockTake: "الجرد",
     suppliers: "الموردون",
     accountsPayable: "الحسابات الدائنة",
     goldPrice: "سعر الذهب",
