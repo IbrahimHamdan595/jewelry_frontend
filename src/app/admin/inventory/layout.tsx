@@ -9,6 +9,7 @@ const TABS = [
   { href: "/admin/inventory/ounces", label: "Ounces" },
   { href: "/admin/inventory/buybacks", label: "Buybacks" },
   { href: "/admin/inventory/alerts", label: "Alerts" },
+  { href: "/admin/inventory/reconcile", label: "Reconcile" },
   { href: "/admin/inventory/ledger", label: "Audit Ledger" },
 ];
 
