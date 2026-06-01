@@ -26,7 +26,7 @@ export default function POSPage() {
     setMounted(true);
   }, []);
 
-  const { items, paymentMethod, addItem, clear } = useCart();
+  const { items, paymentMethod, addItem, clear, discountPercent } = useCart();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -54,6 +54,7 @@ export default function POSPage() {
           goldRate24k: product.gold_rate_24k,
           unitPrice: Number(product.final_price),
           finalPrice: Number(product.final_price),
+          available: product.on_hand_qty,
         });
       } catch {
         setScanError(code);
@@ -77,10 +78,11 @@ export default function POSPage() {
           if (i.kind === "OUNCE") {
             return { item_kind: "OUNCE", ounce_type_id: i.ounceTypeId, quantity: i.quantity };
           }
-          return { item_kind: "PRODUCT", product_id: i.productId, quantity: 1 };
+          return { item_kind: "PRODUCT", product_id: i.productId, quantity: i.quantity };
         }),
         payment_method: paymentMethod,
         customer_name: customerName || null,
+        discount_percent: discountPercent || 0,
       });
       clear();
       router.push(`/pos/confirmation/${order.id}`);

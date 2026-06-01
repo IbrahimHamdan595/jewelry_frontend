@@ -89,7 +89,16 @@ export default function SettingsPage() {
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6 space-y-5">
         {tab === "store" && (
           <>
-            {(["store_name", "address", "phone", "vat_number"] as const).map((f) => (
+            <div>
+              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">store name</label>
+              <input value={(form as any).store_name ?? ""} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">store name (arabic)</label>
+              <input dir="rtl" value={(form as any).store_name_ar ?? ""} onChange={(e) => setForm({ ...form, store_name_ar: e.target.value })} placeholder="فواز النمل" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-right focus:outline-none focus:border-gold" />
+              <p className="text-[11px] text-gray-400 mt-1">Printed on receipts when the language is Arabic. Leave blank to fall back to the English name.</p>
+            </div>
+            {(["address", "phone", "vat_number"] as const).map((f) => (
               <div key={f}>
                 <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{f.replace(/_/g, " ")}</label>
                 <input value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
@@ -103,10 +112,13 @@ export default function SettingsPage() {
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
               Existing products are not affected. Editing a product overrides these defaults.
             </div>
-            {(["default_margin_pct", "default_making_charge", "vat_percent", "lbp_exchange_rate"] as const).map((f) => (
+            {(["default_margin_pct", "default_making_charge", "vat_percent", "lbp_exchange_rate", "max_discount_percent"] as const).map((f) => (
               <div key={f}>
                 <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{f.replace(/_/g, " ")}</label>
                 <input type="number" step="0.01" value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                {f === "max_discount_percent" && (
+                  <p className="text-[11px] text-gray-400 mt-1">Maximum order-level discount a cashier may apply at checkout. 0 disables discounts.</p>
+                )}
               </div>
             ))}
 

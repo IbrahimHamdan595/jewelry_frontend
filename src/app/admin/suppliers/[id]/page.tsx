@@ -220,6 +220,7 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
             <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Gold due / paid</th>
             <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Items</th>
             <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Notes</th>
+            <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Receipt</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -249,6 +250,16 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
                 {p.items.length} item{p.items.length !== 1 ? "s" : ""}
               </td>
               <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">{p.notes ?? "—"}</td>
+              <td className="px-4 py-3 text-right">
+                <a
+                  href={`/admin/suppliers/purchases/${p.id}/receipt`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gold hover:text-gold-dark"
+                >
+                  Receipt →
+                </a>
+              </td>
             </tr>
           ))}
         </tbody>

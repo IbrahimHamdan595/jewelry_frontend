@@ -52,7 +52,7 @@ export default function BuybackPage() {
     <div className="flex flex-col h-screen bg-pos-bg">
       <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-serif text-gold text-xl tracking-widest">MAISON ZAHAB</span>
+          <span className="font-serif text-gold text-xl tracking-widest">Fawaz El Namel</span>
           <span className="text-pos-gray/40 text-xs">·</span>
           <span className="text-pos-gray text-xs uppercase tracking-widest">Point of Sale</span>
         </div>

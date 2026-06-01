@@ -54,7 +54,7 @@ export default function LoginPage() {
               required
               dir="ltr"
               className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
-              placeholder="owner@maisonzahab.com"
+              placeholder="owner@fawazelnamel.com"
             />
           </div>
           <div>

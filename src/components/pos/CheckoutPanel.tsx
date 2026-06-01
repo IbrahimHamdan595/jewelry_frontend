@@ -22,8 +22,10 @@ export function CheckoutPanel({
   onCheckout,
   checkingOut,
 }: Props) {
-  const { items, removeItem, paymentMethod, setPaymentMethod, subtotal, vat, total } =
-    useCart();
+  const {
+    items, removeItem, updateQuantity, paymentMethod, setPaymentMethod, subtotal, vat, total,
+    vatPercent, maxDiscountPercent, discountPercent, setDiscountPercent, discountAmount,
+  } = useCart();
 
   return (
     <div className="flex flex-col h-full">
@@ -53,7 +55,7 @@ export function CheckoutPanel({
       ) : (
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
           {items.map((item) => (
-            <CartItem key={item.cartId} item={item} onRemove={removeItem} />
+            <CartItem key={item.cartId} item={item} onRemove={removeItem} onQuantityChange={updateQuantity} />
           ))}
         </div>
       )}
@@ -92,15 +94,39 @@ export function CheckoutPanel({
           </div>
         </div>
 
+        {maxDiscountPercent > 0 && (
+          <div>
+            <label className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
+              Discount % (max {maxDiscountPercent}%)
+            </label>
+            <Input
+              dark
+              type="number"
+              min={0}
+              max={maxDiscountPercent}
+              step="0.5"
+              value={discountPercent || ""}
+              onChange={(e) => setDiscountPercent(Number(e.target.value))}
+              placeholder="0"
+            />
+          </div>
+        )}
+
         <div className="space-y-1.5 text-sm pt-3 border-t border-white/5">
           <div className="flex justify-between text-pos-gray">
             <span>Subtotal</span>
             <span>{formatUSD(subtotal)}</span>
           </div>
           <div className="flex justify-between text-pos-gray">
-            <span>VAT 11%</span>
+            <span>VAT {vatPercent}%</span>
             <span>{formatUSD(vat)}</span>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-gold">
+              <span>Discount {discountPercent}%</span>
+              <span>−{formatUSD(discountAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-white/5">
             <span className="font-serif text-base text-pos-cream uppercase tracking-widest">
               Total

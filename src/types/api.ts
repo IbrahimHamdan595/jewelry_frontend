@@ -11,7 +11,7 @@ export interface Category {
   is_active: boolean;
   created_at: string;
 }
-export type OrderStatus = "COMPLETED" | "REFUNDED" | "VOIDED";
+export type OrderStatus = "COMPLETED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "VOIDED";
 export type PaymentMethod = "CASH" | "CARD" | "MIXED";
 export type Role = "ADMIN" | "CASHIER";
 
@@ -30,6 +30,9 @@ export interface Product {
   making_charge: number;
   photos: { url: string; isHero: boolean; order: number }[];
   is_active: boolean;
+  // Phase 3 — product quantity
+  on_hand_qty: number;
+  min_stock_qty: number | null;
   // Phase 4
   is_used: boolean;
   cost_basis_usd: number | string | null;
@@ -70,6 +73,10 @@ export interface OrderItem {
   margin_percent: number;
   making_charge: number;
   final_price: number;
+  // Phase 1 — per-item refunds
+  refunded_qty: number;
+  refunded_amount: number | string;
+  refunded_at: string | null;
 }
 
 export interface Cashier {
@@ -89,6 +96,8 @@ export interface Order {
   subtotal: number;
   vat_percent: number;
   vat_amount: number;
+  discount_percent: number | string;
+  discount_amount: number | string;
   total_usd: number;
   total_lbp: number;
   lbp_exchange_rate: number;
@@ -121,15 +130,22 @@ export interface OrderListResponse {
 
 export interface GoldRate {
   rate_24k: number;
+  rate_22k: number;
   rate_21k: number;
   rate_18k: number;
   source: string;
   fetched_at: string;
   is_stale: boolean;
+  // Phase 6 — sustained feed staleness → "market closed" banner
+  market_closed: boolean;
 }
 
 export interface GoldRateHistoryPoint {
   rate_24k: number;
+  rate_22k: number;
+  rate_21k: number;
+  rate_18k: number;
+  per_karat_backfilled: boolean;
   fetched_at: string;
 }
 
@@ -154,6 +170,7 @@ export interface Settings {
   default_buyback_margin_value: number | string;
   buyback_rate_drift_pct_max: number | string;
   nisab_grams: number | string;
+  max_discount_percent: number | string;
   updated_at: string;
 }
 
@@ -175,6 +192,8 @@ export interface DashboardData {
   chart_data: { date: string; revenue: number; is_today: boolean }[];
   top_sellers: { code: string; name: string; karat: Karat; units: number; revenue: number }[];
   recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: number; cashier: string; created_at: string }[];
+  // Phase 4 — recent supplier purchases (dashboard receipt links)
+  recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: number; item_count: number }[];
   // Phase 7 — inventory pulse + AP
   inventory?: {
     pure_gold_by_karat: { karat: Karat; grams_remaining: number; lot_count: number }[];
@@ -258,7 +277,7 @@ export interface LedgerListResponse {
 }
 
 export interface InventoryAlertRow {
-  kind: "COIN" | "OUNCE";
+  kind: "COIN" | "OUNCE" | "PRODUCT";
   id: string;
   code: string;
   name_en: string;
@@ -375,6 +394,26 @@ export interface SupplierPurchase {
   items: SupplierPurchaseItem[];
 }
 
+// Phase 5 — store-wide supplier purchase list (unified orders page)
+export interface PurchaseListItem {
+  id: string;
+  supplier_id: string;
+  supplier_name: string;
+  occurred_at: string;
+  payment_mode: SupplierPurchaseMode;
+  total_cash_due: number | string;
+  total_grams_due_by_karat: Record<string, string>;
+  item_count: number;
+  notes: string | null;
+}
+
+export interface PurchaseListResponse {
+  items: PurchaseListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export interface SupplierPayment {
   id: string;
   supplier_id: string;
@@ -456,4 +495,58 @@ export interface BuybackListResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+// ── Shared receipt shape (Phase 0) — mirrors backend app/schemas/receipt.py ──
+export type ReceiptType = "SALE" | "SUPPLIER_PURCHASE" | "BUYBACK";
+
+export interface ReceiptStore {
+  name: string;
+  name_ar: string | null;
+  logo_url: string | null;
+  address: string;
+  phone: string;
+  vat_number: string | null;
+  footer: string | null;
+}
+
+export interface ReceiptParty {
+  role: "customer" | "supplier" | "seller";
+  name: string | null;
+  phone: string | null;
+}
+
+export interface ReceiptLine {
+  description: string;
+  description_ar: string | null;
+  code: string | null;
+  karat: string | null;
+  weight_grams: number | string | null;
+  quantity: number | string | null;
+  unit_price: number | string | null;
+  line_total: number | string;
+}
+
+export interface ReceiptTotals {
+  subtotal: number | string;
+  discount_percent: number | string | null;
+  discount_amount: number | string | null;
+  vat_percent: number | string | null;
+  vat_amount: number | string | null;
+  total_usd: number | string;
+  total_lbp: number | string | null;
+  lbp_exchange_rate: number | string | null;
+}
+
+export interface Receipt {
+  type: ReceiptType;
+  reference: string;
+  issued_at: string;
+  store: ReceiptStore;
+  cashier_name: string | null;
+  party: ReceiptParty;
+  lines: ReceiptLine[];
+  totals: ReceiptTotals;
+  payment_method: string | null;
+  notes: string | null;
 }

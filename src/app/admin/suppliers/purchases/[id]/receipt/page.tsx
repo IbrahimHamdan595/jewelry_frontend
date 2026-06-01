@@ -5,9 +5,9 @@ import { apiFetcher } from "@/lib/api-client";
 import { ReceiptScreen } from "@/components/shared/Receipt";
 import type { Receipt } from "@/types/api";
 
-export default function ReceiptPage() {
-  const { orderId } = useParams<{ orderId: string }>();
-  const { data: receipt } = useSWR<Receipt>(`/orders/${orderId}/receipt`, apiFetcher);
+export default function SupplierPurchaseReceiptPage() {
+  const { id } = useParams<{ id: string }>();
+  const { data: receipt } = useSWR<Receipt>(`/suppliers/purchases/${id}/receipt`, apiFetcher);
 
   if (!receipt)
     return (

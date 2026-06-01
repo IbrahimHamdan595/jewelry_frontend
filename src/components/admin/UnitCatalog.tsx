@@ -293,7 +293,7 @@ function UnitTypeForm({
         // Code is immutable once created; never PATCH it.
         await api.patch(`/${resource}/${existing.id}`, common);
       } else {
-        // Omit `code` — backend auto-generates MZB-COIN/OZ-{karat}-NNNN.
+        // Omit `code` — backend auto-generates FN-COIN/OZ-{karat}-NNNN.
         await api.post(`/${resource}`, common);
       }
       await onSaved();

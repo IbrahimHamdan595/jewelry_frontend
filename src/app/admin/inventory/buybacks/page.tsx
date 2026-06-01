@@ -158,24 +158,34 @@ function BuybackRow({
       <td className="px-4 py-3 font-semibold text-gray-800">{formatUSD(buyback.buy_price_usd)}</td>
       <td className="px-4 py-3">{outcome}</td>
       <td className="px-4 py-3">
-        {isPendingUsed && (
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={onPolish}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Polish
-            </button>
-            <button
-              onClick={onMelt}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100"
-            >
-              <Flame className="w-3.5 h-3.5" />
-              Melt
-            </button>
-          </div>
-        )}
+        <div className="flex justify-end items-center gap-2">
+          {isPendingUsed && (
+            <>
+              <button
+                onClick={onPolish}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Polish
+              </button>
+              <button
+                onClick={onMelt}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                Melt
+              </button>
+            </>
+          )}
+          <a
+            href={`/pos/buyback-receipt/${buyback.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gold hover:text-gold-dark"
+          >
+            Receipt →
+          </a>
+        </div>
       </td>
     </tr>
   );

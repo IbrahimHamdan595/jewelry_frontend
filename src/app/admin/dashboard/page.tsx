@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useLang } from "@/context/LanguageContext";
+import { MarketClosedBanner } from "@/components/shared/MarketClosedBanner";
 import type { DashboardData } from "@/types/api";
 
 export default function DashboardPage() {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <MarketClosedBanner />
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
@@ -228,6 +230,46 @@ export default function DashboardPage() {
         </table>
         </div>
       </div>
+
+      {/* Recent supplier purchases (Phase 4) */}
+      {data.recent_purchases && data.recent_purchases.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
+          <div className="p-5 border-b border-gray-100">
+            <div className="text-sm font-semibold text-gray-700">Recent supplier purchases</div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[540px] text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {["Supplier", "Items", "Cash due", "Date", "Receipt"].map((h) => (
+                    <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-5 py-3 font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent_purchases.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-5 py-3 text-gray-700">{p.supplier}</td>
+                    <td className="px-5 py-3 text-gray-500 text-xs">{p.item_count}</td>
+                    <td className="px-5 py-3 font-semibold">{formatUSD(p.total_cash_due)}</td>
+                    <td className="px-5 py-3 text-gray-400 text-xs">{formatDateTime(p.occurred_at)}</td>
+                    <td className="px-5 py-3">
+                      <a
+                        href={`/admin/suppliers/purchases/${p.id}/receipt`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gold hover:text-gold-dark"
+                      >
+                        Receipt →
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

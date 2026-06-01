@@ -3,7 +3,7 @@ import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata: Metadata = {
-  title: "MAISON ZAHAB",
+  title: "Fawaz El Namel",
   description: "Gold jewellery management system",
 };
 

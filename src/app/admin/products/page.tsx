@@ -61,14 +61,14 @@ export default function ProductsPage() {
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
-              {["Code", "Name", "Category", "Karat", "Weight", "Live Price", "Status", "Actions"].map((h) => (
+              {["Code", "Name", "Category", "Karat", "Weight", "Stock", "Live Price", "Status", "Actions"].map((h) => (
                 <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {!data && Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i}><td colSpan={8} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>
+              <tr key={i}><td colSpan={9} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>
             ))}
             {data?.items.map((p) => {
               const priced = rate ? calculatePrice({ rate24k: rate.rate_24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;
@@ -94,6 +94,18 @@ export default function ProductsPage() {
                   <td className="px-4 py-3 text-gray-500 text-xs">{p.category}</td>
                   <td className="px-4 py-3"><KaratBadge karat={p.karat} /></td>
                   <td className="px-4 py-3 text-gray-600">{p.weight_grams}g</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold ${
+                      p.on_hand_qty === 0 ? "text-red-600" :
+                      p.min_stock_qty != null && p.on_hand_qty <= p.min_stock_qty ? "text-amber-600" :
+                      "text-gray-700"
+                    }`}>
+                      {p.on_hand_qty}
+                    </span>
+                    {p.min_stock_qty != null && p.on_hand_qty <= p.min_stock_qty && p.on_hand_qty > 0 && (
+                      <span className="ml-1 text-[10px] text-amber-600">low</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-semibold text-gray-800">{priced ? formatUSD(priced.finalPrice) : "—"}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => toggleStatus(p.id)} className="text-gray-400 hover:text-gold transition-colors">

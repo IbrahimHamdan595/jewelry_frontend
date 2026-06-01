@@ -162,7 +162,7 @@ export interface Translations {
 }
 
 const en: Translations = {
-  appName: "MAISON ZAHAB",
+  appName: "Fawaz El Namel",
   appSubtitle: "GOLD JEWELLERY",
 
   login: {

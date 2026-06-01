@@ -23,6 +23,8 @@ interface FormValues {
   weight_grams: number;
   margin_percent: number;
   making_charge: number;
+  on_hand_qty: number;
+  min_stock_qty: number | null;
 }
 
 interface Props {
@@ -57,8 +59,10 @@ export function ProductForm({ initial, onSave }: Props) {
           weight_grams: Number(initial.weight_grams),
           margin_percent: Number(initial.margin_percent),
           making_charge: Number(initial.making_charge),
+          on_hand_qty: Number(initial.on_hand_qty ?? 1),
+          min_stock_qty: initial.min_stock_qty ?? null,
         }
-      : { karat: "K21", margin_percent: 15, making_charge: 25, weight_grams: 0, category_id: "" },
+      : { karat: "K21", margin_percent: 15, making_charge: 25, weight_grams: 0, category_id: "", on_hand_qty: 1, min_stock_qty: null },
   });
 
   const watched = useWatch({ control });
@@ -130,7 +134,18 @@ export function ProductForm({ initial, onSave }: Props) {
   return (
     <div className="grid grid-cols-5 gap-6">
       <form
-        onSubmit={handleSubmit((data) => onSave({ ...data, photos }))}
+        onSubmit={handleSubmit((data) =>
+          onSave({
+            ...data,
+            // Empty min-stock field arrives as NaN — normalize to null (no alert).
+            min_stock_qty:
+              data.min_stock_qty == null || Number.isNaN(data.min_stock_qty)
+                ? null
+                : Number(data.min_stock_qty),
+            on_hand_qty: Number.isNaN(data.on_hand_qty) ? 0 : Number(data.on_hand_qty),
+            photos,
+          }),
+        )}
         className="col-span-3 space-y-5"
       >
         {initial && (
@@ -200,6 +215,18 @@ export function ProductForm({ initial, onSave }: Props) {
           <div>
             <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Making (USD)</label>
             <input type="number" step="0.01" {...register("making_charge", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+          </div>
+        </div>
+
+        {/* Stock (Phase 3 — products are stocked-by-quantity) */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Quantity on hand</label>
+            <input type="number" step="1" min="0" {...register("on_hand_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Low-stock alert at (optional)</label>
+            <input type="number" step="1" min="0" placeholder="No alert" {...register("min_stock_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
           </div>
         </div>
 

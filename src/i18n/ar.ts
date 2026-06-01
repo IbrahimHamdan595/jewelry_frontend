@@ -2,7 +2,7 @@ import type { Translations } from "./en";
 // Arabic translations — type-checked against the Translations interface
 
 const ar: Translations = {
-  appName: "ميزون ذهب",
+  appName: "فواز النمل",
   appSubtitle: "مجوهرات ذهبية",
 
   login: {
