@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       <div className="h-16 flex items-center px-6 border-b border-white/10 gap-2 shrink-0">
         <Gem className="text-gold w-5 h-5 shrink-0" />
-        <span className="font-serif text-gold tracking-widest text-lg">ZAHAB</span>
+        <span className="font-serif text-gold tracking-widest text-lg">{t.appName}</span>
         {/* Close button — mobile only */}
         <button
           className="ms-auto md:hidden text-white/40 hover:text-white"
