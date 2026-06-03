@@ -131,6 +131,26 @@ export const statements = {
       `/accounting/statements/cash-flow?start=${start}&end=${end}`),
 };
 
+export type ReadinessT = {
+  year: number; period_no: number; can_close: boolean;
+  hard: { key: string; ok: boolean; detail: string }[];
+  soft: { key: string; count: number; detail: string }[];
+};
+export type YearPreviewT = {
+  year: number; net_income: string; already_closed: boolean;
+  lines: { code: string; name: string; system_key: string | null; debit: string; credit: string }[];
+};
+
+export const periodClose = {
+  readiness: (year: number, period_no: number) =>
+    api.get<ReadinessT>(`/accounting/periods/close-readiness?year=${year}&period_no=${period_no}`),
+  yearPreview: (year: number) =>
+    api.get<YearPreviewT>(`/accounting/periods/year-close-preview?year=${year}`),
+  closeYear: (year: number) =>
+    api.post<{ entry_id: string; entry_no: string; opened_periods: string[] }>(
+      "/accounting/periods/close-year", { year }),
+};
+
 export type KpiT = { value: string | null; [k: string]: string | null };
 
 export const kpis = {
