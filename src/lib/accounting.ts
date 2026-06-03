@@ -82,3 +82,9 @@ export const ar = {
   aging: (asOf: string) => api.get<{ totals: Record<string, string>; grand_total: string }>(`/accounting/ar/aging?as_of=${asOf}`),
   verify: () => api.get<{ gl_ar_balance: string; subledger_balance: string; matches: boolean }>("/accounting/ar/verify"),
 };
+
+export const ap = {
+  verify: () => api.get<{ ap: { gl: string; subledger: string; matches: boolean }; metal_ap: { matches: boolean; by_karat: Record<string, { gl: string; subledger: string; matches: boolean }> } }>("/accounting/ap/verify"),
+  aging: (asOf: string) => api.get<{ cash_buckets: Record<string, string>; cash_total: string; metal_owed_by_karat: Record<string, string> }>(`/accounting/ap/aging?as_of=${asOf}`),
+  balances: () => api.get<{ suppliers: Array<{ id: string; name: string; cash_owed: string; gold_owed_by_karat: Record<string, string> }> }>("/accounting/ap/balances"),
+};
