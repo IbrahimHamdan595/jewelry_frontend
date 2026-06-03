@@ -68,3 +68,17 @@ export const bank = {
   autoMatch: (recId: string) => api.post<Record<string, unknown>>(`/accounting/bank/reconciliations/${recId}/auto-match`),
   complete: (recId: string) => api.post<{ status: string }>(`/accounting/bank/reconciliations/${recId}/complete`),
 };
+
+export type CustomerT = { id: string; name: string; phone: string | null; currency: string; credit_limit: string | null; open_balance?: string };
+
+export const ar = {
+  listCustomers: () => api.get<{ items: CustomerT[] }>("/accounting/ar/customers"),
+  createCustomer: (b: { name: string; phone?: string; credit_limit?: string }) => api.post<CustomerT>("/accounting/ar/customers", b),
+  listInvoices: (customerId?: string) => api.get<{ items: Array<{ id: string; invoice_no: string; invoice_date: string; total: string; amount_paid: string; status: string }> }>(`/accounting/ar/invoices${customerId ? `?customer_id=${customerId}` : ""}`),
+  createInvoice: (b: { customer_id: string; invoice_date: string; vat_percent: string; memo?: string; lines: { description: string; quantity: number; unit_price: string }[] }) =>
+    api.post<{ invoice_no: string; total: string }>("/accounting/ar/invoices", b),
+  createReceipt: (b: { customer_id: string; receipt_date: string; amount: string; payment_system_key: string }) =>
+    api.post<{ receipt_no: string; unapplied_amount: string }>("/accounting/ar/receipts", b),
+  aging: (asOf: string) => api.get<{ totals: Record<string, string>; grand_total: string }>(`/accounting/ar/aging?as_of=${asOf}`),
+  verify: () => api.get<{ gl_ar_balance: string; subledger_balance: string; matches: boolean }>("/accounting/ar/verify"),
+};
