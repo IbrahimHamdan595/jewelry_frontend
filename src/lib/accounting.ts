@@ -88,3 +88,16 @@ export const ap = {
   aging: (asOf: string) => api.get<{ cash_buckets: Record<string, string>; cash_total: string; metal_owed_by_karat: Record<string, string> }>(`/accounting/ap/aging?as_of=${asOf}`),
   balances: () => api.get<{ suppliers: Array<{ id: string; name: string; cash_owed: string; gold_owed_by_karat: Record<string, string> }> }>("/accounting/ap/balances"),
 };
+
+export type ExpenseAccountT = { id: string; code: string; name: string; system_key: string | null };
+
+export const expenses = {
+  expenseAccounts: () => api.get<{ items: ExpenseAccountT[] }>("/accounting/expenses/expense-accounts"),
+  createBill: (b: { vendor_name: string; bill_date: string; payment_system_key?: string | null; memo?: string; lines: { description: string; expense_account_id: string; amount: string }[] }) =>
+    api.post<{ bill_no: string; total: string; status: string }>("/accounting/expenses/bills", b),
+  listBills: (vendor?: string) => api.get<{ items: Array<{ id: string; bill_no: string; vendor_name: string; bill_date: string; total: string; amount_paid: string; status: string }> }>(`/accounting/expenses/bills${vendor ? `?vendor_name=${encodeURIComponent(vendor)}` : ""}`),
+  pay: (b: { vendor_name: string; payment_date: string; amount: string; payment_system_key: string }) =>
+    api.post<{ payment_no: string; unapplied_amount: string }>("/accounting/expenses/payments", b),
+  byCategory: (from: string, until: string) => api.get<{ accounts: Array<{ code: string; name: string; system_key: string | null; amount: string }>; total: string }>(`/accounting/expenses/reports/by-category?from=${from}&until=${until}`),
+  verify: () => api.get<{ gl: string; subledger: string; matches: boolean }>("/accounting/expenses/verify"),
+};
