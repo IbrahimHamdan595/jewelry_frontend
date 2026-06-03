@@ -21,6 +21,7 @@ export default function AccountingHome() {
     { href: "/admin/accounting/expenses", title: "Expenses", desc: "Vendor bills, payments, expense reports" },
     { href: "/admin/accounting/tax", title: "Tax / VAT", desc: "Tax codes + quarterly VAT return" },
     { href: "/admin/accounting/statements", title: "Financial Statements", desc: "P&L, Balance Sheet, Cash Flow" },
+    { href: "/admin/accounting/kpis", title: "Financial KPIs", desc: "DSI, turnover, DSO/DPO/CCC, margins, ratios" },
     { href: "/admin/accounting/periods", title: "Periods", desc: "Open / close monthly periods" },
   ];
 

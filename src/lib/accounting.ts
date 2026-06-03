@@ -130,3 +130,13 @@ export const statements = {
       net_change: string; reconciles: boolean }>(
       `/accounting/statements/cash-flow?start=${start}&end=${end}`),
 };
+
+export type KpiT = { value: string | null; [k: string]: string | null };
+
+export const kpis = {
+  compute: (start: string, end: string) =>
+    api.get<{ start: string; end: string; days: number;
+      dsi: KpiT; inventory_turnover: KpiT; dpo: KpiT; gross_margin: KpiT; net_margin: KpiT;
+      metal_turnover: KpiT; dso: KpiT; ccc: KpiT; current_ratio: KpiT; quick_ratio: KpiT }>(
+      `/accounting/statements/kpis?start=${start}&end=${end}`),
+};
