@@ -15,6 +15,7 @@ export default function AccountingHome() {
     { href: "/admin/accounting/chart-of-accounts", title: "Chart of Accounts", desc: "Accounts tree, balances, system keys" },
     { href: "/admin/accounting/journal", title: "Journal Entries", desc: "Post & review double-entry journals" },
     { href: "/admin/accounting/trial-balance", title: "Trial Balance", desc: "As-of money + per-karat metal position" },
+    { href: "/admin/accounting/bank", title: "Cash & Bank", desc: "Accounts, transfers, reconciliation" },
     { href: "/admin/accounting/periods", title: "Periods", desc: "Open / close monthly periods" },
   ];
 

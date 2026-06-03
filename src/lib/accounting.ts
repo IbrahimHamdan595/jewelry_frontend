@@ -49,3 +49,22 @@ export const accounting = {
   trialBalance: (asOf: string) => api.get<TrialBalance>(`/accounting/trial-balance?as_of=${asOf}`),
   verify: () => api.get<{ status: string; head_matches: boolean }>("/accounting/ledger/verify"),
 };
+
+export type BankAccountT = {
+  id: string; name: string; account_type: string; currency: string;
+  balance_money?: string; balance_base?: string; last_reconciled_at: string | null;
+};
+
+export const bank = {
+  adoptSeeded: () => api.post<{ created: number }>("/accounting/bank/adopt-seeded"),
+  listAccounts: () => api.get<{ items: BankAccountT[] }>("/accounting/bank/accounts"),
+  createAccount: (b: { name: string; account_type: string; currency: string; bank_name?: string; account_number?: string }) =>
+    api.post<BankAccountT>("/accounting/bank/accounts", b),
+  cashPosition: () => api.get<{ accounts: BankAccountT[] }>("/accounting/bank/cash-position"),
+  transfer: (b: { from_account_id: string; to_account_id: string; amount: string; dest_amount?: string; memo: string; entry_date: string }) =>
+    api.post<{ entry_no: string }>("/accounting/bank/transfers", b),
+  startRec: (b: { bank_account_id: string; statement_date: string; statement_balance: string }) =>
+    api.post<Record<string, unknown>>("/accounting/bank/reconciliations", b),
+  autoMatch: (recId: string) => api.post<Record<string, unknown>>(`/accounting/bank/reconciliations/${recId}/auto-match`),
+  complete: (recId: string) => api.post<{ status: string }>(`/accounting/bank/reconciliations/${recId}/complete`),
+};
