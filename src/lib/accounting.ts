@@ -93,11 +93,19 @@ export type ExpenseAccountT = { id: string; code: string; name: string; system_k
 
 export const expenses = {
   expenseAccounts: () => api.get<{ items: ExpenseAccountT[] }>("/accounting/expenses/expense-accounts"),
-  createBill: (b: { vendor_name: string; bill_date: string; payment_system_key?: string | null; memo?: string; lines: { description: string; expense_account_id: string; amount: string }[] }) =>
+  createBill: (b: { vendor_name: string; bill_date: string; payment_system_key?: string | null; tax_code_id?: string; memo?: string; lines: { description: string; expense_account_id: string; amount: string }[] }) =>
     api.post<{ bill_no: string; total: string; status: string }>("/accounting/expenses/bills", b),
   listBills: (vendor?: string) => api.get<{ items: Array<{ id: string; bill_no: string; vendor_name: string; bill_date: string; total: string; amount_paid: string; status: string }> }>(`/accounting/expenses/bills${vendor ? `?vendor_name=${encodeURIComponent(vendor)}` : ""}`),
   pay: (b: { vendor_name: string; payment_date: string; amount: string; payment_system_key: string }) =>
     api.post<{ payment_no: string; unapplied_amount: string }>("/accounting/expenses/payments", b),
   byCategory: (from: string, until: string) => api.get<{ accounts: Array<{ code: string; name: string; system_key: string | null; amount: string }>; total: string }>(`/accounting/expenses/reports/by-category?from=${from}&until=${until}`),
   verify: () => api.get<{ gl: string; subledger: string; matches: boolean }>("/accounting/expenses/verify"),
+};
+
+export type TaxCodeT = { id: string; code: string; name: string; rate: string; is_active: boolean };
+
+export const tax = {
+  seedCodes: () => api.post<{ created: number }>("/accounting/tax/seed-codes"),
+  listCodes: () => api.get<{ items: TaxCodeT[] }>("/accounting/tax/codes"),
+  vatReturn: (year: number, quarter: number) => api.get<{ year: number; quarter: number; output_vat: string; input_vat: string; net_payable: string; direction: string; cash_split: { cash_75: string; transfer_25: string; bdl_account: string; note: string } | null; transactions: Array<{ entry_no: string; date: string; kind: string; vat: string }> }>(`/accounting/tax/vat-return?year=${year}&quarter=${quarter}`),
 };

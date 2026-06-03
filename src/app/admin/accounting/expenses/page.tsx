@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { expenses, ExpenseAccountT } from "@/lib/accounting";
+import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
 
 export default function Expenses() {
   const [accts, setAccts] = useState<ExpenseAccountT[]>([]);
+  const [taxCodes, setTaxCodes] = useState<TaxCodeT[]>([]);
   const [bills, setBills] = useState<Awaited<ReturnType<typeof expenses.listBills>>["items"]>([]);
   const [cat, setCat] = useState<Awaited<ReturnType<typeof expenses.byCategory>> | null>(null);
   const [tie, setTie] = useState<{ gl: string; subledger: string; matches: boolean } | null>(null);
@@ -13,6 +14,7 @@ export default function Expenses() {
   const [acct, setAcct] = useState("");
   const [amt, setAmt] = useState("");
   const [paid, setPaid] = useState("");
+  const [taxCode, setTaxCode] = useState("");
   const [ok, setOk] = useState<string | null>(null);
 
   async function load() {
@@ -20,6 +22,7 @@ export default function Expenses() {
       const a = (await expenses.expenseAccounts()).items;
       setAccts(a);
       if (!acct && a.length) setAcct(a[0].id);
+      setTaxCodes((await tax.listCodes()).items);
       setBills((await expenses.listBills()).items);
       setCat(await expenses.byCategory("2026-06-01", "2026-06-30"));
       setTie(await expenses.verify());
@@ -31,9 +34,9 @@ export default function Expenses() {
     setError(null); setOk(null);
     try {
       const b = await expenses.createBill({ vendor_name: vendor, bill_date: "2026-06-30",
-        payment_system_key: paid || null, memo: "",
+        payment_system_key: paid || null, tax_code_id: taxCode || undefined, memo: "",
         lines: [{ description: "", expense_account_id: acct, amount: amt }] });
-      setOk(`Bill ${b.bill_no} (${b.status})`); setVendor(""); setAmt(""); await load();
+      setOk(`Bill ${b.bill_no} (${b.status}, total ${b.total})`); setVendor(""); setAmt(""); await load();
     } catch (e) { setError((e as Error).message); }
   }
 
@@ -56,6 +59,9 @@ export default function Expenses() {
           <input placeholder="Amount" value={amt} onChange={(e) => setAmt(e.target.value)} className="border rounded px-3 py-2 w-32 text-right" />
           <select value={paid} onChange={(e) => setPaid(e.target.value)} className="border rounded px-3 py-2">
             <option value="">On credit (Vendor AP)</option><option value="CASH">Paid — Cash</option><option value="BANK">Paid — Bank</option>
+          </select>
+          <select value={taxCode} onChange={(e) => setTaxCode(e.target.value)} className="border rounded px-3 py-2">
+            <option value="">No VAT</option>{taxCodes.map((c) => <option key={c.id} value={c.id}>{c.code} ({c.rate}%)</option>)}
           </select>
           <button onClick={record} disabled={!vendor || !acct || !amt} className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-40">Record</button>
         </div>

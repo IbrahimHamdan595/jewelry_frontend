@@ -19,6 +19,7 @@ export default function AccountingHome() {
     { href: "/admin/accounting/receivables", title: "Accounts Receivable", desc: "Customers, credit sales, receipts, aging" },
     { href: "/admin/accounting/payables", title: "Accounts Payable", desc: "Supplier debt, aging, tie-out" },
     { href: "/admin/accounting/expenses", title: "Expenses", desc: "Vendor bills, payments, expense reports" },
+    { href: "/admin/accounting/tax", title: "Tax / VAT", desc: "Tax codes + quarterly VAT return" },
     { href: "/admin/accounting/periods", title: "Periods", desc: "Open / close monthly periods" },
   ];
 
