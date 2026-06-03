@@ -20,6 +20,7 @@ export default function AccountingHome() {
     { href: "/admin/accounting/payables", title: "Accounts Payable", desc: "Supplier debt, aging, tie-out" },
     { href: "/admin/accounting/expenses", title: "Expenses", desc: "Vendor bills, payments, expense reports" },
     { href: "/admin/accounting/tax", title: "Tax / VAT", desc: "Tax codes + quarterly VAT return" },
+    { href: "/admin/accounting/statements", title: "Financial Statements", desc: "P&L, Balance Sheet, Cash Flow" },
     { href: "/admin/accounting/periods", title: "Periods", desc: "Open / close monthly periods" },
   ];
 

@@ -51,6 +51,28 @@ export async function apiFetcher<T>(path: string): Promise<T> {
   return request<T>(path);
 }
 
+// Download a binary response (e.g. xlsx) through the same cookie-authenticated
+// fetch pipeline, then trigger a browser save. Used by report Excel exports.
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const res = await fetch(`${getBase()}${path}`, { credentials: "include" });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) {
+    throw new Error(`Download failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function uploadFile<T>(path: string, formData: FormData): Promise<T> {
   const res = await fetch(`${getBase()}${path}`, {
     method: "POST",

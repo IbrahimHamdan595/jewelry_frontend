@@ -109,3 +109,24 @@ export const tax = {
   listCodes: () => api.get<{ items: TaxCodeT[] }>("/accounting/tax/codes"),
   vatReturn: (year: number, quarter: number) => api.get<{ year: number; quarter: number; output_vat: string; input_vat: string; net_payable: string; direction: string; cash_split: { cash_75: string; transfer_25: string; bdl_account: string; note: string } | null; transactions: Array<{ entry_no: string; date: string; kind: string; vat: string }> }>(`/accounting/tax/vat-return?year=${year}&quarter=${quarter}`),
 };
+
+export type StatementLineT = { code: string; name: string; system_key: string | null; amount: string };
+
+export const statements = {
+  incomeStatement: (start: string, end: string) =>
+    api.get<{ start: string; end: string; revenue_lines: StatementLineT[]; cogs_lines: StatementLineT[];
+      opex_lines: StatementLineT[]; revenue: string; cogs: string; gross_profit: string;
+      operating_expenses: string; net_profit: string }>(
+      `/accounting/statements/income-statement?start=${start}&end=${end}`),
+  balanceSheet: (as_of: string) =>
+    api.get<{ as_of: string; all_current: boolean; asset_lines: StatementLineT[];
+      liability_lines: StatementLineT[]; equity_lines: StatementLineT[];
+      total_assets: string; total_liabilities: string; total_equity: string;
+      balanced: boolean; metal_position: { karat: string; net_grams: string }[] }>(
+      `/accounting/statements/balance-sheet?as_of=${as_of}`),
+  cashFlow: (start: string, end: string) =>
+    api.get<{ start: string; end: string; opening_cash: string; closing_cash: string;
+      categories: { key: string; label: string; amount: string }[];
+      net_change: string; reconciles: boolean }>(
+      `/accounting/statements/cash-flow?start=${start}&end=${end}`),
+};
