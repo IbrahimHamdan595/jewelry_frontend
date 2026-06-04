@@ -2,8 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Money } from "@/components/accounting/Money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
 export default function Receivables() {
+  const { t } = useLang();
+  const a = t.accounting.receivables;
+  const c = t.accounting.common;
+
   const [customers, setCustomers] = useState<CustomerT[]>([]);
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
@@ -36,52 +50,69 @@ export default function Receivables() {
     } catch (e) { setError((e as Error).message); }
   }
 
+  const agingCells = aging ? [
+    { label: a.agingCurrent, v: aging.totals["0_30"] },
+    { label: a.aging3160, v: aging.totals["31_60"] },
+    { label: a.aging6190, v: aging.totals["61_90"] },
+    { label: a.aging90, v: aging.totals["90_plus"] },
+    { label: c.total, v: aging.grand_total },
+  ] : [];
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Accounts Receivable</h1>
-        {tie && <span className={tie.matches ? "text-green-700 text-sm" : "text-red-700 text-sm"}>
-          Control {tie.gl_ar_balance} vs subledger {tie.subledger_balance} {tie.matches ? "✓" : "✗"}</span>}
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
+      <PageHeader
+        eyebrow={a.eyebrow}
+        title={a.title}
+        description={a.description}
+        actions={tie && (
+          <span className={`text-xs ${tie.matches ? "text-green-700" : "text-red-700"}`}>
+            {tie.matches ? "✓" : "✗"} {tie.gl_ar_balance} / {tie.subledger_balance}
+          </span>
+        )}
+      />
+      {error && <div className="text-sm text-red-600">{error}</div>}
 
       {aging && (
-        <div className="text-sm border rounded-xl p-4">
-          <span className="font-medium">Aging: </span>
-          0–30 {aging.totals["0_30"]} · 31–60 {aging.totals["31_60"]} · 61–90 {aging.totals["61_90"]} · 90+ {aging.totals["90_plus"]} · <b>total {aging.grand_total}</b>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {agingCells.map((cell, i) => (
+            <div key={cell.label} className={`rounded-xl border p-4 ${i === 4 ? "border-gold/30 bg-gold/5" : "border-gray-100 bg-white"}`}>
+              <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">{cell.label}</div>
+              <div className="text-lg font-semibold text-gray-800"><Money value={cell.v} dash /></div>
+            </div>
+          ))}
         </div>
       )}
 
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50"><tr><th className="p-2 text-left">Customer</th><th className="p-2 text-left">Currency</th><th className="p-2 text-right">Credit limit</th><th className="p-2 text-right">Open balance</th></tr></thead>
-        <tbody>
-          {customers.map((c) => (
-            <tr key={c.id} className="border-t"><td className="p-2">{c.name}</td><td className="p-2">{c.currency}</td>
-              <td className="p-2 text-right">{c.credit_limit ?? "—"}</td><td className="p-2 text-right">{c.open_balance}</td></tr>
-          ))}
-        </tbody>
-      </table>
+      <ActionBar hint={a.receiptHint}>
+        <select value={rcCust} onChange={(e) => setRcCust(e.target.value)} className={SELECT}>
+          <option value="">{c.customer}…</option>
+          {customers.map((cu) => <option key={cu.id} value={cu.id}>{cu.name}</option>)}
+        </select>
+        <Input placeholder={a.amountPlaceholder} value={rcAmt} onChange={(e) => setRcAmt(e.target.value)} className="w-32 text-end" />
+        <Button onClick={receipt} disabled={!rcCust || !rcAmt}>{a.recordBtn}</Button>
+        {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}
+      </ActionBar>
 
-      <div className="border rounded-xl p-4 space-y-2">
-        <div className="font-medium">New customer</div>
-        <div className="flex gap-2 flex-wrap">
-          <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="border rounded px-3 py-2" />
-          <input placeholder="Credit limit (blank = unlimited)" value={limit} onChange={(e) => setLimit(e.target.value)} className="border rounded px-3 py-2 w-56" />
-          <button onClick={create} disabled={!name} className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-40">Create</button>
-        </div>
-      </div>
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "name", label: a.colCustomer },
+            { key: "currency", label: c.currency },
+            { key: "open_balance", label: a.colOpenBalance, align: "end", render: (r: CustomerT) => <Money value={r.open_balance} dash /> },
+          ]}
+          rows={customers}
+          rowKey={(r) => r.id}
+          empty={a.empty}
+        />
+      </SectionCard>
 
-      <div className="border rounded-xl p-4 space-y-2">
-        <div className="font-medium">Record receipt</div>
-        <div className="flex gap-2 items-center">
-          <select value={rcCust} onChange={(e) => setRcCust(e.target.value)} className="border rounded px-3 py-2">
-            <option value="">Customer…</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <input placeholder="Amount" value={rcAmt} onChange={(e) => setRcAmt(e.target.value)} className="border rounded px-3 py-2 w-32 text-right" />
-          <button onClick={receipt} disabled={!rcCust || !rcAmt} className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-40">Record</button>
+      <SectionCard title={a.newCustomer}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <Input placeholder={a.namePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-48" />
+          <Input placeholder={a.creditLimitPlaceholder} value={limit} onChange={(e) => setLimit(e.target.value)} className="w-64" />
+          <Button variant="outline" onClick={create} disabled={!name}>{a.createBtn}</Button>
         </div>
-        {ok && <div className="text-green-700">{ok}</div>}
-      </div>
+      </SectionCard>
     </div>
   );
 }
