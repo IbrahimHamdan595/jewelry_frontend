@@ -194,18 +194,42 @@ export interface DashboardData {
   recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: number; cashier: string; created_at: string }[];
   // Phase 4 — recent supplier purchases (dashboard receipt links)
   recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: number; item_count: number }[];
-  // Phase 7 — inventory pulse + AP
+  // Phase 7 — inventory pulse
   inventory?: {
     pure_gold_by_karat: { karat: Karat; grams_remaining: number; lot_count: number }[];
     coins: { on_hand_total: number; distinct_types: number };
     ounces: { on_hand_total: number; distinct_types: number };
     low_stock_alerts: number;
   };
-  accounts_payable?: {
-    total_cash_owed: number;
-    total_grams_owed_by_karat: Record<string, number>;
-    supplier_count: number;
+
+  // ── Jeweler dashboard (Phases A–E) ──────────────────────────────────────────
+  // Phase A — headline KPIs
+  gold_weight_sold_today_by_karat: { karat: Karat; grams: number }[];
+  gold_weight_sold_week_by_karat: { karat: Karat; grams: number }[];
+  avg_invoice_value_today: number;
+  making_charges_today: number;
+  making_charges_week: number;
+  gold_rate_is_stale: boolean;
+  gold_rate_fetched_at: string | null;
+  // Phase B — money pulse (cash & VAT are null until the GL is live)
+  receivables: { total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number };
+  payables_aging: {
+    cash_total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number;
+    metal_owed_by_karat: Record<string, number>;
   };
+  cash_bank_balance: number | null;
+  vat_position: { net_payable: number; direction: string; period_label: string } | null;
+  // Phase C — profitability (null until cost-captured sales exist; go-forward)
+  profitability: { gross_profit: number; gross_margin_pct: number | null; profit_per_gram: number | null; since: string } | null;
+  // Phase D — inventory health
+  inventory_value: {
+    total_usd: number; pure_gold_usd: number; coins_usd: number; ounces_usd: number;
+    products_usd: number; rate_24k: number | null; method: string;
+  };
+  inventory_aging: { d0_90: number; d90_180: number; d180_365: number; d365_plus: number };
+  dead_stock_count: number;
+  // Phase E — loss-prevention
+  loss_prevention: { order_voids: number; rate_overrides: number; excess_discount_orders: number };
 }
 
 // ── Inventory layer (Phases 1-7) ─────────────────────────────────────────────

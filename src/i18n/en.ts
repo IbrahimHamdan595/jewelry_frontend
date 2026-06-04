@@ -108,6 +108,44 @@ export interface Translations {
     date: string;
     lotCount: (n: number) => string;
     distinctTypes: (n: number) => string;
+    // Jeweler dashboard (Phases A–E)
+    goldWeightSold: string;
+    byKarat: string;
+    soldToday: string;
+    soldWeek: string;
+    grams: string;
+    avgInvoice: string;
+    makingCharges: string;
+    marketStale: string;
+    rateAsOf: string;
+    receivables: string;
+    payables: string;
+    aging0_30: string;
+    aging31_60: string;
+    aging61_90: string;
+    aging90Plus: string;
+    metalOwed: string;
+    cashBank: string;
+    vatPosition: string;
+    vatPayable: string;
+    vatRefundable: string;
+    grossProfit: string;
+    grossMargin: string;
+    profitPerGram: string;
+    since: string;
+    inventoryValue: string;
+    products: string;
+    atMarketRate: string;
+    inventoryAging: string;
+    deadStock: string;
+    aging0_90: string;
+    aging90_180: string;
+    aging180_365: string;
+    aging365Plus: string;
+    lossPrevention: string;
+    orderVoids: string;
+    rateOverrides: string;
+    excessDiscounts: string;
   };
 
   pos: {
@@ -271,6 +309,44 @@ const en: Translations = {
     date: "Date",
     lotCount: (n) => `${n} lot${n !== 1 ? "s" : ""}`,
     distinctTypes: (n) => `${n} type${n !== 1 ? "s" : ""}`,
+    // Jeweler dashboard (Phases A–E)
+    goldWeightSold: "Gold Weight Sold",
+    byKarat: "by karat",
+    soldToday: "Sold today",
+    soldWeek: "This week",
+    grams: "g",
+    avgInvoice: "Avg. Invoice Value",
+    makingCharges: "Making Charges Earned",
+    marketStale: "Gold rate may be stale",
+    rateAsOf: "Rate as of",
+    receivables: "Receivables (AR)",
+    payables: "Payables (AP)",
+    aging0_30: "0–30d",
+    aging31_60: "31–60d",
+    aging61_90: "61–90d",
+    aging90Plus: "90d+",
+    metalOwed: "Gold owed",
+    cashBank: "Cash & Bank",
+    vatPosition: "VAT Position",
+    vatPayable: "Payable",
+    vatRefundable: "Refundable",
+    grossProfit: "Gross Profit",
+    grossMargin: "Gross Margin",
+    profitPerGram: "Profit / gram",
+    since: "since",
+    inventoryValue: "Inventory Value",
+    products: "Products",
+    atMarketRate: "at market (24K)",
+    inventoryAging: "Inventory Aging",
+    deadStock: "Dead stock",
+    aging0_90: "0–90d",
+    aging90_180: "90–180d",
+    aging180_365: "180–365d",
+    aging365Plus: "365d+",
+    lossPrevention: "Loss Prevention",
+    orderVoids: "Voided orders",
+    rateOverrides: "Rate overrides",
+    excessDiscounts: "Excess-discount orders",
   },
 
   pos: {
