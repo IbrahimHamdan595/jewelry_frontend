@@ -2,8 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { tax, TaxCodeT } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { DataTable } from "@/components/accounting/DataTable";
+import { StatTile } from "@/components/accounting/StatTile";
+import { Money } from "@/components/accounting/Money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
+
+type VatTxn = { entry_no: string; date: string; kind: string; vat: string };
 
 export default function Tax() {
+  const { t } = useLang();
+  const a = t.accounting.tax;
+  const c = t.accounting.common;
+
   const [codes, setCodes] = useState<TaxCodeT[]>([]);
   const [ret, setRet] = useState<Awaited<ReturnType<typeof tax.vatReturn>> | null>(null);
   const [year, setYear] = useState(2026);
@@ -23,46 +40,74 @@ export default function Tax() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Tax / VAT</h1>
-      {error && <div className="text-red-600">{error}</div>}
+      <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
+      {error && <div className="text-sm text-red-600">{error}</div>}
 
-      <div className="border rounded-xl p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="font-medium">Tax codes</div>
-          {codes.length === 0 && <button onClick={seed} className="px-3 py-1.5 rounded bg-amber-600 text-white text-sm">Seed standard codes</button>}
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50"><tr><th className="p-2 text-left">Code</th><th className="p-2 text-left">Name</th><th className="p-2 text-right">Rate %</th></tr></thead>
-          <tbody>{codes.map((c) => <tr key={c.id} className="border-t"><td className="p-2 font-mono">{c.code}</td><td className="p-2">{c.name}</td><td className="p-2 text-right">{c.rate}</td></tr>)}</tbody>
-        </table>
-      </div>
+      <SectionCard
+        title={a.taxCodes}
+        actions={codes.length === 0 && <Button variant="outline" onClick={seed}>{a.seedCodes}</Button>}
+        flush
+      >
+        <DataTable
+          columns={[
+            { key: "code", label: a.colCode, className: "font-mono", render: (r: TaxCodeT) => r.code },
+            { key: "name", label: a.colName },
+            { key: "rate", label: a.colRate, align: "end" },
+          ]}
+          rows={codes}
+          rowKey={(r) => r.id}
+          empty={c.noData}
+        />
+      </SectionCard>
 
-      <div className="border rounded-xl p-4 space-y-3">
-        <div className="flex gap-2 items-center">
-          <div className="font-medium">VAT return</div>
-          <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="border rounded px-3 py-2 w-28" />
-          <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))} className="border rounded px-3 py-2">
-            <option value={1}>Q1</option><option value={2}>Q2</option><option value={3}>Q3</option><option value={4}>Q4</option>
-          </select>
-          <button onClick={runReturn} className="px-4 py-2 rounded bg-amber-600 text-white">Run</button>
-        </div>
-        {ret && (
-          <div className="text-sm space-y-1">
-            <div>Output VAT (sales): <b>{ret.output_vat}</b></div>
-            <div>Input VAT (purchases): <b>{ret.input_vat}</b></div>
-            <div>Net <b>{ret.direction}</b>: <b>{ret.net_payable}</b></div>
-            {ret.cash_split && (
-              <div className="text-amber-800 bg-amber-50 rounded p-2">
-                Pay {ret.cash_split.cash_75} in cash (75%) + {ret.cash_split.transfer_25} by transfer (25%) to BdL acct {ret.cash_split.bdl_account}.
-                <div className="text-xs mt-1">{ret.cash_split.note}</div>
-              </div>
-            )}
-            <table className="w-full mt-2"><thead className="bg-gray-50"><tr><th className="p-1 text-left">Entry</th><th className="p-1 text-left">Date</th><th className="p-1 text-left">Kind</th><th className="p-1 text-right">VAT</th></tr></thead>
-              <tbody>{ret.transactions.map((t, i) => <tr key={i} className="border-t"><td className="p-1 font-mono">{t.entry_no}</td><td className="p-1">{t.date}</td><td className="p-1">{t.kind}</td><td className="p-1 text-right">{t.vat}</td></tr>)}</tbody>
-            </table>
+      <ActionBar hint={a.cashSplitHint}>
+        <span className="text-sm font-medium text-gray-700 me-1">{a.vatReturn}</span>
+        <Input
+          type="number"
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="w-28"
+        />
+        <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))} className={SELECT}>
+          <option value={1}>Q1</option>
+          <option value={2}>Q2</option>
+          <option value={3}>Q3</option>
+          <option value={4}>Q4</option>
+        </select>
+        <Button onClick={runReturn}>{a.runBtn}</Button>
+      </ActionBar>
+
+      {ret && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StatTile label={a.outputVat} value={<Money value={ret.output_vat} dash />} />
+            <StatTile label={a.inputVat} value={<Money value={ret.input_vat} dash />} />
+            <StatTile label={`${a.netLabel} ${ret.direction}`} value={<Money value={ret.net_payable} dash />} />
           </div>
-        )}
-      </div>
+
+          {ret.cash_split && (
+            <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 text-sm text-gold-dark">
+              <Money value={ret.cash_split.cash_75} /> ({a.cashSplitHint}) +{" "}
+              <Money value={ret.cash_split.transfer_25} /> — {ret.cash_split.bdl_account}
+              <div className="text-xs mt-1 text-gold-dark/70">{ret.cash_split.note}</div>
+            </div>
+          )}
+
+          <SectionCard title={a.vatReturn} flush>
+            <DataTable
+              columns={[
+                { key: "entry_no", label: a.colEntry, className: "font-mono", render: (r: VatTxn) => r.entry_no },
+                { key: "date", label: a.colDate },
+                { key: "kind", label: a.colKind },
+                { key: "vat", label: a.colVat, align: "end", render: (r: VatTxn) => <Money value={r.vat} dash /> },
+              ]}
+              rows={ret.transactions}
+              rowKey={(_, i) => String(i)}
+              empty={a.empty}
+            />
+          </SectionCard>
+        </>
+      )}
     </div>
   );
 }
