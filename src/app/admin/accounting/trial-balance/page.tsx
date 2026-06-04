@@ -2,8 +2,22 @@
 
 import { useState } from "react";
 import { accounting, TrialBalance } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Money } from "@/components/accounting/Money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+type TBAccount = TrialBalance["accounts"][number];
 
 export default function TrialBalancePage() {
+  const { t } = useLang();
+  const a = t.accounting.trialBalance;
+  const c = t.accounting.common;
+
   const [asOf, setAsOf] = useState("2026-06-30");
   const [tb, setTb] = useState<TrialBalance | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -14,48 +28,46 @@ export default function TrialBalancePage() {
     catch (e) { setError((e as Error).message); }
   }
 
+  const balanced = tb ? tb.balanced && tb.metal_balanced : false;
+
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Trial Balance</h1>
-      <div className="flex gap-3 items-center">
-        <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="border rounded px-3 py-2" />
-        <button onClick={load} className="px-4 py-2 rounded bg-amber-600 text-white">Run</button>
-        {tb && (
-          <span className={tb.balanced && tb.metal_balanced ? "text-green-700" : "text-red-700"}>
-            {tb.balanced ? "Money balanced ✓" : "Money OUT OF BALANCE ✗"} · {tb.metal_balanced ? "Metal balanced ✓" : "Metal OUT ✗"}
+    <div className="p-6 space-y-6">
+      <PageHeader
+        eyebrow={a.eyebrow}
+        title={a.title}
+        description={a.description}
+        actions={tb && (
+          <span className={`text-xs font-semibold ${balanced ? "text-green-700" : "text-red-700"}`}>
+            {balanced ? a.balanced : a.notBalanced}
           </span>
         )}
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
-      {tb && (
-        <>
-          <table className="w-full text-sm border">
-            <thead className="bg-gray-50"><tr>
-              <th className="p-2 text-left">Code</th><th className="p-2 text-left">Account</th>
-              <th className="p-2 text-right">Debit (USD)</th><th className="p-2 text-right">Credit (USD)</th>
-              <th className="p-2 text-left">Metal (g/karat)</th>
-            </tr></thead>
-            <tbody>
-              {tb.accounts.map((a) => (
-                <tr key={a.account_id} className="border-t">
-                  <td className="p-2 font-mono">{a.code}</td><td className="p-2">{a.name}</td>
-                  <td className="p-2 text-right">{a.base_debit}</td><td className="p-2 text-right">{a.base_credit}</td>
-                  <td className="p-2">{Object.entries(a.metal_by_karat).map(([k, v]) => `${k}: ${v.net_grams}`).join(", ")}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot className="bg-gray-50 font-semibold">
-              <tr><td className="p-2" colSpan={2}>Total</td>
-                <td className="p-2 text-right">{tb.total_base_debit}</td>
-                <td className="p-2 text-right">{tb.total_base_credit}</td><td /></tr>
-            </tfoot>
-          </table>
-          <div className="text-sm">
-            <span className="font-semibold">Metal position (grams per karat): </span>
-            {Object.entries(tb.metal_by_karat).map(([k, v]) => `${k}: DR ${v.debit_grams} / CR ${v.credit_grams}`).join("   ") || "—"}
-          </div>
-        </>
-      )}
+      />
+      {error && <div className="text-sm text-red-600">{error}</div>}
+
+      <ActionBar>
+        <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="w-44" />
+        <Button onClick={load}>{c.run}</Button>
+      </ActionBar>
+
+      <SectionCard flush>
+        <DataTable
+          columns={[
+            { key: "code", label: a.colCode, render: (r: TBAccount) => <span className="font-mono">{r.code}</span> },
+            { key: "name", label: a.colAccount },
+            { key: "base_debit", label: a.colDebit, align: "end", render: (r: TBAccount) => <Money value={r.base_debit} dash /> },
+            { key: "base_credit", label: a.colCredit, align: "end", render: (r: TBAccount) => <Money value={r.base_credit} dash /> },
+            {
+              key: "metal",
+              label: a.colMetal,
+              render: (r: TBAccount) =>
+                Object.entries(r.metal_by_karat).map(([k, v]) => `${k}: ${v.net_grams}`).join(", ") || "—",
+            },
+          ]}
+          rows={tb?.accounts ?? []}
+          rowKey={(r) => r.account_id}
+          empty={a.empty}
+        />
+      </SectionCard>
     </div>
   );
 }

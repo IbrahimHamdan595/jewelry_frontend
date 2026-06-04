@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { accounting, GLAccount } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Button } from "@/components/ui/button";
 
 export default function ChartOfAccounts() {
+  const { t } = useLang();
+  const a = t.accounting.coa;
+  const c = t.accounting.common;
+
   const [accounts, setAccounts] = useState<GLAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,38 +33,36 @@ export default function ChartOfAccounts() {
     await load();
   }
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading) return <div className="p-6">{c.noData}</div>;
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Chart of Accounts</h1>
-        {accounts.length === 0 && (
-          <button onClick={seed} className="px-4 py-2 rounded bg-amber-600 text-white">Seed system accounts</button>
-        )}
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="text-left p-2">Code</th><th className="text-left p-2">Name</th>
-            <th className="text-left p-2">Type</th><th className="text-left p-2">Denom.</th>
-            <th className="text-left p-2">Normal</th><th className="text-left p-2">Currency</th>
-            <th className="text-left p-2">System key</th><th className="text-left p-2">Active</th>
-          </tr>
-        </thead>
-        <tbody>
-          {accounts.map((a) => (
-            <tr key={a.id} className="border-t">
-              <td className="p-2 font-mono">{a.code}</td><td className="p-2">{a.name}</td>
-              <td className="p-2">{a.type}</td><td className="p-2">{a.denomination}</td>
-              <td className="p-2">{a.normal_balance}</td><td className="p-2">{a.currency ?? "—"}</td>
-              <td className="p-2 font-mono text-xs">{a.system_key ?? ""}</td>
-              <td className="p-2">{a.is_active ? "✓" : "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="p-6 space-y-6">
+      <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
+      {error && <div className="text-sm text-red-600">{error}</div>}
+
+      {accounts.length === 0 && (
+        <ActionBar>
+          <Button onClick={seed}>{a.seedBtn}</Button>
+        </ActionBar>
+      )}
+
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "code", label: a.colCode, render: (r: GLAccount) => <span className="font-mono">{r.code}</span> },
+            { key: "name", label: a.colName },
+            { key: "type", label: a.colType },
+            { key: "denomination", label: a.colDenom },
+            { key: "normal_balance", label: a.colNormal },
+            { key: "currency", label: a.colCurrency, render: (r: GLAccount) => r.currency ?? "—" },
+            { key: "system_key", label: a.colSystemKey, render: (r: GLAccount) => <span className="font-mono text-xs">{r.system_key ?? ""}</span> },
+            { key: "is_active", label: a.colActive, render: (r: GLAccount) => (r.is_active ? "✓" : "—") },
+          ]}
+          rows={accounts}
+          rowKey={(r) => r.id}
+          empty={a.empty}
+        />
+      </SectionCard>
     </div>
   );
 }
