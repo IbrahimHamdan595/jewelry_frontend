@@ -33,8 +33,24 @@ export type TrialBalance = {
   }>;
 };
 
+export type GLDrilldownRow = {
+  entry_id: string; entry_no: string; date: string; memo: string;
+  debit: string; credit: string; running_balance: string;
+  metal_debit_grams: string; metal_credit_grams: string; running_grams: string;
+};
+
+export type GLDrilldown = {
+  account_id: string; code: string; name: string; type: string; system_key: string | null;
+  start: string; end: string;
+  opening_balance: string; closing_balance: string;
+  opening_grams: string; closing_grams: string;
+  rows: GLDrilldownRow[];
+};
+
 export const accounting = {
   listAccounts: () => api.get<{ items: GLAccount[] }>("/accounting/accounts"),
+  generalLedger: (account_id: string, start: string, end: string) =>
+    api.get<GLDrilldown>(`/accounting/general-ledger?account_id=${account_id}&start=${start}&end=${end}`),
   seedCoa: () => api.post<{ created: number }>("/accounting/seed-coa"),
   createAccount: (b: Partial<GLAccount>) => api.post<GLAccount>("/accounting/accounts", b),
   listPeriods: () => api.get<{ items: Period[] }>("/accounting/periods"),

@@ -216,6 +216,7 @@ export interface Translations {
       coaTitle: string; coaDesc: string;
       journalTitle: string; journalDesc: string;
       trialBalanceTitle: string; trialBalanceDesc: string;
+      generalLedgerTitle: string; generalLedgerDesc: string;
       receivablesTitle: string; receivablesDesc: string;
       payablesTitle: string; payablesDesc: string;
       bankTitle: string; bankDesc: string;
@@ -240,6 +241,13 @@ export interface Translations {
       eyebrow: string; title: string; description: string;
       colCode: string; colAccount: string; colDebit: string; colCredit: string; colMetal: string;
       totalRow: string; balanced: string; notBalanced: string; empty: string;
+    };
+    generalLedger: {
+      eyebrow: string; title: string; description: string;
+      account: string; opening: string; closing: string;
+      colDate: string; colEntry: string; colMemo: string;
+      colDebit: string; colCredit: string; colRunning: string;
+      colGramsDr: string; colGramsCr: string; colRunningGrams: string; empty: string;
     };
     receivables: {
       eyebrow: string; title: string; description: string; newCustomer: string;
@@ -524,6 +532,8 @@ const en: Translations = {
       journalDesc: "Every financial event as a balanced debit/credit entry.",
       trialBalanceTitle: "Trial Balance",
       trialBalanceDesc: "Point-in-time proof the books balance.",
+      generalLedgerTitle: "General Ledger",
+      generalLedgerDesc: "Trace every posting to one account, with a running balance.",
       receivablesTitle: "Accounts Receivable",
       receivablesDesc: "Customers who bought on credit and owe you.",
       payablesTitle: "Accounts Payable",
@@ -568,6 +578,16 @@ const en: Translations = {
       colMetal: "Metal (g/karat)", totalRow: "Total",
       balanced: "Balanced — debits = credits ✓", notBalanced: "Out of balance ✗",
       empty: "Pick a date and run the trial balance.",
+    },
+    generalLedger: {
+      eyebrow: "Account drill-down",
+      title: "General Ledger",
+      description: "Every posting to one account over a period, with a running balance. Pick an account and date range to trace exactly what moved and when. Dual accounts also show running grams.",
+      account: "Account", opening: "Opening balance", closing: "Closing balance",
+      colDate: "Date", colEntry: "Entry", colMemo: "Memo",
+      colDebit: "Debit (USD)", colCredit: "Credit (USD)", colRunning: "Running balance",
+      colGramsDr: "Grams Dr", colGramsCr: "Grams Cr", colRunningGrams: "Running grams",
+      empty: "Pick an account and date range, then run.",
     },
     receivables: {
       eyebrow: "Money owed to you",

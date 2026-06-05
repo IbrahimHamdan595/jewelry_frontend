@@ -23,6 +23,7 @@ export default function AccountingHome() {
         { href: "/admin/accounting/chart-of-accounts", title: a.landing.coaTitle, desc: a.landing.coaDesc },
         { href: "/admin/accounting/journal", title: a.landing.journalTitle, desc: a.landing.journalDesc },
         { href: "/admin/accounting/trial-balance", title: a.landing.trialBalanceTitle, desc: a.landing.trialBalanceDesc },
+        { href: "/admin/accounting/general-ledger", title: a.landing.generalLedgerTitle, desc: a.landing.generalLedgerDesc },
       ],
     },
     {
