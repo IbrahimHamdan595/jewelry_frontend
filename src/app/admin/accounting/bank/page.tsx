@@ -2,8 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { bank, BankAccountT } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Money } from "@/components/accounting/Money";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
 export default function BankPage() {
+  const { t } = useLang();
+  const a = t.accounting.bank;
+  const c = t.accounting.common;
+
   const [accounts, setAccounts] = useState<BankAccountT[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -39,60 +53,58 @@ export default function BankPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Cash &amp; Bank</h1>
-        {accounts.length === 0 && <button onClick={adopt} className="px-4 py-2 rounded bg-amber-600 text-white">Adopt seeded accounts</button>}
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
+      <PageHeader
+        eyebrow={a.eyebrow}
+        title={a.title}
+        description={a.description}
+        actions={<Button variant="outline" onClick={adopt}>{a.adoptSeeded}</Button>}
+      />
+      {error && <div className="text-sm text-red-600">{error}</div>}
 
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50"><tr>
-          <th className="p-2 text-left">Account</th><th className="p-2 text-left">Type</th>
-          <th className="p-2 text-left">Ccy</th><th className="p-2 text-right">Balance</th>
-          <th className="p-2 text-right">USD base</th><th className="p-2 text-left">Last reconciled</th>
-        </tr></thead>
-        <tbody>
-          {accounts.map((a) => (
-            <tr key={a.id} className="border-t">
-              <td className="p-2">{a.name}</td><td className="p-2">{a.account_type}</td>
-              <td className="p-2">{a.currency}</td><td className="p-2 text-right">{a.balance_money}</td>
-              <td className="p-2 text-right">{a.balance_base}</td>
-              <td className="p-2">{a.last_reconciled_at ? a.last_reconciled_at.slice(0, 10) : "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "name", label: a.colAccount },
+            { key: "account_type", label: a.colType },
+            { key: "currency", label: a.colCcy },
+            { key: "balance_money", label: a.colBalance, align: "end", render: (r: BankAccountT) => <Money value={r.balance_money} dash /> },
+            { key: "balance_base", label: a.colUsdBase, align: "end", render: (r: BankAccountT) => <Money value={r.balance_base} dash /> },
+            { key: "last_reconciled_at", label: a.colLastReconciled, render: (r: BankAccountT) => r.last_reconciled_at ? r.last_reconciled_at.slice(0, 10) : "—" },
+          ]}
+          rows={accounts}
+          rowKey={(r) => r.id}
+          empty={a.empty}
+        />
+      </SectionCard>
 
-      <div className="border rounded-xl p-4 space-y-2">
-        <div className="font-medium">New account</div>
-        <div className="flex gap-2 flex-wrap">
-          <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="border rounded px-3 py-2" />
-          <select value={type} onChange={(e) => setType(e.target.value)} className="border rounded px-3 py-2">
+      <SectionCard title={a.newAccount}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <Input placeholder={a.namePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-48" />
+          <select value={type} onChange={(e) => setType(e.target.value)} className={SELECT}>
             <option>BANK</option><option>CASH</option><option>PETTY_CASH</option>
           </select>
-          <select value={ccy} onChange={(e) => setCcy(e.target.value)} className="border rounded px-3 py-2">
+          <select value={ccy} onChange={(e) => setCcy(e.target.value)} className={SELECT}>
             <option>USD</option><option>LBP</option>
           </select>
-          <button onClick={create} disabled={!name} className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-40">Create</button>
+          <Button variant="outline" onClick={create} disabled={!name}>{c.create}</Button>
         </div>
-      </div>
+      </SectionCard>
 
-      <div className="border rounded-xl p-4 space-y-2">
-        <div className="font-medium">Transfer</div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <select value={from} onChange={(e) => setFrom(e.target.value)} className="border rounded px-3 py-2">
-            <option value="">From…</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}
+      <SectionCard title={a.transfer}>
+        <ActionBar hint={a.transferHint}>
+          <select value={from} onChange={(e) => setFrom(e.target.value)} className={SELECT}>
+            <option value="">{c.from}…</option>{accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>)}
           </select>
-          <select value={to} onChange={(e) => setTo(e.target.value)} className="border rounded px-3 py-2">
-            <option value="">To…</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}
+          <select value={to} onChange={(e) => setTo(e.target.value)} className={SELECT}>
+            <option value="">{c.account}…</option>{accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>)}
           </select>
-          <input placeholder="Amount (from ccy)" value={amount} onChange={(e) => setAmount(e.target.value)} className="border rounded px-3 py-2 w-40 text-right" />
-          <input placeholder="Dest amount (cross-ccy)" value={destAmount} onChange={(e) => setDestAmount(e.target.value)} className="border rounded px-3 py-2 w-48 text-right" />
-          <input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} className="border rounded px-3 py-2" />
-          <button onClick={doTransfer} disabled={!from || !to || !amount} className="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-40">Transfer</button>
-        </div>
-        {ok && <div className="text-green-700">{ok}</div>}
-      </div>
+          <Input placeholder={a.amountPlaceholder} value={amount} onChange={(e) => setAmount(e.target.value)} className="w-40 text-end" />
+          <Input placeholder={a.destAmountPlaceholder} value={destAmount} onChange={(e) => setDestAmount(e.target.value)} className="w-48 text-end" />
+          <Input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} className="w-auto" />
+          <Button onClick={doTransfer} disabled={!from || !to || !amount}>{a.transfer}</Button>
+          {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}
+        </ActionBar>
+      </SectionCard>
     </div>
   );
 }

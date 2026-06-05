@@ -2,8 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { ap } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Money } from "@/components/accounting/Money";
+
+type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
 
 export default function Payables() {
+  const { t } = useLang();
+  const a = t.accounting.payables;
+  const c = t.accounting.common;
+
   const [tie, setTie] = useState<Awaited<ReturnType<typeof ap.verify>> | null>(null);
   const [aging, setAging] = useState<Awaited<ReturnType<typeof ap.aging>> | null>(null);
   const [sups, setSups] = useState<Awaited<ReturnType<typeof ap.balances>>["suppliers"]>([]);
@@ -19,33 +30,54 @@ export default function Payables() {
     })();
   }, []);
 
+  const goldByKarat = (byKarat: Record<string, string>) =>
+    Object.entries(byKarat).map(([k, g]) => `${k} · ${g}${c.grams}`).join("  ");
+
+  const agingCells = aging ? [
+    { label: a.agingCurrent, v: aging.cash_buckets["0_30"] },
+    { label: a.aging3160, v: aging.cash_buckets["31_60"] },
+    { label: a.aging6190, v: aging.cash_buckets["61_90"] },
+    { label: a.aging90, v: aging.cash_buckets["90_plus"] },
+    { label: c.total, v: aging.cash_total },
+  ] : [];
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Accounts Payable</h1>
-        {tie && <span className={tie.ap.matches && tie.metal_ap.matches ? "text-green-700 text-sm" : "text-red-700 text-sm"}>
-          AP {tie.ap.gl} (sub {tie.ap.subledger}) {tie.ap.matches ? "✓" : "✗"} · Metal {tie.metal_ap.matches ? "✓" : "✗"}</span>}
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
+      <PageHeader
+        eyebrow={a.eyebrow}
+        title={a.title}
+        description={a.description}
+        actions={tie && (
+          <span className={`text-xs ${tie.ap.matches && tie.metal_ap.matches ? "text-green-700" : "text-red-700"}`}>
+            {tie.ap.matches ? "✓" : "✗"} {tie.ap.gl} / {tie.ap.subledger}
+          </span>
+        )}
+      />
+      {error && <div className="text-sm text-red-600">{error}</div>}
 
       {aging && (
-        <div className="text-sm border rounded-xl p-4">
-          <span className="font-medium">Cash aging: </span>
-          0–30 {aging.cash_buckets["0_30"]} · 31–60 {aging.cash_buckets["31_60"]} · 61–90 {aging.cash_buckets["61_90"]} · 90+ {aging.cash_buckets["90_plus"]} · <b>total {aging.cash_total}</b>
-          <div className="mt-1"><span className="font-medium">Gold owed: </span>
-            {Object.entries(aging.metal_owed_by_karat).map(([k, g]) => `${k}: ${g}g`).join(" · ") || "—"}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {agingCells.map((cell, i) => (
+            <div key={cell.label} className={`rounded-xl border p-4 ${i === 4 ? "border-gold/30 bg-gold/5" : "border-gray-100 bg-white"}`}>
+              <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">{cell.label}</div>
+              <div className="text-lg font-semibold text-gray-800"><Money value={cell.v} dash /></div>
+            </div>
+          ))}
         </div>
       )}
 
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50"><tr><th className="p-2 text-left">Supplier</th><th className="p-2 text-right">Cash owed</th><th className="p-2 text-left">Gold owed</th></tr></thead>
-        <tbody>
-          {sups.map((s) => (
-            <tr key={s.id} className="border-t"><td className="p-2">{s.name}</td><td className="p-2 text-right">{s.cash_owed}</td>
-              <td className="p-2">{Object.entries(s.gold_owed_by_karat).map(([k, g]) => `${k}: ${g}g`).join(", ") || "—"}</td></tr>
-          ))}
-        </tbody>
-      </table>
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "name", label: a.colSupplier },
+            { key: "cash_owed", label: a.colCashOwed, align: "end", render: (s: Supplier) => <Money value={s.cash_owed} dash /> },
+            { key: "gold_owed", label: a.colGoldOwed, render: (s: Supplier) => goldByKarat(s.gold_owed_by_karat) || <span className="tabular-nums text-gray-300">—</span> },
+          ]}
+          rows={sups}
+          rowKey={(s) => s.id}
+          empty={a.empty}
+        />
+      </SectionCard>
     </div>
   );
 }

@@ -197,6 +197,104 @@ export interface Translations {
     customerName: string;
     checkout: string;
   };
+
+  accounting: {
+    common: {
+      run: string; downloadExcel: string; seed: string; record: string; create: string;
+      post: string; save: string; cancel: string; noData: string; total: string; date: string;
+      status: string; amount: string; code: string; name: string; type: string; account: string;
+      customer: string; supplier: string; vendor: string; balance: string; currency: string;
+      asOf: string; karat: string; grams: string; from: string; until: string;
+      ledgerChain: string; intact: string; broken: string;
+    };
+    landing: {
+      title: string; description: string;
+      groupLedger: string; groupLedgerDesc: string;
+      groupMoney: string; groupMoneyDesc: string;
+      groupReports: string; groupReportsDesc: string;
+      groupControls: string; groupControlsDesc: string;
+      coaTitle: string; coaDesc: string;
+      journalTitle: string; journalDesc: string;
+      trialBalanceTitle: string; trialBalanceDesc: string;
+      receivablesTitle: string; receivablesDesc: string;
+      payablesTitle: string; payablesDesc: string;
+      bankTitle: string; bankDesc: string;
+      expensesTitle: string; expensesDesc: string;
+      taxTitle: string; taxDesc: string;
+      statementsTitle: string; statementsDesc: string;
+      kpisTitle: string; kpisDesc: string;
+      periodsTitle: string; periodsDesc: string;
+    };
+    coa: {
+      eyebrow: string; title: string; description: string; seedBtn: string;
+      colCode: string; colName: string; colType: string; colDenom: string; colNormal: string;
+      colCurrency: string; colSystemKey: string; colActive: string; empty: string;
+    };
+    journal: {
+      eyebrow: string; title: string; description: string; recentEntries: string;
+      colEntryNo: string; colDate: string; colSource: string; colMemo: string; colAccount: string;
+      colDebit: string; colCredit: string; colGramsDr: string; colGramsCr: string; colKarat: string;
+      memoPlaceholder: string; empty: string;
+    };
+    trialBalance: {
+      eyebrow: string; title: string; description: string;
+      colCode: string; colAccount: string; colDebit: string; colCredit: string; colMetal: string;
+      totalRow: string; balanced: string; notBalanced: string; empty: string;
+    };
+    receivables: {
+      eyebrow: string; title: string; description: string; newCustomer: string;
+      namePlaceholder: string; creditLimitPlaceholder: string; createBtn: string;
+      recordReceipt: string; amountPlaceholder: string; recordBtn: string; receiptHint: string;
+      colCustomer: string; colOpenBalance: string;
+      agingCurrent: string; aging3160: string; aging6190: string; aging90: string; empty: string;
+    };
+    payables: {
+      eyebrow: string; title: string; description: string;
+      colSupplier: string; colCashOwed: string; colGoldOwed: string; empty: string;
+      agingCurrent: string; aging3160: string; aging6190: string; aging90: string;
+    };
+    bank: {
+      eyebrow: string; title: string; description: string; adoptSeeded: string; newAccount: string;
+      namePlaceholder: string; transfer: string; transferHint: string; amountPlaceholder: string;
+      destAmountPlaceholder: string; createBtn: string;
+      colAccount: string; colType: string; colCcy: string; colBalance: string;
+      colUsdBase: string; colLastReconciled: string; empty: string;
+    };
+    expenses: {
+      eyebrow: string; title: string; description: string; recordBill: string;
+      vendorPlaceholder: string; amountPlaceholder: string; onCredit: string;
+      paidCash: string; paidBank: string; noVat: string; recordBtn: string; byCategory: string;
+      colBill: string; colVendor: string; colDate: string; colTotal: string; colPaid: string;
+      colStatus: string; empty: string;
+    };
+    tax: {
+      eyebrow: string; title: string; description: string; taxCodes: string; seedCodes: string;
+      colCode: string; colName: string; colRate: string; vatReturn: string; runBtn: string;
+      outputVat: string; inputVat: string; netLabel: string; cashSplitHint: string;
+      colEntry: string; colDate: string; colKind: string; colVat: string; empty: string;
+    };
+    statements: {
+      eyebrow: string; title: string; description: string;
+      tabPnl: string; tabBs: string; tabCf: string; runBtn: string; downloadExcel: string;
+      revenue: string; cogs: string; grossProfit: string; opex: string; netProfit: string;
+      assets: string; liabilities: string; equity: string; totalAssets: string;
+      totalLiabilities: string; totalEquity: string; balanced: string; allCurrent: string;
+      metalSchedule: string; colKarat: string; colNetGrams: string;
+      openingCash: string; netChange: string; closingCash: string; reconciles: string;
+    };
+    kpis: {
+      eyebrow: string; title: string; description: string; runBtn: string; downloadExcel: string;
+      dsi: string; turnover: string; dpo: string; dso: string; ccc: string;
+      grossMargin: string; netMargin: string; metalTurnover: string; currentRatio: string; quickRatio: string;
+    };
+    periods: {
+      eyebrow: string; title: string; description: string; openPeriod: string; month: string; year: string;
+      checkClose: string; closePeriod: string; blocked: string; reopen: string;
+      colYear: string; colMonth: string; colStatus: string;
+      yearEndClose: string; preview: string; closeYear: string; netIncome: string; alreadyClosed: string;
+      colAccount: string; colDebit: string; colCredit: string;
+    };
+  };
 }
 
 const en: Translations = {
@@ -397,6 +495,169 @@ const en: Translations = {
     customer: "Customer",
     customerName: "Customer Name",
     checkout: "Checkout",
+  },
+
+  accounting: {
+    common: {
+      run: "Run", downloadExcel: "Download Excel", seed: "Seed", record: "Record", create: "Create",
+      post: "Post", save: "Save", cancel: "Cancel", noData: "Nothing here yet.", total: "Total",
+      date: "Date", status: "Status", amount: "Amount", code: "Code", name: "Name", type: "Type",
+      account: "Account", customer: "Customer", supplier: "Supplier", vendor: "Vendor",
+      balance: "Balance", currency: "Currency", asOf: "As of", karat: "Karat", grams: "g",
+      from: "From", until: "Until", ledgerChain: "Ledger chain", intact: "intact", broken: "broken",
+    },
+    landing: {
+      title: "Accounting",
+      description: "The books for Fawaz El Namel. Every sale, purchase, and payment is recorded here as double-entry accounting. Start with the section you need — each page explains what it's for.",
+      groupLedger: "Ledger",
+      groupLedgerDesc: "The core books — accounts, entries, and the balance proof.",
+      groupMoney: "Money",
+      groupMoneyDesc: "Who owes you, who you owe, cash, expenses, and tax.",
+      groupReports: "Reports",
+      groupReportsDesc: "Financial statements and health metrics.",
+      groupControls: "Controls",
+      groupControlsDesc: "Locking the books at month- and year-end.",
+      coaTitle: "Chart of Accounts",
+      coaDesc: "The master list of accounts money & gold flow through.",
+      journalTitle: "Journal Entries",
+      journalDesc: "Every financial event as a balanced debit/credit entry.",
+      trialBalanceTitle: "Trial Balance",
+      trialBalanceDesc: "Point-in-time proof the books balance.",
+      receivablesTitle: "Accounts Receivable",
+      receivablesDesc: "Customers who bought on credit and owe you.",
+      payablesTitle: "Accounts Payable",
+      payablesDesc: "What you owe suppliers — cash and gold.",
+      bankTitle: "Cash & Bank",
+      bankDesc: "Cash/bank accounts, transfers, reconciliation.",
+      expensesTitle: "Expenses",
+      expensesDesc: "Rent, salaries, utilities — bills and payments.",
+      taxTitle: "Tax / VAT",
+      taxDesc: "Tax codes and the quarterly VAT return.",
+      statementsTitle: "Financial Statements",
+      statementsDesc: "P&L, Balance Sheet, Cash Flow — with Excel export.",
+      kpisTitle: "Financial KPIs",
+      kpisDesc: "Turnover, margins, days-to-pay/collect.",
+      periodsTitle: "Periods",
+      periodsDesc: "Open/close months; year-end closing.",
+    },
+    coa: {
+      eyebrow: "The master account list",
+      title: "Chart of Accounts",
+      description: "Every account is a labelled bucket that money or gold flows through — Cash, Sales Revenue, Metal Inventory, and so on. Each has a type (asset, liability, equity, income, expense) that decides how it behaves. Seed the standard set once to get started.",
+      seedBtn: "Seed system accounts",
+      colCode: "Code", colName: "Name", colType: "Type", colDenom: "Denom.", colNormal: "Normal",
+      colCurrency: "Currency", colSystemKey: "System key", colActive: "Active",
+      empty: "No accounts yet — seed the system accounts to begin.",
+    },
+    journal: {
+      eyebrow: "The raw double-entry log",
+      title: "Journal Entries",
+      description: "Every financial event is recorded as a journal entry — a set of lines where total debits must equal total credits (and gold grams must balance per karat too). Most entries are posted automatically by sales and purchases; you can post a manual one here.",
+      recentEntries: "Recent entries",
+      colEntryNo: "Entry no", colDate: "Date", colSource: "Source", colMemo: "Memo",
+      colAccount: "Account", colDebit: "Debit (USD)", colCredit: "Credit (USD)",
+      colGramsDr: "Grams DR", colGramsCr: "Grams CR", colKarat: "Karat",
+      memoPlaceholder: "Memo", empty: "No entries posted yet.",
+    },
+    trialBalance: {
+      eyebrow: "The balance proof",
+      title: "Trial Balance",
+      description: "A snapshot of every account's balance as of a date. If the books are healthy, total debits equal total credits — and gold grams net to zero per karat. Pick a date and run it.",
+      colCode: "Code", colAccount: "Account", colDebit: "Debit (USD)", colCredit: "Credit (USD)",
+      colMetal: "Metal (g/karat)", totalRow: "Total",
+      balanced: "Balanced — debits = credits ✓", notBalanced: "Out of balance ✗",
+      empty: "Pick a date and run the trial balance.",
+    },
+    receivables: {
+      eyebrow: "Money owed to you",
+      title: "Accounts Receivable",
+      description: "Customers who bought on credit and still owe you. Record a receipt when a customer pays — it's applied to their oldest unpaid invoices first. The aging columns show how overdue each balance is.",
+      newCustomer: "New customer",
+      namePlaceholder: "Name", creditLimitPlaceholder: "Credit limit (blank = unlimited)",
+      createBtn: "Create", recordReceipt: "Record a receipt", amountPlaceholder: "Amount",
+      recordBtn: "Record receipt", receiptHint: "pays off oldest invoices first",
+      colCustomer: "Customer", colOpenBalance: "Open balance",
+      agingCurrent: "Current", aging3160: "31–60d", aging6190: "61–90d", aging90: "90d+",
+      empty: "No customers with a balance.",
+    },
+    payables: {
+      eyebrow: "What you owe suppliers",
+      title: "Accounts Payable",
+      description: "What you owe your gold suppliers — both cash and gold (by karat). The aging columns show how overdue each balance is. This ties out to the supplier balances on the operations side.",
+      colSupplier: "Supplier", colCashOwed: "Cash owed", colGoldOwed: "Gold owed",
+      empty: "You don't owe any supplier right now.",
+      agingCurrent: "Current", aging3160: "31–60d", aging6190: "61–90d", aging90: "90d+",
+    },
+    bank: {
+      eyebrow: "Cash & bank accounts",
+      title: "Cash & Bank",
+      description: "Your cash and bank accounts, transfers between them, and reconciling them against real bank statements. Seed the standard cash/bank accounts once, then add more as needed.",
+      adoptSeeded: "Adopt seeded accounts", newAccount: "New account", namePlaceholder: "Name",
+      transfer: "Transfer", transferHint: "moves money between two accounts",
+      amountPlaceholder: "Amount (from ccy)", destAmountPlaceholder: "Dest amount (cross-ccy)",
+      createBtn: "Create",
+      colAccount: "Account", colType: "Type", colCcy: "Ccy", colBalance: "Balance",
+      colUsdBase: "USD base", colLastReconciled: "Last reconciled",
+      empty: "No bank accounts yet — adopt the seeded ones to begin.",
+    },
+    expenses: {
+      eyebrow: "Running costs",
+      title: "Expenses",
+      description: "Day-to-day business costs — rent, salaries, utilities, marketing. Record a bill (paid now in cash/bank, or on credit), optionally with input VAT. The report shows where the money went.",
+      recordBill: "Record an expense / bill",
+      vendorPlaceholder: "Vendor", amountPlaceholder: "Amount",
+      onCredit: "On credit (Vendor AP)", paidCash: "Paid — Cash", paidBank: "Paid — Bank",
+      noVat: "No VAT", recordBtn: "Record", byCategory: "Expense by category",
+      colBill: "Bill", colVendor: "Vendor", colDate: "Date", colTotal: "Total", colPaid: "Paid",
+      colStatus: "Status", empty: "No bills recorded yet.",
+    },
+    tax: {
+      eyebrow: "Lebanon VAT (11%)",
+      title: "Tax / VAT",
+      description: "Lebanon's VAT is 11%. Set up your tax codes once, then run the quarterly VAT return — it nets the VAT you charged on sales (output) against the VAT you paid on purchases (input). A positive net is what you owe the government.",
+      taxCodes: "Tax codes", seedCodes: "Seed standard codes",
+      colCode: "Code", colName: "Name", colRate: "Rate %",
+      vatReturn: "VAT return", runBtn: "Run",
+      outputVat: "Output VAT (on sales)", inputVat: "Input VAT (on purchases)", netLabel: "Net",
+      cashSplitHint: "Lebanon: pay 75% cash + 25% by transfer to BdL.",
+      colEntry: "Entry", colDate: "Date", colKind: "Kind", colVat: "VAT",
+      empty: "Run a quarter to see the return.",
+    },
+    statements: {
+      eyebrow: "The financial reports",
+      title: "Financial Statements",
+      description: "The three core reports for any period — Profit & Loss (did you make money?), Balance Sheet (what you own vs owe), and Cash Flow (where cash moved). Pick a period and export to Excel if you need.",
+      tabPnl: "P&L", tabBs: "Balance Sheet", tabCf: "Cash Flow",
+      runBtn: "Run", downloadExcel: "Download Excel",
+      revenue: "Revenue", cogs: "COGS", grossProfit: "Gross profit", opex: "Operating expenses",
+      netProfit: "Net profit", assets: "Assets", liabilities: "Liabilities", equity: "Equity",
+      totalAssets: "Total assets", totalLiabilities: "Total liabilities", totalEquity: "Total equity",
+      balanced: "Assets = Liabilities + Equity", allCurrent: "all assets treated as current",
+      metalSchedule: "Metal position (grams per karat)", colKarat: "Karat", colNetGrams: "Net grams",
+      openingCash: "Opening cash", netChange: "Net change", closingCash: "Closing cash",
+      reconciles: "reconciles to cash balance",
+    },
+    kpis: {
+      eyebrow: "Business health metrics",
+      title: "Financial KPIs",
+      description: "Health metrics derived from the books — how fast inventory sells, your margins, and how quickly you pay suppliers and collect from customers. Pick a period and run.",
+      runBtn: "Run", downloadExcel: "Download Excel",
+      dsi: "Days Sales of Inventory", turnover: "Inventory Turnover", dpo: "Days Payable Outstanding",
+      dso: "Days Sales Outstanding", ccc: "Cash Conversion Cycle", grossMargin: "Gross Margin",
+      netMargin: "Net Margin", metalTurnover: "Metal Turnover (grams)", currentRatio: "Current Ratio",
+      quickRatio: "Quick Ratio",
+    },
+    periods: {
+      eyebrow: "Locking the books",
+      title: "Accounting Periods",
+      description: "Months are 'periods' you lock once they're done so no one can change past numbers. Run the pre-close checklist before closing a month; at year-end, close the year to roll profit into retained earnings.",
+      openPeriod: "Open period", month: "Month", year: "Year",
+      checkClose: "Check & Close", closePeriod: "Close period", blocked: "Blocked", reopen: "Reopen",
+      colYear: "Year", colMonth: "Month", colStatus: "Status",
+      yearEndClose: "Year-End Close", preview: "Preview", closeYear: "Close Year",
+      netIncome: "Net income", alreadyClosed: "already closed",
+      colAccount: "Account", colDebit: "Debit", colCredit: "Credit",
+    },
   },
 };
 

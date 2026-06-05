@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { accounting, GLAccount, JournalEntry } from "@/lib/accounting";
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { SectionCard } from "@/components/accounting/SectionCard";
+import { DataTable } from "@/components/accounting/DataTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
 type Row = {
   account_id: string; base_debit: string; base_credit: string;
@@ -12,6 +20,10 @@ const EMPTY: Row = { account_id: "", base_debit: "", base_credit: "", metal_debi
 const KARATS = ["", "K18", "K21", "K22", "K24"];
 
 export default function Journal() {
+  const { t } = useLang();
+  const a = t.accounting.journal;
+  const c = t.accounting.common;
+
   const [accounts, setAccounts] = useState<GLAccount[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [rows, setRows] = useState<Row[]>([{ ...EMPTY }, { ...EMPTY }]);
@@ -68,73 +80,84 @@ export default function Journal() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Journal Entry</h1>
+      <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
 
-      <div className="flex gap-4">
-        <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="border rounded px-3 py-2" />
-        <input placeholder="Memo" value={memo} onChange={(e) => setMemo(e.target.value)} className="border rounded px-3 py-2 flex-1" />
-      </div>
+      <SectionCard title={a.title}>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="w-48" />
+            <Input placeholder={a.memoPlaceholder} value={memo} onChange={(e) => setMemo(e.target.value)} className="flex-1 min-w-[12rem]" />
+          </div>
 
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="p-2 text-left">Account</th><th className="p-2">Debit (USD)</th><th className="p-2">Credit (USD)</th>
-            <th className="p-2">Karat</th><th className="p-2">Grams DR</th><th className="p-2">Grams CR</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-t">
-              <td className="p-1">
-                <select value={r.account_id} onChange={(e) => setRow(i, { account_id: e.target.value })} className="border rounded px-2 py-1 w-full">
-                  <option value="">—</option>
-                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} {a.name}</option>)}
-                </select>
-              </td>
-              <td className="p-1"><input value={r.base_debit} onChange={(e) => setRow(i, { base_debit: e.target.value })} className="border rounded px-2 py-1 w-28 text-right" /></td>
-              <td className="p-1"><input value={r.base_credit} onChange={(e) => setRow(i, { base_credit: e.target.value })} className="border rounded px-2 py-1 w-28 text-right" /></td>
-              <td className="p-1">
-                <select value={r.karat} onChange={(e) => setRow(i, { karat: e.target.value })} className="border rounded px-2 py-1">
-                  {KARATS.map((k) => <option key={k} value={k}>{k || "—"}</option>)}
-                </select>
-              </td>
-              <td className="p-1"><input value={r.metal_debit_grams} onChange={(e) => setRow(i, { metal_debit_grams: e.target.value })} className="border rounded px-2 py-1 w-24 text-right" /></td>
-              <td className="p-1"><input value={r.metal_credit_grams} onChange={(e) => setRow(i, { metal_credit_grams: e.target.value })} className="border rounded px-2 py-1 w-24 text-right" /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" style={{ minWidth: 640 }}>
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-start">{c.account}</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end">{a.colDebit}</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end">{a.colCredit}</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-start">{a.colKarat}</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end">{a.colGramsDr}</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end">{a.colGramsCr}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i} className="border-b border-gray-50">
+                    <td className="px-2 py-1.5">
+                      <select value={r.account_id} onChange={(e) => setRow(i, { account_id: e.target.value })} className={`${SELECT} w-full`}>
+                        <option value="">—</option>
+                        {accounts.map((ac) => <option key={ac.id} value={ac.id}>{ac.code} {ac.name}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-2 py-1.5"><Input value={r.base_debit} onChange={(e) => setRow(i, { base_debit: e.target.value })} className="w-28 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.base_credit} onChange={(e) => setRow(i, { base_credit: e.target.value })} className="w-28 text-end" /></td>
+                    <td className="px-2 py-1.5">
+                      <select value={r.karat} onChange={(e) => setRow(i, { karat: e.target.value })} className={SELECT}>
+                        {KARATS.map((k) => <option key={k} value={k}>{k || "—"}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-2 py-1.5"><Input value={r.metal_debit_grams} onChange={(e) => setRow(i, { metal_debit_grams: e.target.value })} className="w-24 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.metal_credit_grams} onChange={(e) => setRow(i, { metal_credit_grams: e.target.value })} className="w-24 text-end" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <button onClick={() => setRows((rs) => [...rs, { ...EMPTY }])} className="text-sm text-amber-700">+ Add line</button>
+          <Button variant="ghost" size="sm" onClick={() => setRows((rs) => [...rs, { ...EMPTY }])}>+ {t.common.add}</Button>
 
-      <div className="flex items-center gap-6 text-sm">
-        <span className={moneyBalanced ? "text-green-700" : "text-red-700"}>
-          Money: DR {moneyDebit.toFixed(2)} / CR {moneyCredit.toFixed(2)} {moneyBalanced ? "✓" : "✗"}
-        </span>
-        <span className={metalBalanced ? "text-green-700" : "text-red-700"}>
-          Metal: {Object.entries(metalByKarat).map(([k, v]) => `${k} ${v.d}/${v.c}`).join("  ") || "—"} {metalBalanced ? "✓" : "✗"}
-        </span>
-      </div>
+          <div className="flex flex-wrap items-center gap-6 text-sm">
+            <span className={moneyBalanced ? "text-green-700" : "text-red-700"}>
+              {c.amount}: DR {moneyDebit.toFixed(2)} / CR {moneyCredit.toFixed(2)} {moneyBalanced ? "✓" : "✗"}
+            </span>
+            <span className={metalBalanced ? "text-green-700" : "text-red-700"}>
+              {c.grams}: {Object.entries(metalByKarat).map(([k, v]) => `${k} ${v.d}/${v.c}`).join("  ") || "—"} {metalBalanced ? "✓" : "✗"}
+            </span>
+          </div>
 
-      {error && <div className="text-red-600">{error}</div>}
-      {ok && <div className="text-green-700">{ok}</div>}
+          {error && <div className="text-sm text-red-600">{error}</div>}
+          {ok && <div className="text-sm text-green-700">{ok}</div>}
 
-      <button onClick={submit} disabled={!moneyBalanced || !metalBalanced || !entryDate} className="px-5 py-2 rounded bg-amber-600 text-white disabled:opacity-40">
-        Post entry
-      </button>
+          <Button onClick={submit} disabled={!moneyBalanced || !metalBalanced || !entryDate}>
+            {c.post}
+          </Button>
+        </div>
+      </SectionCard>
 
-      <h2 className="text-xl font-semibold pt-4">Recent entries</h2>
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-50"><tr><th className="p-2 text-left">Entry no</th><th className="p-2 text-left">Date</th><th className="p-2 text-left">Memo</th><th className="p-2 text-left">Source</th></tr></thead>
-        <tbody>
-          {entries.map((e) => (
-            <tr key={e.id} className="border-t">
-              <td className="p-2 font-mono">{e.entry_no}</td><td className="p-2">{e.entry_date}</td>
-              <td className="p-2">{e.memo}</td><td className="p-2">{e.source_type}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SectionCard title={a.recentEntries} flush>
+        <DataTable
+          columns={[
+            { key: "entry_no", label: a.colEntryNo, render: (e: JournalEntry) => <span className="font-mono">{e.entry_no}</span> },
+            { key: "entry_date", label: a.colDate },
+            { key: "memo", label: a.colMemo },
+            { key: "source_type", label: a.colSource },
+          ]}
+          rows={entries}
+          rowKey={(e) => e.id}
+          empty={a.empty}
+        />
+      </SectionCard>
     </div>
   );
 }

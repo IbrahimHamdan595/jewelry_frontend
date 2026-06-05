@@ -3,21 +3,18 @@
 import { useEffect, useState } from "react";
 import { kpis } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
-
-const CARDS: { key: string; label: string; suffix?: string }[] = [
-  { key: "dsi", label: "Days Sales of Inventory", suffix: " d" },
-  { key: "inventory_turnover", label: "Inventory Turnover", suffix: "×" },
-  { key: "dpo", label: "Days Payable Outstanding", suffix: " d" },
-  { key: "dso", label: "Days Sales Outstanding", suffix: " d" },
-  { key: "ccc", label: "Cash Conversion Cycle", suffix: " d" },
-  { key: "gross_margin", label: "Gross Margin", suffix: "%" },
-  { key: "net_margin", label: "Net Margin", suffix: "%" },
-  { key: "metal_turnover", label: "Metal Turnover (grams)", suffix: "×" },
-  { key: "current_ratio", label: "Current Ratio", suffix: "×" },
-  { key: "quick_ratio", label: "Quick Ratio", suffix: "×" },
-];
+import { useLang } from "@/context/LanguageContext";
+import { PageHeader } from "@/components/accounting/PageHeader";
+import { ActionBar } from "@/components/accounting/ActionBar";
+import { StatTile } from "@/components/accounting/StatTile";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function Kpis() {
+  const { t } = useLang();
+  const a = t.accounting.kpis;
+  const c = t.accounting.common;
+
   const [start, setStart] = useState("2026-06-01");
   const [end, setEnd] = useState("2026-06-30");
   const [data, setData] = useState<Awaited<ReturnType<typeof kpis.compute>> | null>(null);
@@ -29,33 +26,58 @@ export default function Kpis() {
   }
   useEffect(() => { run(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
+  const cards: { key: keyof NonNullable<typeof data>; label: string; suffix?: string }[] = [
+    { key: "dsi", label: a.dsi, suffix: " d" },
+    { key: "inventory_turnover", label: a.turnover, suffix: "×" },
+    { key: "dpo", label: a.dpo, suffix: " d" },
+    { key: "dso", label: a.dso, suffix: " d" },
+    { key: "ccc", label: a.ccc, suffix: " d" },
+    { key: "gross_margin", label: a.grossMargin, suffix: "%" },
+    { key: "net_margin", label: a.netMargin, suffix: "%" },
+    { key: "metal_turnover", label: a.metalTurnover, suffix: "×" },
+    { key: "current_ratio", label: a.currentRatio, suffix: "×" },
+    { key: "quick_ratio", label: a.quickRatio, suffix: "×" },
+  ];
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Financial KPIs</h1>
-      <div className="flex flex-wrap gap-2 items-center">
-        <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="border rounded px-3 py-2" />
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="border rounded px-3 py-2" />
-        <button onClick={run} className="px-4 py-2 rounded bg-amber-600 text-white">Run</button>
-        <button onClick={() => downloadFile(`/accounting/statements/kpis?start=${start}&end=${end}&format=xlsx`, `kpis-${start}-${end}.xlsx`)}
-          className="px-4 py-2 rounded border">Download Excel</button>
-      </div>
-      {error && <div className="text-red-600">{error}</div>}
+      <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
+      {error && <div className="text-sm text-red-600">{error}</div>}
+
+      <ActionBar>
+        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-40" />
+        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-40" />
+        <Button onClick={run}>{c.run}</Button>
+        <Button
+          variant="outline"
+          onClick={() => downloadFile(`/accounting/statements/kpis?start=${start}&end=${end}&format=xlsx`, `kpis-${start}-${end}.xlsx`)}
+        >
+          {a.downloadExcel}
+        </Button>
+      </ActionBar>
+
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {CARDS.map((c) => {
-            const k = data[c.key as keyof typeof data] as { value: string | null };
+          {cards.map((card) => {
+            const k = data[card.key] as { value: string | null };
             return (
-              <div key={c.key} className="rounded-xl border p-4">
-                <div className="text-sm text-gray-500">{c.label}</div>
-                <div className="text-2xl font-semibold mt-1">
-                  {k.value === null ? <span className="text-gray-400 text-base">n/a</span> : <>{k.value}{c.suffix}</>}
-                </div>
-              </div>
+              <StatTile
+                key={card.key}
+                label={card.label}
+                value={
+                  k.value === null
+                    ? <span className="text-gray-400 text-base">n/a</span>
+                    : <>{k.value}{card.suffix}</>
+                }
+              />
             );
           })}
         </div>
       )}
-      {data && <div className="text-xs text-gray-400">Window: {data.start} → {data.end} ({data.days} days)</div>}
+
+      {data && (
+        <div className="text-xs text-gray-400">Window: {data.start} → {data.end} ({data.days} days)</div>
+      )}
     </div>
   );
 }
