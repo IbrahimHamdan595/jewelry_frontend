@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
+import { apiFetcher } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -31,6 +32,11 @@ export default function Expenses() {
   const [amt, setAmt] = useState("");
   const [paid, setPaid] = useState("");
   const [taxCode, setTaxCode] = useState("");
+  // Bill booking currency + fx_rate (LBP per USD). USD locks the rate to 1; LBP
+  // prefills the live settings rate and stays editable for back-dated bills.
+  const [ccy, setCcy] = useState("USD");
+  const [rate, setRate] = useState("1");
+  const [lbpRate, setLbpRate] = useState("1");
   const [ok, setOk] = useState<string | null>(null);
 
   async function load() {
@@ -45,12 +51,23 @@ export default function Expenses() {
     } catch (e) { setError((e as Error).message); }
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    apiFetcher<{ lbp_exchange_rate: number | string | null }>("/settings")
+      .then((s) => { if (s.lbp_exchange_rate) setLbpRate(String(s.lbp_exchange_rate)); })
+      .catch(() => {});
+  }, []);
+
+  function setCurrency(currency: string) {
+    setCcy(currency);
+    setRate(currency === "USD" ? "1" : lbpRate);
+  }
 
   async function record() {
     setError(null); setOk(null);
     try {
       const b = await expenses.createBill({ vendor_name: vendor, bill_date: "2026-06-30",
         payment_system_key: paid || null, tax_code_id: taxCode || undefined, memo: "",
+        currency: ccy, fx_rate: ccy === "USD" ? "1" : (rate || "1"),
         lines: [{ description: "", expense_account_id: acct, amount: amt }] });
       setOk(`Bill ${b.bill_no} (${b.status}, total ${b.total})`); setVendor(""); setAmt(""); await load();
     } catch (e) { setError((e as Error).message); }
@@ -75,6 +92,12 @@ export default function Expenses() {
         <select value={acct} onChange={(e) => setAcct(e.target.value)} className={SELECT}>
           {accts.map((ac) => <option key={ac.id} value={ac.id}>{ac.code} {ac.name}</option>)}
         </select>
+        <select value={ccy} onChange={(e) => setCurrency(e.target.value)} className={SELECT}>
+          <option value="USD">USD</option>
+          <option value="LBP">LBP</option>
+        </select>
+        <Input placeholder={c.fxRate} value={rate} onChange={(e) => setRate(e.target.value)}
+               disabled={ccy === "USD"} className="w-28 text-end disabled:bg-gray-50 disabled:text-gray-400" />
         <Input placeholder={a.amountPlaceholder} value={amt} onChange={(e) => setAmt(e.target.value)} className="w-32 text-end" />
         <select value={paid} onChange={(e) => setPaid(e.target.value)} className={SELECT}>
           <option value="">{a.onCredit}</option>

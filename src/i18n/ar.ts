@@ -210,7 +210,7 @@ const ar: Translations = {
       date: "التاريخ", status: "الحالة", amount: "المبلغ", code: "الرمز", name: "الاسم", type: "النوع",
       account: "الحساب", customer: "العميل", supplier: "المورّد", vendor: "المورّد",
       balance: "الرصيد", currency: "العملة", asOf: "كما في", karat: "العيار", grams: "غ",
-      from: "من", until: "إلى", ledgerChain: "سلسلة السجل", intact: "سليمة", broken: "مكسورة",
+      from: "من", until: "إلى", ledgerChain: "سلسلة السجل", intact: "سليمة", broken: "مكسورة", fxRate: "سعر الصرف",
     },
     landing: {
       title: "المحاسبة",
@@ -336,6 +336,7 @@ const ar: Translations = {
       tabPnl: "الأرباح والخسائر", tabBs: "الميزانية", tabCf: "التدفق النقدي",
       runBtn: "تشغيل", downloadExcel: "تنزيل Excel",
       revenue: "الإيرادات", cogs: "تكلفة المبيعات", grossProfit: "الربح الإجمالي", opex: "المصاريف التشغيلية",
+      operatingProfit: "الربح التشغيلي", otherIncomeExpense: "إيرادات/(مصاريف) أخرى",
       netProfit: "صافي الربح", assets: "الأصول", liabilities: "الالتزامات", equity: "حقوق الملكية",
       totalAssets: "إجمالي الأصول", totalLiabilities: "إجمالي الالتزامات", totalEquity: "إجمالي حقوق الملكية",
       balanced: "الأصول = الالتزامات + حقوق الملكية", allCurrent: "تُعامل كل الأصول كمتداولة",

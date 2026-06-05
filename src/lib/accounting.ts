@@ -77,7 +77,7 @@ export const ar = {
   listInvoices: (customerId?: string) => api.get<{ items: Array<{ id: string; invoice_no: string; invoice_date: string; total: string; amount_paid: string; status: string }> }>(`/accounting/ar/invoices${customerId ? `?customer_id=${customerId}` : ""}`),
   createInvoice: (b: { customer_id: string; invoice_date: string; vat_percent: string; memo?: string; lines: { description: string; quantity: number; unit_price: string }[] }) =>
     api.post<{ invoice_no: string; total: string }>("/accounting/ar/invoices", b),
-  createReceipt: (b: { customer_id: string; receipt_date: string; amount: string; payment_system_key: string }) =>
+  createReceipt: (b: { customer_id: string; receipt_date: string; amount: string; payment_system_key: string; currency?: string; fx_rate?: string }) =>
     api.post<{ receipt_no: string; unapplied_amount: string }>("/accounting/ar/receipts", b),
   aging: (asOf: string) => api.get<{ totals: Record<string, string>; grand_total: string }>(`/accounting/ar/aging?as_of=${asOf}`),
   verify: () => api.get<{ gl_ar_balance: string; subledger_balance: string; matches: boolean }>("/accounting/ar/verify"),
@@ -93,10 +93,10 @@ export type ExpenseAccountT = { id: string; code: string; name: string; system_k
 
 export const expenses = {
   expenseAccounts: () => api.get<{ items: ExpenseAccountT[] }>("/accounting/expenses/expense-accounts"),
-  createBill: (b: { vendor_name: string; bill_date: string; payment_system_key?: string | null; tax_code_id?: string; memo?: string; lines: { description: string; expense_account_id: string; amount: string }[] }) =>
+  createBill: (b: { vendor_name: string; bill_date: string; payment_system_key?: string | null; tax_code_id?: string; memo?: string; currency?: string; fx_rate?: string; lines: { description: string; expense_account_id: string; amount: string }[] }) =>
     api.post<{ bill_no: string; total: string; status: string }>("/accounting/expenses/bills", b),
   listBills: (vendor?: string) => api.get<{ items: Array<{ id: string; bill_no: string; vendor_name: string; bill_date: string; total: string; amount_paid: string; status: string }> }>(`/accounting/expenses/bills${vendor ? `?vendor_name=${encodeURIComponent(vendor)}` : ""}`),
-  pay: (b: { vendor_name: string; payment_date: string; amount: string; payment_system_key: string }) =>
+  pay: (b: { vendor_name: string; payment_date: string; amount: string; payment_system_key: string; currency?: string; fx_rate?: string }) =>
     api.post<{ payment_no: string; unapplied_amount: string }>("/accounting/expenses/payments", b),
   byCategory: (from: string, until: string) => api.get<{ accounts: Array<{ code: string; name: string; system_key: string | null; amount: string }>; total: string }>(`/accounting/expenses/reports/by-category?from=${from}&until=${until}`),
   verify: () => api.get<{ gl: string; subledger: string; matches: boolean }>("/accounting/expenses/verify"),
@@ -115,8 +115,8 @@ export type StatementLineT = { code: string; name: string; system_key: string | 
 export const statements = {
   incomeStatement: (start: string, end: string) =>
     api.get<{ start: string; end: string; revenue_lines: StatementLineT[]; cogs_lines: StatementLineT[];
-      opex_lines: StatementLineT[]; revenue: string; cogs: string; gross_profit: string;
-      operating_expenses: string; net_profit: string }>(
+      opex_lines: StatementLineT[]; other_lines: StatementLineT[]; revenue: string; cogs: string; gross_profit: string;
+      operating_expenses: string; operating_profit: string; other_income_expense: string; net_profit: string }>(
       `/accounting/statements/income-statement?start=${start}&end=${end}`),
   balanceSheet: (as_of: string) =>
     api.get<{ as_of: string; all_current: boolean; asset_lines: StatementLineT[];

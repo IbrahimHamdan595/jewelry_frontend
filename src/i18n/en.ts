@@ -205,7 +205,7 @@ export interface Translations {
       status: string; amount: string; code: string; name: string; type: string; account: string;
       customer: string; supplier: string; vendor: string; balance: string; currency: string;
       asOf: string; karat: string; grams: string; from: string; until: string;
-      ledgerChain: string; intact: string; broken: string;
+      ledgerChain: string; intact: string; broken: string; fxRate: string;
     };
     landing: {
       title: string; description: string;
@@ -276,7 +276,8 @@ export interface Translations {
     statements: {
       eyebrow: string; title: string; description: string;
       tabPnl: string; tabBs: string; tabCf: string; runBtn: string; downloadExcel: string;
-      revenue: string; cogs: string; grossProfit: string; opex: string; netProfit: string;
+      revenue: string; cogs: string; grossProfit: string; opex: string;
+      operatingProfit: string; otherIncomeExpense: string; netProfit: string;
       assets: string; liabilities: string; equity: string; totalAssets: string;
       totalLiabilities: string; totalEquity: string; balanced: string; allCurrent: string;
       metalSchedule: string; colKarat: string; colNetGrams: string;
@@ -504,7 +505,7 @@ const en: Translations = {
       date: "Date", status: "Status", amount: "Amount", code: "Code", name: "Name", type: "Type",
       account: "Account", customer: "Customer", supplier: "Supplier", vendor: "Vendor",
       balance: "Balance", currency: "Currency", asOf: "As of", karat: "Karat", grams: "g",
-      from: "From", until: "Until", ledgerChain: "Ledger chain", intact: "intact", broken: "broken",
+      from: "From", until: "Until", ledgerChain: "Ledger chain", intact: "intact", broken: "broken", fxRate: "FX rate",
     },
     landing: {
       title: "Accounting",
@@ -630,6 +631,7 @@ const en: Translations = {
       tabPnl: "P&L", tabBs: "Balance Sheet", tabCf: "Cash Flow",
       runBtn: "Run", downloadExcel: "Download Excel",
       revenue: "Revenue", cogs: "COGS", grossProfit: "Gross profit", opex: "Operating expenses",
+      operatingProfit: "Operating profit", otherIncomeExpense: "Other income/(expense)",
       netProfit: "Net profit", assets: "Assets", liabilities: "Liabilities", equity: "Equity",
       totalAssets: "Total assets", totalLiabilities: "Total liabilities", totalEquity: "Total equity",
       balanced: "Assets = Liabilities + Equity", allCurrent: "all assets treated as current",

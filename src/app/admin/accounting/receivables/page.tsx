@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
+import { apiFetcher } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -26,6 +27,12 @@ export default function Receivables() {
   const [aging, setAging] = useState<{ totals: Record<string, string>; grand_total: string } | null>(null);
   const [rcCust, setRcCust] = useState("");
   const [rcAmt, setRcAmt] = useState("");
+  // Receipt currency is the "recorded-in" currency — it must match the invoices
+  // being settled. fx_rate (LBP per USD) is the settlement-day rate; realized FX
+  // is booked when it differs from the invoice's captured rate.
+  const [rcCcy, setRcCcy] = useState("USD");
+  const [rcRate, setRcRate] = useState("1");
+  const [lbpRate, setLbpRate] = useState("1");
   const [ok, setOk] = useState<string | null>(null);
 
   async function load() {
@@ -36,6 +43,16 @@ export default function Receivables() {
     } catch (e) { setError((e as Error).message); }
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    apiFetcher<{ lbp_exchange_rate: number | string | null }>("/settings")
+      .then((s) => { if (s.lbp_exchange_rate) setLbpRate(String(s.lbp_exchange_rate)); })
+      .catch(() => {});
+  }, []);
+
+  function setRcCurrency(currency: string) {
+    setRcCcy(currency);
+    setRcRate(currency === "USD" ? "1" : lbpRate);
+  }
 
   async function create() {
     setError(null);
@@ -45,7 +62,10 @@ export default function Receivables() {
   async function receipt() {
     setError(null); setOk(null);
     try {
-      const r = await ar.createReceipt({ customer_id: rcCust, receipt_date: "2026-06-30", amount: rcAmt, payment_system_key: "CASH" });
+      const r = await ar.createReceipt({
+        customer_id: rcCust, receipt_date: "2026-06-30", amount: rcAmt, payment_system_key: "CASH",
+        currency: rcCcy, fx_rate: rcCcy === "USD" ? "1" : (rcRate || "1"),
+      });
       setOk(`Receipt ${r.receipt_no} (unapplied ${r.unapplied_amount})`); setRcAmt(""); await load();
     } catch (e) { setError((e as Error).message); }
   }
@@ -88,6 +108,12 @@ export default function Receivables() {
           <option value="">{c.customer}…</option>
           {customers.map((cu) => <option key={cu.id} value={cu.id}>{cu.name}</option>)}
         </select>
+        <select value={rcCcy} onChange={(e) => setRcCurrency(e.target.value)} className={SELECT}>
+          <option value="USD">USD</option>
+          <option value="LBP">LBP</option>
+        </select>
+        <Input placeholder={c.fxRate} value={rcRate} onChange={(e) => setRcRate(e.target.value)}
+               disabled={rcCcy === "USD"} className="w-28 text-end disabled:bg-gray-50 disabled:text-gray-400" />
         <Input placeholder={a.amountPlaceholder} value={rcAmt} onChange={(e) => setRcAmt(e.target.value)} className="w-32 text-end" />
         <Button onClick={receipt} disabled={!rcCust || !rcAmt}>{a.recordBtn}</Button>
         {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}

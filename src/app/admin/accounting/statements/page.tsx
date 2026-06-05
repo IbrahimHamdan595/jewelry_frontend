@@ -97,6 +97,14 @@ export default function Statements() {
               <Section title={a.cogs} lines={pnl.cogs_lines} />
               <Total label={a.grossProfit} v={pnl.gross_profit} />
               <Section title={a.opex} lines={pnl.opex_lines} />
+              <Total label={a.opex} v={pnl.operating_expenses} />
+              <Total label={a.operatingProfit} v={pnl.operating_profit} />
+              {pnl.other_lines.length > 0 && (
+                <>
+                  <Section title={a.otherIncomeExpense} lines={pnl.other_lines} />
+                  <Total label={a.otherIncomeExpense} v={pnl.other_income_expense} />
+                </>
+              )}
               <Total label={a.netProfit} v={pnl.net_profit} bold />
             </tbody>
           </table>
