@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { accounting, TrialBalance } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
+import { today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -19,7 +20,7 @@ export default function TrialBalancePage() {
   const a = t.accounting.trialBalance;
   const c = t.accounting.common;
 
-  const [asOf, setAsOf] = useState("2026-06-30");
+  const [asOf, setAsOf] = useState(today());
   const [tb, setTb] = useState<TrialBalance | null>(null);
   const [error, setError] = useState<string | null>(null);
 

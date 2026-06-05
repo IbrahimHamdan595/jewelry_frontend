@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { statements, StatementLineT } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
+import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -20,9 +21,9 @@ export default function Statements() {
   const c = t.accounting.common;
 
   const [tab, setTab] = useState<Tab>("pnl");
-  const [start, setStart] = useState("2026-06-01");
-  const [end, setEnd] = useState("2026-06-30");
-  const [asOf, setAsOf] = useState("2026-06-30");
+  const [start, setStart] = useState(firstOfMonth());
+  const [end, setEnd] = useState(today());
+  const [asOf, setAsOf] = useState(today());
   const [pnl, setPnl] = useState<Awaited<ReturnType<typeof statements.incomeStatement>> | null>(null);
   const [bs, setBs] = useState<Awaited<ReturnType<typeof statements.balanceSheet>> | null>(null);
   const [cf, setCf] = useState<Awaited<ReturnType<typeof statements.cashFlow>> | null>(null);

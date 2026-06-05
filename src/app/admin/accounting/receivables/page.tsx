@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
 import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { firstOfYear, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
+import { Loading } from "@/components/accounting/Loading";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +21,9 @@ export default function Receivables() {
   const a = t.accounting.receivables;
   const c = t.accounting.common;
 
-  // AR statement PDF spans the current year to date (Phase 4 will lift the few
-  // remaining hardcoded report dates into shared helpers).
-  const stmtUntil = new Date().toISOString().slice(0, 10);
-  const stmtFrom = `${new Date().getFullYear()}-01-01`;
+  // AR statement PDF spans the current year to date.
+  const stmtUntil = today();
+  const stmtFrom = firstOfYear();
   function statementPdf(cust: CustomerT) {
     downloadFile(
       `/accounting/ar/customers/${cust.id}/statement?from=${stmtFrom}&until=${stmtUntil}&format=pdf&lang=${lang}`,
@@ -44,13 +45,15 @@ export default function Receivables() {
   const [rcRate, setRcRate] = useState("1");
   const [lbpRate, setLbpRate] = useState("1");
   const [ok, setOk] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     try {
       setCustomers((await ar.listCustomers()).items);
       setTie(await ar.verify());
-      setAging(await ar.aging("2026-06-30"));
+      setAging(await ar.aging(today()));
     } catch (e) { setError((e as Error).message); }
+    finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
   useEffect(() => {
@@ -73,7 +76,7 @@ export default function Receivables() {
     setError(null); setOk(null);
     try {
       const r = await ar.createReceipt({
-        customer_id: rcCust, receipt_date: "2026-06-30", amount: rcAmt, payment_system_key: "CASH",
+        customer_id: rcCust, receipt_date: today(), amount: rcAmt, payment_system_key: "CASH",
         currency: rcCcy, fx_rate: rcCcy === "USD" ? "1" : (rcRate || "1"),
       });
       setOk(`Receipt ${r.receipt_no} (unapplied ${r.unapplied_amount})`); setRcAmt(""); await load();
@@ -101,6 +104,8 @@ export default function Receivables() {
         )}
       />
       {error && <div className="text-sm text-red-600">{error}</div>}
+
+      {loading && !aging && <Loading label={t.common.loading} />}
 
       {aging && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

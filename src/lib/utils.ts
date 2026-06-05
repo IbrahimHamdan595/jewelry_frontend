@@ -53,6 +53,28 @@ export function formatLBP(n: number | string) {
   return `ل.ل ${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
+// ── Report date helpers ───────────────────────────────────────────────────────
+// Default ranges for accounting reports, computed at call time from the LOCAL
+// date (not UTC) so an evening in a positive-offset zone doesn't roll to tomorrow.
+// Use these for `useState` defaults / report params instead of hardcoded literals.
+function _pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+export function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`;
+}
+
+export function firstOfMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-01`;
+}
+
+export function firstOfYear() {
+  return `${new Date().getFullYear()}-01-01`;
+}
+
 export function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }

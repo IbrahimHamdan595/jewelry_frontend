@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { kpis } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
+import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { ActionBar } from "@/components/accounting/ActionBar";
@@ -15,8 +16,8 @@ export default function Kpis() {
   const a = t.accounting.kpis;
   const c = t.accounting.common;
 
-  const [start, setStart] = useState("2026-06-01");
-  const [end, setEnd] = useState("2026-06-30");
+  const [start, setStart] = useState(firstOfMonth());
+  const [end, setEnd] = useState(today());
   const [data, setData] = useState<Awaited<ReturnType<typeof kpis.compute>> | null>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { bank, BankAccountT } from "@/lib/accounting";
+import { today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -27,7 +28,7 @@ export default function BankPage() {
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [destAmount, setDestAmount] = useState("");
-  const [tDate, setTDate] = useState("2026-06-05");
+  const [tDate, setTDate] = useState(today());
   const [ok, setOk] = useState<string | null>(null);
 
   async function load() {

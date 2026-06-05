@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
+import { Loading } from "@/components/accounting/Loading";
 import { Button } from "@/components/ui/button";
 
 export default function ChartOfAccounts() {
@@ -33,7 +34,7 @@ export default function ChartOfAccounts() {
     await load();
   }
 
-  if (loading) return <div className="p-6">{c.noData}</div>;
+  if (loading) return <div className="p-6"><Loading label={t.common.loading} /></div>;
 
   return (
     <div className="p-6 space-y-6">

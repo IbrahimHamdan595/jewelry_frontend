@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
 import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -46,7 +47,7 @@ export default function Expenses() {
       if (!acct && a.length) setAcct(a[0].id);
       setTaxCodes((await tax.listCodes()).items);
       setBills((await expenses.listBills()).items);
-      setCat(await expenses.byCategory("2026-06-01", "2026-06-30"));
+      setCat(await expenses.byCategory(firstOfMonth(), today()));
       setTie(await expenses.verify());
     } catch (e) { setError((e as Error).message); }
   }
@@ -65,7 +66,7 @@ export default function Expenses() {
   async function record() {
     setError(null); setOk(null);
     try {
-      const b = await expenses.createBill({ vendor_name: vendor, bill_date: "2026-06-30",
+      const b = await expenses.createBill({ vendor_name: vendor, bill_date: today(),
         payment_system_key: paid || null, tax_code_id: taxCode || undefined, memo: "",
         currency: ccy, fx_rate: ccy === "USD" ? "1" : (rate || "1"),
         lines: [{ description: "", expense_account_id: acct, amount: amt }] });
