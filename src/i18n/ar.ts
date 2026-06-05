@@ -205,7 +205,7 @@ const ar: Translations = {
 
   accounting: {
     common: {
-      run: "تشغيل", downloadExcel: "تنزيل Excel", seed: "تهيئة", record: "تسجيل", create: "إنشاء",
+      run: "تشغيل", downloadExcel: "تنزيل Excel", downloadPdf: "تنزيل PDF", statement: "كشف حساب", pdf: "PDF", seed: "تهيئة", record: "تسجيل", create: "إنشاء",
       post: "ترحيل", save: "حفظ", cancel: "إلغاء", noData: "لا يوجد شيء بعد.", total: "الإجمالي",
       date: "التاريخ", status: "الحالة", amount: "المبلغ", code: "الرمز", name: "الاسم", type: "النوع",
       account: "الحساب", customer: "العميل", supplier: "المورّد", vendor: "المورّد",

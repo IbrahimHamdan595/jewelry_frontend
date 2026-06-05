@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
-import { apiFetcher } from "@/lib/api-client";
+import { apiFetcher, downloadFile } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -15,9 +15,19 @@ import { Input } from "@/components/ui/input";
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
 export default function Receivables() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const a = t.accounting.receivables;
   const c = t.accounting.common;
+
+  // AR statement PDF spans the current year to date (Phase 4 will lift the few
+  // remaining hardcoded report dates into shared helpers).
+  const stmtUntil = new Date().toISOString().slice(0, 10);
+  const stmtFrom = `${new Date().getFullYear()}-01-01`;
+  function statementPdf(cust: CustomerT) {
+    downloadFile(
+      `/accounting/ar/customers/${cust.id}/statement?from=${stmtFrom}&until=${stmtUntil}&format=pdf&lang=${lang}`,
+      `statement-${cust.name}-${stmtUntil}.pdf`);
+  }
 
   const [customers, setCustomers] = useState<CustomerT[]>([]);
   const [name, setName] = useState("");
@@ -125,6 +135,9 @@ export default function Receivables() {
             { key: "name", label: a.colCustomer },
             { key: "currency", label: c.currency },
             { key: "open_balance", label: a.colOpenBalance, align: "end", render: (r: CustomerT) => <Money value={r.open_balance} dash /> },
+            { key: "statement", label: c.statement, align: "end", render: (r: CustomerT) => (
+              <button onClick={() => statementPdf(r)} className="text-gold hover:underline text-xs">{c.pdf}</button>
+            ) },
           ]}
           rows={customers}
           rowKey={(r) => r.id}

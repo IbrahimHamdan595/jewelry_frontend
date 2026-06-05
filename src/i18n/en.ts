@@ -200,7 +200,7 @@ export interface Translations {
 
   accounting: {
     common: {
-      run: string; downloadExcel: string; seed: string; record: string; create: string;
+      run: string; downloadExcel: string; downloadPdf: string; statement: string; pdf: string; seed: string; record: string; create: string;
       post: string; save: string; cancel: string; noData: string; total: string; date: string;
       status: string; amount: string; code: string; name: string; type: string; account: string;
       customer: string; supplier: string; vendor: string; balance: string; currency: string;
@@ -508,7 +508,7 @@ const en: Translations = {
 
   accounting: {
     common: {
-      run: "Run", downloadExcel: "Download Excel", seed: "Seed", record: "Record", create: "Create",
+      run: "Run", downloadExcel: "Download Excel", downloadPdf: "Download PDF", statement: "Statement", pdf: "PDF", seed: "Seed", record: "Record", create: "Create",
       post: "Post", save: "Save", cancel: "Cancel", noData: "Nothing here yet.", total: "Total",
       date: "Date", status: "Status", amount: "Amount", code: "Code", name: "Name", type: "Type",
       account: "Account", customer: "Customer", supplier: "Supplier", vendor: "Vendor",

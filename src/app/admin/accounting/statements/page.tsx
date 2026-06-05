@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 type Tab = "pnl" | "bs" | "cf";
 
 export default function Statements() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const a = t.accounting.statements;
   const c = t.accounting.common;
 
@@ -47,6 +47,19 @@ export default function Statements() {
         await downloadFile(`/accounting/statements/balance-sheet?as_of=${asOf}&format=xlsx`, `balance-sheet-${asOf}.xlsx`);
       else
         await downloadFile(`/accounting/statements/cash-flow?start=${start}&end=${end}&format=xlsx`, `cash-flow-${start}-${end}.xlsx`);
+    } catch (e) { setError((e as Error).message); }
+  }
+
+  // PDF uses the active UI language so an Arabic session exports an RTL Arabic PDF.
+  async function dlPdf() {
+    setError(null);
+    try {
+      if (tab === "pnl")
+        await downloadFile(`/accounting/statements/income-statement?start=${start}&end=${end}&format=pdf&lang=${lang}`, `income-statement-${start}-${end}.pdf`);
+      else if (tab === "bs")
+        await downloadFile(`/accounting/statements/balance-sheet?as_of=${asOf}&format=pdf&lang=${lang}`, `balance-sheet-${asOf}.pdf`);
+      else
+        await downloadFile(`/accounting/statements/cash-flow?start=${start}&end=${end}&format=pdf&lang=${lang}`, `cash-flow-${start}-${end}.pdf`);
     } catch (e) { setError((e as Error).message); }
   }
 
@@ -84,6 +97,7 @@ export default function Statements() {
         )}
         <Button onClick={run}>{a.runBtn}</Button>
         <Button variant="outline" onClick={dl}>{a.downloadExcel}</Button>
+        <Button variant="outline" onClick={dlPdf}>{c.downloadPdf}</Button>
       </ActionBar>
 
       {error && <div className="text-sm text-red-600">{error}</div>}

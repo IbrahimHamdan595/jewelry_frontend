@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { accounting, TrialBalance } from "@/lib/accounting";
+import { downloadFile } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -47,6 +48,12 @@ export default function TrialBalancePage() {
       <ActionBar>
         <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="w-44" />
         <Button onClick={load}>{c.run}</Button>
+        {tb && (
+          <Button variant="outline" onClick={() => downloadFile(
+            `/accounting/trial-balance?as_of=${asOf}&format=xlsx`, `trial-balance-${asOf}.xlsx`)}>
+            {c.downloadExcel}
+          </Button>
+        )}
       </ActionBar>
 
       <SectionCard flush>

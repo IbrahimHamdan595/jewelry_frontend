@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { tax, TaxCodeT } from "@/lib/accounting";
+import { downloadFile } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -75,6 +76,11 @@ export default function Tax() {
           <option value={4}>Q4</option>
         </select>
         <Button onClick={runReturn}>{a.runBtn}</Button>
+        {ret && (
+          <Button variant="outline" onClick={() => downloadFile(
+            `/accounting/tax/vat-return?year=${year}&quarter=${quarter}&format=xlsx`,
+            `vat-return-${year}-Q${quarter}.xlsx`)}>{c.downloadExcel}</Button>
+        )}
       </ActionBar>
 
       {ret && (

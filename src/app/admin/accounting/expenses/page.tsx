@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
-import { apiFetcher } from "@/lib/api-client";
+import { apiFetcher, downloadFile } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -17,7 +17,7 @@ const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focu
 type BillT = Awaited<ReturnType<typeof expenses.listBills>>["items"][number];
 
 export default function Expenses() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const a = t.accounting.expenses;
   const c = t.accounting.common;
 
@@ -121,6 +121,10 @@ export default function Expenses() {
             { key: "total", label: a.colTotal, align: "end", render: (b: BillT) => <Money value={b.total} dash /> },
             { key: "amount_paid", label: a.colPaid, align: "end", render: (b: BillT) => <Money value={b.amount_paid} dash /> },
             { key: "status", label: a.colStatus },
+            { key: "pdf", label: c.pdf, align: "end", render: (b: BillT) => (
+              <button onClick={() => downloadFile(`/accounting/expenses/bills/${b.id}/pdf?lang=${lang}`, `bill-${b.bill_no}.pdf`)}
+                      className="text-gold hover:underline text-xs">{c.pdf}</button>
+            ) },
           ]}
           rows={bills}
           rowKey={(b) => b.id}
