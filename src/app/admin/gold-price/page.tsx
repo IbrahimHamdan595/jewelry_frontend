@@ -9,6 +9,7 @@ import { TradingViewChart } from "@/components/admin/TradingViewChart";
 import { CalendarFilter, calendarParams, type CalendarValue } from "@/components/admin/CalendarFilter";
 import { AlertTriangle } from "lucide-react";
 import type { GoldRateHistoryPoint } from "@/types/api";
+import { Skeleton, CardSkeleton } from "@/components/ui/skeleton";
 
 type Range = "24h" | "7d" | "30d";
 type KaratKey = "24k" | "22k" | "21k" | "18k";
@@ -93,36 +94,38 @@ export default function GoldPricePage() {
       )}
 
       {/* Hero card */}
-      <div className="bg-admin-sidebar rounded-xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-white/40 text-xs uppercase tracking-widest mb-2">24K Gold — USD/gram</div>
-            <div className="font-serif text-kpi text-gold leading-none">{rate ? `$${rate.rate_24k.toFixed(2)}` : "—"}</div>
-            {rate && (
+      {!rate ? (
+        <CardSkeleton className="bg-admin-sidebar border-0 h-[120px]" />
+      ) : (
+        <div className="bg-admin-sidebar rounded-xl p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-white/40 text-xs uppercase tracking-widest mb-2">24K Gold — USD/gram</div>
+              <div className="font-serif text-kpi text-gold leading-none">{`$${rate.rate_24k.toFixed(2)}`}</div>
               <div className="flex items-center gap-2 mt-2">
                 <span className={`w-2 h-2 rounded-full ${rate.is_stale ? "bg-yellow-400" : "bg-green-400"}`} />
                 <span className="text-white/40 text-xs uppercase tracking-widest">{rate.is_stale ? "STALE" : "LIVE"}</span>
                 <span className="text-white/20 text-xs">{formatDateTime(rate.fetched_at)}</span>
                 <span className="text-white/20 text-xs capitalize">{rate.source}</span>
               </div>
-            )}
-          </div>
-          <div className="text-right space-y-3">
-            <div>
-              <div className="text-white/40 text-xs uppercase tracking-widest">22K</div>
-              <div className="text-white text-xl font-semibold">{rate ? `$${rate.rate_22k.toFixed(2)}` : "—"}</div>
             </div>
-            <div>
-              <div className="text-white/40 text-xs uppercase tracking-widest">21K</div>
-              <div className="text-white text-xl font-semibold">{rate ? `$${rate.rate_21k.toFixed(2)}` : "—"}</div>
-            </div>
-            <div>
-              <div className="text-white/40 text-xs uppercase tracking-widest">18K</div>
-              <div className="text-white text-xl font-semibold">{rate ? `$${rate.rate_18k.toFixed(2)}` : "—"}</div>
+            <div className="text-right space-y-3">
+              <div>
+                <div className="text-white/40 text-xs uppercase tracking-widest">22K</div>
+                <div className="text-white text-xl font-semibold">{`$${rate.rate_22k.toFixed(2)}`}</div>
+              </div>
+              <div>
+                <div className="text-white/40 text-xs uppercase tracking-widest">21K</div>
+                <div className="text-white text-xl font-semibold">{`$${rate.rate_21k.toFixed(2)}`}</div>
+              </div>
+              <div>
+                <div className="text-white/40 text-xs uppercase tracking-widest">18K</div>
+                <div className="text-white text-xl font-semibold">{`$${rate.rate_18k.toFixed(2)}`}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* TradingView real-time chart */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
@@ -164,13 +167,15 @@ export default function GoldPricePage() {
         <div className="mb-4">
           <CalendarFilter value={cal} onChange={setCal} />
         </div>
-        {history && history.length === 0 ? (
+        {!history ? (
+          <Skeleton className="h-[200px]" />
+        ) : history.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-sm text-gray-400">
             No polled rates for this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={history ?? []}>
+            <AreaChart data={history}>
               <defs>
                 <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
