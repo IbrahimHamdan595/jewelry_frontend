@@ -32,11 +32,21 @@ export default function EditProductPage() {
             <Skeleton className="h-5 w-16" />
           </div>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <Skeleton className="h-5 w-56" />
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-3 w-72" />
+          </div>
+          <Skeleton className="h-9 w-20" />
         </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <SkeletonText lines={8} />
+        <div className="grid grid-cols-5 gap-6">
+          <div className="col-span-3 space-y-4">
+            <SkeletonText lines={10} />
+          </div>
+          <div className="col-span-2 space-y-3">
+            <Skeleton className="h-40" />
+            <Skeleton className="h-10 w-32" />
+          </div>
         </div>
       </div>
     );
