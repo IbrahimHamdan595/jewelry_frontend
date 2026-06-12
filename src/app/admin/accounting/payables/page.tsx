@@ -87,21 +87,19 @@ export default function Payables() {
         </div>
       )}
 
-      {!loading && (
-        <SectionCard title={a.title} flush>
-          <DataTable
-            columns={[
-              { key: "name", label: a.colSupplier },
-              { key: "cash_owed", label: a.colCashOwed, align: "end", render: (s: Supplier) => <Money value={s.cash_owed} dash /> },
-              { key: "gold_owed", label: a.colGoldOwed, render: (s: Supplier) => goldByKarat(s.gold_owed_by_karat) || <span className="tabular-nums text-gray-300">—</span> },
-            ]}
-            rows={sups}
-            rowKey={(s) => s.id}
-            empty={a.empty}
-            loading={loading}
-          />
-        </SectionCard>
-      )}
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "name", label: a.colSupplier },
+            { key: "cash_owed", label: a.colCashOwed, align: "end", render: (s: Supplier) => <Money value={s.cash_owed} dash /> },
+            { key: "gold_owed", label: a.colGoldOwed, render: (s: Supplier) => goldByKarat(s.gold_owed_by_karat) || <span className="tabular-nums text-gray-300">—</span> },
+          ]}
+          rows={sups}
+          rowKey={(s) => s.id}
+          empty={a.empty}
+          loading={loading}
+        />
+      </SectionCard>
     </div>
   );
 }

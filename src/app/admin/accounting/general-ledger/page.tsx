@@ -28,6 +28,7 @@ export default function GeneralLedger() {
   const [end, setEnd] = useState(today());
   const [gl, setGl] = useState<GLDrilldown | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
   useEffect(() => {
     accounting.listAccounts()
@@ -45,8 +46,10 @@ export default function GeneralLedger() {
   async function run() {
     setError(null);
     if (!accountId) return;
+    setRunning(true);
     try { setGl(await accounting.generalLedger(accountId, start, end)); }
     catch (e) { setError((e as Error).message); }
+    finally { setRunning(false); }
   }
 
   async function dl() {
@@ -92,7 +95,7 @@ export default function GeneralLedger() {
         </select>
         <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-44" />
         <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-44" />
-        <Button onClick={run} disabled={!accountId}>{c.run}</Button>
+        <Button onClick={run} disabled={!accountId || running}>{c.run}</Button>
         <Button variant="outline" onClick={dl} disabled={!gl}>{c.downloadExcel}</Button>
       </ActionBar>
 
@@ -115,6 +118,7 @@ export default function GeneralLedger() {
           rowKey={(r: GLDrilldownRow, i: number) => `${r.entry_id}-${i}`}
           empty={a.empty}
           minWidth={showGrams ? 900 : 640}
+          loading={running}
         />
       </SectionCard>
     </div>
