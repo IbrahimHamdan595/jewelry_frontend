@@ -12,6 +12,7 @@ import type {
   PurchaseListResponse,
   BuybackListResponse,
 } from "@/types/api";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 type Tab = "sell" | "purchases" | "buybacks";
 
@@ -117,7 +118,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
               </tr>
             </thead>
             <tbody>
-              {!data && <tr><td colSpan={8} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>}
+              {!data && <TableSkeleton cols={8} />}
               {data && data.items.length === 0 && <EmptyRow cols={8} label="No orders for this period" />}
               {data?.items.map((o) => (
                 <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/50">
@@ -161,7 +162,7 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
             </tr>
           </thead>
           <tbody>
-            {!data && <tr><td colSpan={7} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>}
+            {!data && <TableSkeleton cols={7} />}
             {data && data.items.length === 0 && <EmptyRow cols={7} label="No supplier purchases for this period" />}
             {data?.items.map((p) => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
@@ -207,7 +208,7 @@ function BuybacksTab({ cal }: { cal: CalendarValue }) {
             </tr>
           </thead>
           <tbody>
-            {!data && <tr><td colSpan={7} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>}
+            {!data && <TableSkeleton cols={7} />}
             {data && data.items.length === 0 && <EmptyRow cols={7} label="No buybacks for this period" />}
             {data?.items.map((b) => (
               <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50/50">
