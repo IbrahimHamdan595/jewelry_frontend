@@ -48,7 +48,7 @@ export default function Tax() {
 
       <SectionCard
         title={a.taxCodes}
-        actions={codes.length === 0 && <Button variant="outline" onClick={seed}>{a.seedCodes}</Button>}
+        actions={!loading && codes.length === 0 && <Button variant="outline" onClick={seed}>{a.seedCodes}</Button>}
         flush
       >
         <DataTable
