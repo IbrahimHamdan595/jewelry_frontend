@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { Plus, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import type { Category } from "@/types/api";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 export default function CategoriesPage() {
   const { data: categories, mutate } = useSWR<Category[]>(
@@ -118,7 +119,23 @@ export default function CategoriesPage() {
       )}
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!categories?.length ? (
+        {!categories ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Name</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Slug</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Status</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <TableSkeleton cols={4} />
+              </tbody>
+            </table>
+          </div>
+        ) : !categories?.length ? (
           <div className="p-8 text-center text-gray-400 text-sm">No categories yet</div>
         ) : (
           <div className="overflow-x-auto">
