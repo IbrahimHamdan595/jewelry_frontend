@@ -5,6 +5,7 @@ import { kpis } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { StatTile } from "@/components/accounting/StatTile";
@@ -56,6 +57,14 @@ export default function Kpis() {
           {a.downloadExcel}
         </Button>
       </ActionBar>
+
+      {!data && !error && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      )}
 
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
