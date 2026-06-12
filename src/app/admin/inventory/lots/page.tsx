@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { Plus, Sliders, History } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
   Karat,
   Lot,
@@ -45,7 +46,8 @@ export default function LotsPage() {
       {/* Per-karat pool totals */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {KARATS.map((k) => {
-          const row = totals?.by_karat.find((r) => r.karat === k);
+          if (!totals) return <CardSkeleton key={k} />;
+          const row = totals.by_karat.find((r) => r.karat === k);
           return (
             <div
               key={k}
@@ -117,37 +119,41 @@ export default function LotsPage() {
 
       {/* Lot list */}
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!data?.items.length ? (
-          <div className="p-8 text-center text-gray-400 text-sm">
-            No lots {karatFilter ? `in ${karatFilter}` : "yet"}
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-100">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Karat
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Remaining / Original
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Source
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Cost basis
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Acquired
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Status
+              </th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {!data ? (
+              <TableSkeleton cols={7} />
+            ) : !data.items.length ? (
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Karat
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Remaining / Original
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Source
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Cost basis
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Acquired
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Status
-                </th>
-                <th className="px-4 py-3" />
+                <td colSpan={7} className="p-8 text-center text-gray-400 text-sm">
+                  No lots {karatFilter ? `in ${karatFilter}` : "yet"}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data.items.map((lot) => (
+            ) : (
+              data.items.map((lot) => (
                 <tr key={lot.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <span className="inline-block px-2 py-0.5 rounded bg-gold/10 text-gold text-xs font-medium">
@@ -191,10 +197,10 @@ export default function LotsPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {adjustLot && (

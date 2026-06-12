@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
   Karat,
   MarginMode,
@@ -102,40 +103,44 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
       )}
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!data?.items.length ? (
-          <div className="p-8 text-center text-gray-400 text-sm">
-            No {plural.toLowerCase()} yet
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-100">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Code
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Name
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Karat
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Weight
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Markup / Margin
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                On hand
+              </th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                Min
+              </th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {!data ? (
+              <TableSkeleton cols={8} />
+            ) : !data.items.length ? (
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Code
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Name
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Karat
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Weight
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Markup / Margin
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  On hand
-                </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Min
-                </th>
-                <th className="px-4 py-3" />
+                <td colSpan={8} className="p-8 text-center text-gray-400 text-sm">
+                  No {plural.toLowerCase()} yet
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data.items.map((row) => {
+            ) : (
+              data.items.map((row) => {
                 const low =
                   row.min_stock_qty !== null && row.on_hand_qty <= row.min_stock_qty;
                 return (
@@ -220,10 +225,10 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       {adjustRow && (
