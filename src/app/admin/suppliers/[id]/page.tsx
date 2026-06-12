@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { ArrowLeft, Plus, Banknote, Coins } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
+import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import type {
   Karat,
   Lot,
@@ -24,7 +25,31 @@ export default function SupplierDetailPage() {
   const [payGold, setPayGold] = useState(false);
 
   if (!data) {
-    return <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-4 w-36" />
+        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+          <SkeletonText lines={6} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+            <SkeletonText lines={4} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+            <SkeletonText lines={4} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const { supplier, balances, purchases, payments } = data;

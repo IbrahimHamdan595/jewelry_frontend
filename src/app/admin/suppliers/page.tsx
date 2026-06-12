@@ -4,6 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { Plus, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import type { Supplier, SupplierListResponse } from "@/types/api";
 
 export default function SuppliersPage() {
@@ -71,7 +72,25 @@ export default function SuppliersPage() {
       )}
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!data?.items.length ? (
+        {!data ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Name</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Contact</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Phone</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Terms</th>
+                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Status</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <TableSkeleton cols={6} />
+              </tbody>
+            </table>
+          </div>
+        ) : !data.items.length ? (
           <div className="p-8 text-center text-gray-400 text-sm">No suppliers yet</div>
         ) : (
           <div className="overflow-x-auto">
