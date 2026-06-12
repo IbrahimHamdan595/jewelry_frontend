@@ -3,6 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { Banknote, Coins, Users } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
 import type { AccountsPayable } from "@/types/api";
 
@@ -12,7 +13,22 @@ export default function AccountsPayablePage() {
   });
 
   if (!data) {
-    return <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />;
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-white shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <tbody>
+              <TableSkeleton cols={4} />
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   }
 
   const goldKarats = Object.entries(data.total_grams_owed_by_karat).filter(

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
+import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import { formatUSD, formatLBP, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
@@ -32,7 +33,16 @@ export default function OrderDetailPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!order) return <div className="animate-pulse h-64 bg-gray-100 rounded-lg" />;
+  if (!order)
+    return (
+      <div className="max-w-3xl space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+          <SkeletonText lines={8} />
+        </div>
+        <CardSkeleton />
+      </div>
+    );
 
   const canModify = order.status === "COMPLETED";
   const canRefundItems = order.status === "COMPLETED" || order.status === "PARTIALLY_REFUNDED";

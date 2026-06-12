@@ -69,7 +69,11 @@ export default function StockTakeIndexPage() {
       )}
 
       {!data ? (
-        <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
+          ))}
+        </div>
       ) : items.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-10 text-center">
           <ClipboardCheck className="w-12 h-12 text-gray-300 mx-auto mb-3" />

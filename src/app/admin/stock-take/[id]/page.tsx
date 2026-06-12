@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Info, Lock,
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
   StockTake, StockTakeLine, StockTakeRefType,
 } from "@/types/stock-take";
@@ -32,7 +33,18 @@ export default function StockTakeDetailPage({ params }: Props) {
     );
   }
   if (!take) {
-    return <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="rounded-lg border border-gray-100 bg-white shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <tbody>
+              <TableSkeleton cols={6} rows={8} />
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   }
 
   return (
