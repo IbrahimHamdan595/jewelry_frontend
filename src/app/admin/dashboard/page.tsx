@@ -9,6 +9,7 @@ import { KaratBadge } from "@/components/shared/KaratBadge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useLang } from "@/context/LanguageContext";
 import { MarketClosedBanner } from "@/components/shared/MarketClosedBanner";
+import { Skeleton, SkeletonText, CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type { DashboardData } from "@/types/api";
 
 export default function DashboardPage() {
@@ -16,7 +17,7 @@ export default function DashboardPage() {
   const { t } = useLang();
 
   if (isLoading || !data) {
-    return <div className="space-y-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 bg-gray-200 animate-pulse rounded-lg" />)}</div>;
+    return <DashboardSkeleton />;
   }
 
   const weekDelta = data.prev_week_revenue > 0
@@ -406,6 +407,60 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+      {/* jeweler headline KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
+            <div className="mb-3 h-3 w-32 animate-pulse rounded bg-gray-100" />
+            <SkeletonText lines={3} />
+          </div>
+        ))}
+      </div>
+      {/* chart + top sellers */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
+          <div className="mb-4 h-3 w-40 animate-pulse rounded bg-gray-100" />
+          <Skeleton className="h-64" />
+        </div>
+        <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
+          <div className="mb-4 h-3 w-28 animate-pulse rounded bg-gray-100" />
+          <SkeletonText lines={6} />
+        </div>
+      </div>
+      {/* inventory pulse */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+      {/* money pulse */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+      {/* recent orders table */}
+      <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
+        <div className="m-4 h-3 w-32 animate-pulse rounded bg-gray-100" />
+        <table className="w-full text-sm">
+          <tbody>
+            <TableSkeleton cols={5} rows={5} />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
