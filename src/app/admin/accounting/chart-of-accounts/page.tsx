@@ -38,7 +38,7 @@ export default function ChartOfAccounts() {
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
       {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {accounts.length === 0 && (
+      {!loading && accounts.length === 0 && (
         <ActionBar>
           <Button onClick={seed}>{a.seedBtn}</Button>
         </ActionBar>

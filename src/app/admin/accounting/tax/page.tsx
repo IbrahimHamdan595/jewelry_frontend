@@ -23,6 +23,7 @@ export default function Tax() {
   const c = t.accounting.common;
 
   const [codes, setCodes] = useState<TaxCodeT[]>([]);
+  const [loading, setLoading] = useState(true);
   const [ret, setRet] = useState<Awaited<ReturnType<typeof tax.vatReturn>> | null>(null);
   const [year, setYear] = useState(2026);
   const [quarter, setQuarter] = useState(2);
@@ -30,6 +31,7 @@ export default function Tax() {
 
   async function loadCodes() {
     try { setCodes((await tax.listCodes()).items); } catch (e) { setError((e as Error).message); }
+    finally { setLoading(false); }
   }
   useEffect(() => { loadCodes(); }, []);
 
@@ -58,6 +60,7 @@ export default function Tax() {
           rows={codes}
           rowKey={(r) => r.id}
           empty={c.noData}
+          loading={loading}
         />
       </SectionCard>
 

@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
-import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,19 +106,10 @@ export default function Receivables() {
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {loading && !aging && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <CardSkeleton key={i} />
-            ))}
-          </div>
-          <div className="rounded-lg border border-gray-100 bg-white shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody>
-                <TableSkeleton cols={4} />
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       )}
 
