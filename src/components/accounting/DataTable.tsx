@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 export interface Column<T> {
   key: string;
@@ -17,6 +18,8 @@ interface DataTableProps<T> {
   /** min table width before horizontal scroll kicks in */
   minWidth?: number;
   className?: string;
+  /** show skeleton rows instead of empty/rows */
+  loading?: boolean;
 }
 
 /**
@@ -24,7 +27,7 @@ interface DataTableProps<T> {
  * right-aligned tabular numbers via `align: "end"`, built-in empty state,
  * horizontal scroll on small screens. RTL-safe (text-start/text-end).
  */
-export function DataTable<T>({ columns, rows, rowKey, empty, minWidth = 540, className }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, empty, minWidth = 540, className, loading }: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto">
       <table className={cn("w-full text-sm", className)} style={{ minWidth }}>
@@ -44,7 +47,9 @@ export function DataTable<T>({ columns, rows, rowKey, empty, minWidth = 540, cla
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {loading ? (
+            <TableSkeleton cols={columns.length} />
+          ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-10 text-center text-sm text-gray-400">
                 {empty}
