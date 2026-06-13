@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import useSWR from "swr";
-import { Flame, Recycle, AlertCircle } from "lucide-react";
+import { Flame, Recycle, AlertCircle, Gem } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { ProductForm } from "@/components/admin/ProductForm";
@@ -77,6 +77,33 @@ export default function EditProductPage() {
           )}
         </div>
       </div>
+
+      {/* Stone / diamond section — only when stone data is present */}
+      {(product.stone_value_usd != null || product.stone_carats != null || product.stone_count != null || product.stone_cert != null || product.stone_note != null) && (
+        <div className="bg-sky-50 border border-sky-100 shadow-sm rounded-lg p-4">
+          <div className="text-sm font-medium text-sky-800 flex items-center gap-2 mb-2">
+            <Gem className="w-4 h-4" />
+            Stone / Diamond Details
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-sky-900">
+            {product.stone_carats != null && (
+              <span><span className="text-sky-500 font-medium">Carats:</span> {product.stone_carats} ct</span>
+            )}
+            {product.stone_count != null && (
+              <span><span className="text-sky-500 font-medium">Stone count:</span> {product.stone_count}</span>
+            )}
+            {product.stone_cert != null && product.stone_cert !== "" && (
+              <span><span className="text-sky-500 font-medium">Certificate:</span> {product.stone_cert}</span>
+            )}
+            {product.stone_value_usd != null && (
+              <span><span className="text-sky-500 font-medium">Stone value:</span> {formatUSD(product.stone_value_usd)}</span>
+            )}
+            {product.stone_note != null && product.stone_note !== "" && (
+              <span className="w-full mt-1"><span className="text-sky-500 font-medium">Note:</span> {product.stone_note}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Melt action */}
       <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-4 flex items-center justify-between">

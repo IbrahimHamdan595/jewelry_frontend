@@ -25,6 +25,14 @@ interface FormValues {
   making_charge: number;
   on_hand_qty: number;
   min_stock_qty: number | null;
+  // Stone / diamond fields
+  has_stones: boolean;
+  stone_value_usd: number;
+  stone_cost_usd: number;
+  stone_carats: number;
+  stone_count: number | null;
+  stone_cert: string;
+  stone_note: string;
 }
 
 interface Props {
@@ -61,8 +69,30 @@ export function ProductForm({ initial, onSave }: Props) {
           making_charge: Number(initial.making_charge),
           on_hand_qty: Number(initial.on_hand_qty ?? 1),
           min_stock_qty: initial.min_stock_qty ?? null,
+          has_stones: Boolean(initial.stone_value_usd),
+          stone_value_usd: Number(initial.stone_value_usd ?? 0),
+          stone_cost_usd: Number(initial.stone_cost_usd ?? 0),
+          stone_carats: Number(initial.stone_carats ?? 0),
+          stone_count: initial.stone_count ?? null,
+          stone_cert: initial.stone_cert ?? "",
+          stone_note: initial.stone_note ?? "",
         }
-      : { karat: "K21", margin_percent: 15, making_charge: 25, weight_grams: 0, category_id: "", on_hand_qty: 1, min_stock_qty: null },
+      : {
+          karat: "K21",
+          margin_percent: 15,
+          making_charge: 25,
+          weight_grams: 0,
+          category_id: "",
+          on_hand_qty: 1,
+          min_stock_qty: null,
+          has_stones: false,
+          stone_value_usd: 0,
+          stone_cost_usd: 0,
+          stone_carats: 0,
+          stone_count: null,
+          stone_cert: "",
+          stone_note: "",
+        },
   });
 
   const watched = useWatch({ control });
@@ -81,6 +111,7 @@ export function ProductForm({ initial, onSave }: Props) {
         marginPercent: Number(watched.margin_percent ?? 0),
         makingCharge: Number(watched.making_charge ?? 0),
         karatMarkup: markupMap[watched.karat ?? ""] ?? 0,
+        stoneValue: watched.has_stones ? Number(watched.stone_value_usd || 0) : 0,
       })
     : null;
 
@@ -134,8 +165,9 @@ export function ProductForm({ initial, onSave }: Props) {
   return (
     <div className="grid grid-cols-5 gap-6">
       <form
-        onSubmit={handleSubmit((data) =>
-          onSave({
+        onSubmit={handleSubmit((data) => {
+          const hasStones = data.has_stones;
+          return onSave({
             ...data,
             // Empty min-stock field arrives as NaN — normalize to null (no alert).
             min_stock_qty:
@@ -143,9 +175,18 @@ export function ProductForm({ initial, onSave }: Props) {
                 ? null
                 : Number(data.min_stock_qty),
             on_hand_qty: Number.isNaN(data.on_hand_qty) ? 0 : Number(data.on_hand_qty),
+            // Stone fields: send typed values when has_stones is true, null when false.
+            stone_value_usd: hasStones ? (Number(data.stone_value_usd) || 0) : (null as any),
+            stone_cost_usd: hasStones ? (Number(data.stone_cost_usd) || 0) : (null as any),
+            stone_carats: hasStones ? (Number(data.stone_carats) || 0) : (null as any),
+            stone_count: hasStones
+              ? (data.stone_count == null || Number.isNaN(data.stone_count) ? null : Number(data.stone_count))
+              : null,
+            stone_cert: hasStones ? (data.stone_cert || null as any) : (null as any),
+            stone_note: hasStones ? (data.stone_note || null as any) : (null as any),
             photos,
-          }),
-        )}
+          });
+        })}
         className="col-span-3 space-y-5"
       >
         {initial && (
@@ -228,6 +269,87 @@ export function ProductForm({ initial, onSave }: Props) {
             <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Low-stock alert at (optional)</label>
             <input type="number" step="1" min="0" placeholder="No alert" {...register("min_stock_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
           </div>
+        </div>
+
+        {/* Diamond / stone fields */}
+        {/* TODO(ar): stone labels */}
+        <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              {...register("has_stones")}
+              className="h-4 w-4 rounded border-gray-300 accent-gold cursor-pointer"
+            />
+            <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">Has diamonds / stones</span>
+          </label>
+
+          {watched.has_stones && (
+            <div className="space-y-4 pt-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone value (USD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register("stone_value_usd", { valueAsNumber: true })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone cost (USD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register("stone_cost_usd", { valueAsNumber: true })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Carats</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register("stone_carats", { valueAsNumber: true })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone count</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="Optional"
+                    {...register("stone_count", { valueAsNumber: true })}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Certificate #</label>
+                <input
+                  type="text"
+                  placeholder="GIA-123456 (optional)"
+                  {...register("stone_cert")}
+                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone note</label>
+                <input
+                  type="text"
+                  placeholder="e.g. VS1 clarity, G colour (optional)"
+                  {...register("stone_note")}
+                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Image upload */}
@@ -364,6 +486,12 @@ export function ProductForm({ initial, onSave }: Props) {
                 <span>Making charge</span>
                 <span>+{formatUSD(Number(watched.making_charge ?? 0))}</span>
               </div>
+              {priced.stoneValue > 0 && (
+                <div className="flex justify-between text-white/40">
+                  <span>Stones</span>
+                  <span>+{formatUSD(priced.stoneValue)}</span>
+                </div>
+              )}
               <div className="border-t border-white/10 pt-2 flex justify-between text-gold font-serif text-lg font-bold">
                 <span>Retail Price</span>
                 <span>{formatUSD(priced.finalPrice)}</span>

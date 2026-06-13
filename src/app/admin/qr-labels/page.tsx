@@ -244,6 +244,9 @@ export default function QRLabelsPage() {
                 </div>
                 <div className="text-[9px] text-gray-500">
                   {preview.weight_grams}g · {preview.karat}
+                  {preview.stone_carats != null
+                    ? ` · 💎 ${preview.stone_carats}ct${preview.stone_cert ? ` · ${preview.stone_cert}` : ""}`
+                    : ""}
                 </div>
               </div>
             ) : (
@@ -295,6 +298,9 @@ export default function QRLabelsPage() {
             </div>
             <div style={{ fontSize: "7.5pt", color: "#555" }}>
               {p.weight_grams}g · {p.karat}
+              {p.stone_carats != null
+                ? ` · 💎 ${p.stone_carats}ct${p.stone_cert ? ` · ${p.stone_cert}` : ""}`
+                : ""}
             </div>
           </div>
         ))}
