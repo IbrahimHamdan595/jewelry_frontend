@@ -24,6 +24,7 @@ export function calculatePrice(params: {
   marginPercent: number;
   makingCharge: number;
   karatMarkup?: number;
+  stoneValue?: number;
 }) {
   const purity = KARAT_PURITY[params.karat] ?? 0.999;
   const purityRate = params.rate24k * purity;
@@ -31,12 +32,13 @@ export function calculatePrice(params: {
   const metalValue = effectiveRate * params.weightGrams;
   const marginAmount = metalValue * (params.marginPercent / 100);
   const withMargin = metalValue + marginAmount;
-  const finalPrice = withMargin + params.makingCharge;
+  const finalPrice = withMargin + params.makingCharge + (params.stoneValue ?? 0);
   return {
     purityRate: round(purityRate),
     effectiveRate: round(effectiveRate),
     metalValue: round(metalValue),
     marginAmount: round(marginAmount),
+    stoneValue: round(params.stoneValue ?? 0),
     finalPrice: round(finalPrice),
   };
 }

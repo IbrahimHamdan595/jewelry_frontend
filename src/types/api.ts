@@ -39,6 +39,13 @@ export interface Product {
   status: ProductStatus;
   source_ref_type: string | null;
   source_ref_id: string | null;
+  // Diamond / stone fields (feat/diamond-products)
+  stone_value_usd: number | null;
+  stone_cost_usd: number | null;
+  stone_carats: number | null;
+  stone_count: number | null;
+  stone_cert: string | null;
+  stone_note: string | null;
   created_at: string;
   updated_at: string;
 }
