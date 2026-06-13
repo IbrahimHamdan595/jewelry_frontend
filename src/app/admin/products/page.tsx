@@ -80,6 +80,9 @@ export default function ProductsPage() {
                       {p.is_used && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">USED</span>
                       )}
+                      {p.stone_value_usd != null && p.stone_value_usd > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">💎 Stones</span>
+                      )}
                       {p.status !== "AVAILABLE" && (
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                           p.status === "SOLD" ? "bg-blue-50 text-blue-700" :

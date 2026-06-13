@@ -198,6 +198,16 @@ export interface Translations {
     checkout: string;
   };
 
+  products: {
+    stones: string;
+    carats: string;
+    stoneCount: string;
+    certificate: string;
+    stoneValue: string;
+    stoneNote: string;
+    stoneDetails: string;
+  };
+
   accounting: {
     common: {
       run: string; downloadExcel: string; downloadPdf: string; statement: string; pdf: string; seed: string; record: string; create: string;
@@ -504,6 +514,16 @@ const en: Translations = {
     customer: "Customer",
     customerName: "Customer Name",
     checkout: "Checkout",
+  },
+
+  products: {
+    stones: "Stones",
+    carats: "Carats",
+    stoneCount: "Stone count",
+    certificate: "Certificate",
+    stoneValue: "Stone value",
+    stoneNote: "Note",
+    stoneDetails: "Stone / Diamond Details",
   },
 
   accounting: {

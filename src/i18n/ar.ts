@@ -203,6 +203,17 @@ const ar: Translations = {
     checkout: "إتمام الشراء",
   },
 
+  // TODO(ar): stone terms — Arabic gemological terminology to be verified by native speaker
+  products: {
+    stones: "Stones", // TODO(ar): stone terms
+    carats: "Carats", // TODO(ar): stone terms
+    stoneCount: "Stone count", // TODO(ar): stone terms
+    certificate: "Certificate", // TODO(ar): stone terms
+    stoneValue: "Stone value", // TODO(ar): stone terms
+    stoneNote: "Note", // TODO(ar): stone terms
+    stoneDetails: "Stone / Diamond Details", // TODO(ar): stone terms
+  },
+
   accounting: {
     common: {
       run: "تشغيل", downloadExcel: "تنزيل Excel", downloadPdf: "تنزيل PDF", statement: "كشف حساب", pdf: "PDF", seed: "تهيئة", record: "تسجيل", create: "إنشاء",

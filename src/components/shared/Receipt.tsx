@@ -133,6 +133,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
               <span className="flex-1 truncate pr-2">
                 {isAr && line.description_ar ? line.description_ar : line.description}
                 {num(line.quantity) > 1 ? ` ×${num(line.quantity)}` : ""}
+                {line.stone_value != null && line.stone_value > 0 ? " 💎" : ""}
               </span>
               <span className="font-bold">{formatUSD(line.line_total)}</span>
             </div>
@@ -142,6 +143,9 @@ export function Receipt({ data }: { data: ReceiptData }) {
                 line.karat,
                 line.weight_grams != null ? `${line.weight_grams}g` : null,
                 line.unit_price != null && num(line.quantity) > 1 ? `@ ${formatUSD(line.unit_price)}` : null,
+                line.stone_value != null && line.stone_value > 0
+                  ? `${isAr ? "أحجار" : "Stones"}: ${formatUSD(line.stone_value)}`
+                  : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}

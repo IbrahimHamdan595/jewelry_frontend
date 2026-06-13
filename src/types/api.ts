@@ -556,6 +556,7 @@ export interface ReceiptLine {
   quantity: number | string | null;
   unit_price: number | string | null;
   line_total: number | string;
+  stone_value?: number | null;
 }
 
 export interface ReceiptTotals {
