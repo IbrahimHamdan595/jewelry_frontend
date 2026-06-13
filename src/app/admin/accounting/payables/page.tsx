@@ -7,7 +7,7 @@ import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { DataTable } from "@/components/accounting/DataTable";
-import { Loading } from "@/components/accounting/Loading";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 
 type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
@@ -59,7 +59,22 @@ export default function Payables() {
       />
       {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {loading && !aging && <Loading label={t.common.loading} />}
+      {loading && !aging && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+          <div className="rounded-lg border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody>
+                <TableSkeleton cols={3} />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {aging && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -72,20 +87,19 @@ export default function Payables() {
         </div>
       )}
 
-      {!loading && (
-        <SectionCard title={a.title} flush>
-          <DataTable
-            columns={[
-              { key: "name", label: a.colSupplier },
-              { key: "cash_owed", label: a.colCashOwed, align: "end", render: (s: Supplier) => <Money value={s.cash_owed} dash /> },
-              { key: "gold_owed", label: a.colGoldOwed, render: (s: Supplier) => goldByKarat(s.gold_owed_by_karat) || <span className="tabular-nums text-gray-300">—</span> },
-            ]}
-            rows={sups}
-            rowKey={(s) => s.id}
-            empty={a.empty}
-          />
-        </SectionCard>
-      )}
+      <SectionCard title={a.title} flush>
+        <DataTable
+          columns={[
+            { key: "name", label: a.colSupplier },
+            { key: "cash_owed", label: a.colCashOwed, align: "end", render: (s: Supplier) => <Money value={s.cash_owed} dash /> },
+            { key: "gold_owed", label: a.colGoldOwed, render: (s: Supplier) => goldByKarat(s.gold_owed_by_karat) || <span className="tabular-nums text-gray-300">—</span> },
+          ]}
+          rows={sups}
+          rowKey={(s) => s.id}
+          empty={a.empty}
+          loading={loading}
+        />
+      </SectionCard>
     </div>
   );
 }

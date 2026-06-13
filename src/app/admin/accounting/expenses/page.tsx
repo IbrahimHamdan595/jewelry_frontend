@@ -25,6 +25,7 @@ export default function Expenses() {
   const [accts, setAccts] = useState<ExpenseAccountT[]>([]);
   const [taxCodes, setTaxCodes] = useState<TaxCodeT[]>([]);
   const [bills, setBills] = useState<Awaited<ReturnType<typeof expenses.listBills>>["items"]>([]);
+  const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState<Awaited<ReturnType<typeof expenses.byCategory>> | null>(null);
   const [tie, setTie] = useState<{ gl: string; subledger: string; matches: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function Expenses() {
       setCat(await expenses.byCategory(firstOfMonth(), today()));
       setTie(await expenses.verify());
     } catch (e) { setError((e as Error).message); }
+    finally { setLoading(false); }
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   useEffect(() => {
@@ -130,6 +132,7 @@ export default function Expenses() {
           rows={bills}
           rowKey={(b) => b.id}
           empty={a.empty}
+          loading={loading}
         />
       </SectionCard>
 

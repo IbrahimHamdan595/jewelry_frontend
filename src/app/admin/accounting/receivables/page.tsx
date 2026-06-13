@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
-import { Loading } from "@/components/accounting/Loading";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +105,13 @@ export default function Receivables() {
       />
       {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {loading && !aging && <Loading label={t.common.loading} />}
+      {loading && !aging && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      )}
 
       {aging && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -147,6 +153,7 @@ export default function Receivables() {
           rows={customers}
           rowKey={(r) => r.id}
           empty={a.empty}
+          loading={loading}
         />
       </SectionCard>
 

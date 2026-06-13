@@ -6,6 +6,7 @@ import { Flame, Recycle, AlertCircle } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import type { Karat, Product, ProductStatus } from "@/types/api";
 
 const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
@@ -21,7 +22,34 @@ export default function EditProductPage() {
     router.push("/admin/products");
   }
 
-  if (!product) return <div className="animate-pulse h-64 bg-gray-100 rounded-lg" />;
+  if (!product)
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-3 w-72" />
+          </div>
+          <Skeleton className="h-9 w-20" />
+        </div>
+        <div className="grid grid-cols-5 gap-6">
+          <div className="col-span-3 space-y-4">
+            <SkeletonText lines={10} />
+          </div>
+          <div className="col-span-2 space-y-3">
+            <Skeleton className="h-40" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+      </div>
+    );
 
   const meltable =
     product.status === "AVAILABLE" || product.status === "INACTIVE";

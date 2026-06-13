@@ -20,6 +20,7 @@ export default function BankPage() {
   const c = t.accounting.common;
 
   const [accounts, setAccounts] = useState<BankAccountT[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [ccy, setCcy] = useState("USD");
@@ -34,6 +35,7 @@ export default function BankPage() {
   async function load() {
     try { setAccounts((await bank.cashPosition()).accounts); }
     catch (e) { setError((e as Error).message); }
+    finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -75,6 +77,7 @@ export default function BankPage() {
           rows={accounts}
           rowKey={(r) => r.id}
           empty={a.empty}
+          loading={loading}
         />
       </SectionCard>
 

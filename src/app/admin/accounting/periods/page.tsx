@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -19,6 +20,7 @@ export default function PeriodsPage() {
   const c = t.accounting.common;
 
   const [periods, setPeriods] = useState<Period[]>([]);
+  const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(6);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,10 @@ export default function PeriodsPage() {
   const [preview, setPreview] = useState<YearPreviewT | null>(null);
   const [yearMsg, setYearMsg] = useState<string | null>(null);
 
-  async function load() { setPeriods((await accounting.listPeriods()).items); }
+  async function load() {
+    try { setPeriods((await accounting.listPeriods()).items); }
+    finally { setLoading(false); }
+  }
   useEffect(() => { load(); }, []);
 
   async function open() {
@@ -105,7 +110,7 @@ export default function PeriodsPage() {
               </tr>
             </thead>
             <tbody>
-              {periods.map((p) => {
+              {loading ? <TableSkeleton cols={4} /> : periods.map((p) => {
                 const r = checking[p.id];
                 return (
                   <Fragment key={p.id}>
@@ -142,7 +147,8 @@ export default function PeriodsPage() {
                     )}
                   </Fragment>
                 );
-              })}
+              })
+              }
             </tbody>
           </table>
         </div>

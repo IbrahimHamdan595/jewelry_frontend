@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/utils";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
   LedgerEntry,
   LedgerListResponse,
@@ -226,26 +227,28 @@ function LedgerBrowser() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-sm text-gray-400">Loading…</div>
-        ) : !data?.items.length ? (
-          <div className="p-8 text-center text-sm text-gray-400">No events match these filters.</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-100">
+            <tr>
+              <th className="w-6" />
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Event</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Ref</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Actor</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Occurred</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading ? (
+              <TableSkeleton cols={5} />
+            ) : !data?.items.length ? (
               <tr>
-                <th className="w-6" />
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Event</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Ref</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Actor</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Occurred</th>
+                <td colSpan={5} className="p-8 text-center text-sm text-gray-400">No events match these filters.</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data.items.map((entry) => <LedgerRow key={entry.id} entry={entry} />)}
-            </tbody>
-          </table>
-        )}
+            ) : (
+              data.items.map((entry) => <LedgerRow key={entry.id} entry={entry} />)
+            )}
+          </tbody>
+        </table>
       </div>
 
       {data && data.total > pageSize && (

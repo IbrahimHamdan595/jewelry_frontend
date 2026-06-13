@@ -2,6 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { Plus, Edit2, Trash2, QrCode, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD, KARAT_LABEL } from "@/lib/utils";
@@ -67,9 +68,7 @@ export default function ProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {!data && Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i}><td colSpan={9} className="px-4 py-3"><div className="h-4 bg-gray-100 animate-pulse rounded" /></td></tr>
-            ))}
+            {!data && <TableSkeleton cols={9} />}
             {data?.items.map((p) => {
               const priced = rate ? calculatePrice({ rate24k: rate.rate_24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;
               return (

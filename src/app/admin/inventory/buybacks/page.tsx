@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { Sparkles, Flame, AlertCircle } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD, formatDateTime } from "@/lib/utils";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
   BuybackKind,
   BuybackListResponse,
@@ -60,35 +61,39 @@ export default function BuybacksTab() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-400">
-            No buybacks {kindFilter ? `of kind ${kindFilter}` : ""} {pendingOnly ? "pending action" : ""}.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-100">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">When</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Kind</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Seller</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Detail</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Price paid</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Outcome</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {!data ? (
+              <TableSkeleton cols={7} />
+            ) : items.length === 0 ? (
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">When</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Kind</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Seller</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Detail</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Price paid</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Outcome</th>
-                <th className="px-4 py-3" />
+                <td colSpan={7} className="p-8 text-center text-sm text-gray-400">
+                  No buybacks {kindFilter ? `of kind ${kindFilter}` : ""} {pendingOnly ? "pending action" : ""}.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((b) => (
+            ) : (
+              items.map((b) => (
                 <BuybackRow
                   key={b.id}
                   buyback={b}
                   onPolish={() => setPolishFor(b)}
                   onMelt={() => setMeltFor(b)}
                 />
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {polishFor && (

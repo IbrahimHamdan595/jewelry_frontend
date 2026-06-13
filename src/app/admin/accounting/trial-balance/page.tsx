@@ -23,11 +23,14 @@ export default function TrialBalancePage() {
   const [asOf, setAsOf] = useState(today());
   const [tb, setTb] = useState<TrialBalance | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
   async function load() {
     setError(null);
+    setRunning(true);
     try { setTb(await accounting.trialBalance(asOf)); }
     catch (e) { setError((e as Error).message); }
+    finally { setRunning(false); }
   }
 
   const balanced = tb ? tb.balanced && tb.metal_balanced : false;
@@ -48,7 +51,7 @@ export default function TrialBalancePage() {
 
       <ActionBar>
         <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="w-44" />
-        <Button onClick={load}>{c.run}</Button>
+        <Button onClick={load} disabled={running}>{c.run}</Button>
         {tb && (
           <Button variant="outline" onClick={() => downloadFile(
             `/accounting/trial-balance?as_of=${asOf}&format=xlsx`, `trial-balance-${asOf}.xlsx`)}>
@@ -74,6 +77,7 @@ export default function TrialBalancePage() {
           rows={tb?.accounts ?? []}
           rowKey={(r) => r.account_id}
           empty={a.empty}
+          loading={running}
         />
       </SectionCard>
     </div>

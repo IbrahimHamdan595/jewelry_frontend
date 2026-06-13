@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
-import { Loading } from "@/components/accounting/Loading";
 import { Button } from "@/components/ui/button";
 
 export default function ChartOfAccounts() {
@@ -34,14 +33,12 @@ export default function ChartOfAccounts() {
     await load();
   }
 
-  if (loading) return <div className="p-6"><Loading label={t.common.loading} /></div>;
-
   return (
     <div className="p-6 space-y-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
       {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {accounts.length === 0 && (
+      {!loading && accounts.length === 0 && (
         <ActionBar>
           <Button onClick={seed}>{a.seedBtn}</Button>
         </ActionBar>
@@ -62,6 +59,7 @@ export default function ChartOfAccounts() {
           rows={accounts}
           rowKey={(r) => r.id}
           empty={a.empty}
+          loading={loading}
         />
       </SectionCard>
     </div>

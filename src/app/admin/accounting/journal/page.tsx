@@ -36,6 +36,7 @@ export default function Journal() {
 
   const [accounts, setAccounts] = useState<GLAccount[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lbpRate, setLbpRate] = useState("1");
   const [rows, setRows] = useState<Row[]>([{ ...EMPTY }, { ...EMPTY }]);
   const [entryDate, setEntryDate] = useState("");
@@ -44,9 +45,11 @@ export default function Journal() {
   const [ok, setOk] = useState<string | null>(null);
 
   async function load() {
-    const [acc, e] = await Promise.all([accounting.listAccounts(), accounting.listEntries()]);
-    setAccounts(acc.items);
-    setEntries(e.items);
+    try {
+      const [acc, e] = await Promise.all([accounting.listAccounts(), accounting.listEntries()]);
+      setAccounts(acc.items);
+      setEntries(e.items);
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -200,6 +203,7 @@ export default function Journal() {
           rows={entries}
           rowKey={(e) => e.id}
           empty={a.empty}
+          loading={loading}
         />
       </SectionCard>
     </div>

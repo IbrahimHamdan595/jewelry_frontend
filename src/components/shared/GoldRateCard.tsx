@@ -11,7 +11,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
         className={
           compact
             ? "h-10 w-64 animate-pulse bg-white/10 rounded"
-            : "h-24 animate-pulse bg-white/10 rounded"
+            : "h-28 animate-pulse bg-white/10 rounded"
         }
       />
     );

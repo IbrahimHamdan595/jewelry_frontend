@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
+import { SkeletonText } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,12 @@ export default function Statements() {
       </ActionBar>
 
       {error && <div className="text-sm text-red-600">{error}</div>}
+
+      {((tab === "pnl" && !pnl) || (tab === "bs" && !bs) || (tab === "cf" && !cf)) && !error && (
+        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+          <SkeletonText lines={12} />
+        </div>
+      )}
 
       {tab === "pnl" && pnl && (
         <SectionCard flush>
