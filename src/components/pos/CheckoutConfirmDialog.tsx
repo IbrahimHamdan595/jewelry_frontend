@@ -25,8 +25,8 @@ function Thumb({ url }: { url?: string }) {
   const [broken, setBroken] = useState(false);
   if (!url || broken) {
     return (
-      <div className="w-14 h-14 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-        <Gem className="w-5 h-5 text-pos-gray/50" />
+      <div className="w-24 h-24 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+        <Gem className="w-9 h-9 text-pos-gray/50" />
       </div>
     );
   }
@@ -37,7 +37,7 @@ function Thumb({ url }: { url?: string }) {
       alt=""
       loading="lazy"
       onError={() => setBroken(true)}
-      className="w-14 h-14 rounded object-cover border border-white/10 shrink-0"
+      className="w-24 h-24 rounded-lg object-cover border border-white/10 shrink-0"
     />
   );
 }
@@ -54,18 +54,18 @@ export function CheckoutConfirmDialog(props: Props) {
           <p className="text-pos-gray text-xs mt-0.5">Review the items and quantities before completing the sale.</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {items.map((it) => (
-            <div key={it.cartId} className="flex items-center gap-3">
+            <div key={it.cartId} className="flex items-center gap-4">
               <Thumb url={it.imageUrl} />
               <div className="min-w-0 flex-1">
-                <div className="text-pos-cream text-sm truncate">{it.nameEn}</div>
-                <div className="text-pos-gray/70 text-[11px] font-mono">{it.code} · {it.karat} · {it.weightGrams}g</div>
+                <div className="text-pos-cream text-base truncate">{it.nameEn}</div>
+                <div className="text-pos-gray/70 text-[11px] font-mono mt-0.5">{it.code} · {it.karat} · {it.weightGrams}g</div>
+                <div className="text-pos-gray text-xs mt-1.5">{formatUSD(it.unitPrice)} ea · {formatUSD(it.finalPrice)}</div>
               </div>
-              <div className="text-end shrink-0">
-                <div className="text-gold font-bold text-base leading-none">×{it.quantity}</div>
-                <div className="text-pos-gray text-[11px] mt-1">{formatUSD(it.unitPrice)} ea</div>
-                <div className="text-pos-cream text-sm">{formatUSD(it.finalPrice)}</div>
+              <div className="shrink-0 flex flex-col items-center justify-center rounded-lg bg-gold/15 border border-gold/40 px-3.5 py-2">
+                <span className="text-gold/60 text-[9px] uppercase tracking-widest leading-none">Qty</span>
+                <span className="text-gold font-bold text-3xl leading-none mt-1">×{it.quantity}</span>
               </div>
             </div>
           ))}
