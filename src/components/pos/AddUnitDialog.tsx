@@ -72,6 +72,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
         goldRate24k: price.gold_rate_24k,
         unitPrice: Number(price.final_price),
         finalPrice: Number(price.final_price) * qty,
+        imageUrl: selected.photo_url ?? undefined,
       });
       onAdded();
     } finally {

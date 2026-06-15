@@ -55,6 +55,7 @@ export default function POSPage() {
           unitPrice: Number(product.final_price),
           finalPrice: Number(product.final_price),
           available: product.on_hand_qty,
+          imageUrl: product.photo_url ?? undefined,
         });
       } catch {
         setScanError(code);
