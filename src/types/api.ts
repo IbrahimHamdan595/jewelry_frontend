@@ -54,6 +54,7 @@ export interface ProductLookup extends Product {
   gold_rate_24k: number;
   purity_rate: number;
   final_price: number;
+  photo_url: string | null;
 }
 
 export interface ProductListResponse {

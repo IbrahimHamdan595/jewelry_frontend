@@ -9,6 +9,7 @@ import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
+import { CheckoutConfirmDialog } from "@/components/pos/CheckoutConfirmDialog";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { api } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
@@ -26,9 +27,13 @@ export default function POSPage() {
     setMounted(true);
   }, []);
 
-  const { items, paymentMethod, addItem, clear, discountPercent } = useCart();
+  const {
+    items, paymentMethod, addItem, clear, discountPercent,
+    subtotal, vat, total, vatPercent, discountAmount,
+  } = useCart();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [addUnit, setAddUnit] = useState<"COIN" | "OUNCE" | null>(null);
 
@@ -55,6 +60,7 @@ export default function POSPage() {
           unitPrice: Number(product.final_price),
           finalPrice: Number(product.final_price),
           available: product.on_hand_qty,
+          imageUrl: product.photo_url ?? undefined,
         });
       } catch {
         setScanError(code);
@@ -66,7 +72,12 @@ export default function POSPage() {
 
   useScanner(handleScan);
 
-  async function handleCheckout() {
+  function handleCheckout() {
+    if (items.length === 0) return;
+    setConfirming(true);
+  }
+
+  async function submitOrder() {
     if (items.length === 0) return;
     setCheckingOut(true);
     try {
@@ -85,6 +96,7 @@ export default function POSPage() {
         discount_percent: discountPercent || 0,
       });
       clear();
+      setConfirming(false);
       router.push(`/pos/confirmation/${order.id}`);
     } finally {
       setCheckingOut(false);
@@ -178,6 +190,22 @@ export default function POSPage() {
           onAdded={() => setAddUnit(null)}
         />
       )}
+
+      <CheckoutConfirmDialog
+        open={confirming}
+        items={items}
+        subtotal={subtotal}
+        vat={vat}
+        vatPercent={vatPercent}
+        discountPercent={discountPercent}
+        discountAmount={discountAmount}
+        total={total}
+        paymentMethod={paymentMethod}
+        customerName={customerName}
+        submitting={checkingOut}
+        onConfirm={submitOrder}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

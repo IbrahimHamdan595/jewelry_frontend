@@ -27,6 +27,8 @@ export interface CartItem {
   finalPrice: number;
   /** Max sellable units (PRODUCT: on_hand_qty). Undefined ⇒ fall back to the 100 cap. */
   available?: number;
+  /** Presentation-only thumbnail (product hero photo / unit photo_url). Not sent in the order POST. */
+  imageUrl?: string;
 }
 
 const HARD_QTY_CAP = 100; // mirrors COIN_OUNCE_QTY_CAP server-side
