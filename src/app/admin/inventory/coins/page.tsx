@@ -1,13 +1,8 @@
 "use client";
-import { UnitCatalog } from "@/components/admin/UnitCatalog";
-
-export default function CoinsPage() {
-  return (
-    <UnitCatalog
-      resource="coins"
-      adjustmentTarget="COIN_STOCK"
-      singular="Coin Type"
-      plural="Coin Types"
-    />
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+export default function Redirect() {
+  const r = useRouter();
+  useEffect(() => { r.replace("/admin/products?tab=coins"); }, [r]);
+  return null;
 }

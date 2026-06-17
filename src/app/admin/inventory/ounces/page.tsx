@@ -1,13 +1,8 @@
 "use client";
-import { UnitCatalog } from "@/components/admin/UnitCatalog";
-
-export default function OuncesPage() {
-  return (
-    <UnitCatalog
-      resource="ounces"
-      adjustmentTarget="OUNCE_STOCK"
-      singular="Ounce Type"
-      plural="Ounce Types"
-    />
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+export default function Redirect() {
+  const r = useRouter();
+  useEffect(() => { r.replace("/admin/products?tab=ounces"); }, [r]);
+  return null;
 }

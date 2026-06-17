@@ -24,6 +24,7 @@ const ar: Translations = {
     accountsPayable: "الحسابات الدائنة",
     goldPrice: "سعر الذهب",
     zakat: "الزكاة",
+    auditLedger: "سجل المراجعة",
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
     admin: "المشرف",

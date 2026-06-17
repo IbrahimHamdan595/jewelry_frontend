@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import useSWR from "swr";
-import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
+import { apiFetcher, api, uploadFile } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -106,6 +106,7 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
+              <th className="px-4 py-3 w-14" />
               <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 Code
               </th>
@@ -132,10 +133,10 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
           </thead>
           <tbody className="divide-y divide-gray-100">
             {!data ? (
-              <TableSkeleton cols={8} />
+              <TableSkeleton cols={9} />
             ) : !data.items.length ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-gray-400 text-sm">
+                <td colSpan={9} className="p-8 text-center text-gray-400 text-sm">
                   No {plural.toLowerCase()} yet
                 </td>
               </tr>
@@ -145,6 +146,19 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
                   row.min_stock_qty !== null && row.on_hand_qty <= row.min_stock_qty;
                 return (
                   <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      {row.photo_url ? (
+                        <img
+                          src={row.photo_url}
+                          alt={row.name_en}
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-gray-300" />
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-700">{row.code}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800">{row.name_en}</div>
@@ -277,8 +291,30 @@ function UnitTypeForm({
   const [marginMode, setMarginMode] = useState<MarginMode>(existing?.margin_mode ?? "USD");
   const [marginValue, setMarginValue] = useState(existing?.margin_value?.toString() ?? "0");
   const [minStock, setMinStock] = useState(existing?.min_stock_qty?.toString() ?? "");
+  const [photoUrl, setPhotoUrl] = useState<string>(existing?.photo_url ?? "");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { url } = await uploadFile<{ url: string }>("/products/upload-image", fd);
+      setPhotoUrl(url);
+    } catch (err: any) {
+      setUploadError(err?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -293,6 +329,7 @@ function UnitTypeForm({
         margin_mode: marginMode,
         margin_value: marginValue || "0",
         min_stock_qty: minStock === "" ? null : Number(minStock),
+        photo_url: photoUrl || null,
       };
       if (existing) {
         // Code is immutable once created; never PATCH it.
@@ -416,6 +453,55 @@ function UnitTypeForm({
           />
         </div>
       </div>
+
+      {/* Image upload */}
+      <div className="space-y-2">
+        <label className="block text-xs text-gray-400 uppercase tracking-widest">Photo</label>
+        <div className="flex items-center gap-3">
+          {photoUrl ? (
+            <div className="relative">
+              <img
+                src={photoUrl}
+                alt="Preview"
+                className="w-20 h-20 rounded object-cover border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={() => setPhotoUrl("")}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                title="Remove photo"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center">
+              <ImageIcon className="w-6 h-6 text-gray-300" />
+            </div>
+          )}
+          <div className="space-y-1">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onPickImage}
+            />
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={uploading}
+              className="px-3 py-1.5 border border-gray-200 text-xs rounded hover:bg-gray-50 disabled:opacity-60 transition-colors"
+            >
+              {uploading ? "Uploading…" : photoUrl ? "Change photo" : "Upload photo"}
+            </button>
+            {uploadError && (
+              <div className="text-xs text-red-600">{uploadError}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {error && <div className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button

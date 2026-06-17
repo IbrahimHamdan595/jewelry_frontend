@@ -88,9 +88,9 @@ export default function InventoryAlertsPage() {
                   <Link
                     href={
                       row.kind === "COIN"
-                        ? "/admin/inventory/coins"
+                        ? "/admin/products?tab=coins"
                         : row.kind === "OUNCE"
-                          ? "/admin/inventory/ounces"
+                          ? "/admin/products?tab=ounces"
                           : `/admin/products/${row.id}`
                     }
                     className="text-xs text-gold hover:text-gold-dark"

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, QrCode, ShoppingCart,
   TrendingUp, Settings, LogOut, Gem, Tag, Boxes, Truck, Wallet, Menu, X, Scale,
-  ClipboardCheck, BookOpen,
+  ClipboardCheck, BookOpen, ScrollText,
 } from "lucide-react";
 import { logout, getStoredUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/qr-labels", icon: QrCode, label: t.nav.qrLabels },
     { href: "/admin/orders", icon: ShoppingCart, label: t.nav.orders },
     { href: "/admin/inventory", icon: Boxes, label: t.nav.inventory },
+    { href: "/admin/ledger", icon: ScrollText, label: (t.nav as Record<string, string>).auditLedger ?? "Audit Ledger" },
     { href: "/admin/stock-take", icon: ClipboardCheck, label: t.nav.stockTake },
     { href: "/admin/suppliers", icon: Truck, label: t.nav.suppliers },
     { href: "/admin/accounts-payable", icon: Wallet, label: t.nav.accountsPayable },
