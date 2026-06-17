@@ -133,7 +133,7 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
           </thead>
           <tbody className="divide-y divide-gray-100">
             {!data ? (
-              <TableSkeleton cols={8} />
+              <TableSkeleton cols={9} />
             ) : !data.items.length ? (
               <tr>
                 <td colSpan={9} className="p-8 text-center text-gray-400 text-sm">
