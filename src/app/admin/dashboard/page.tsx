@@ -184,7 +184,7 @@ export default function DashboardPage() {
 
           {data.inventory && (
             <Link
-              href="/admin/inventory/coins"
+              href="/admin/products?tab=coins"
               className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm hover:border-gold/40 transition-colors group"
             >
               <div className="flex items-center justify-between mb-3">

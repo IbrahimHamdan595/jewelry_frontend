@@ -5,12 +5,9 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/admin/inventory/lots", label: "Pure Gold Lots" },
-  { href: "/admin/inventory/coins", label: "Coins" },
-  { href: "/admin/inventory/ounces", label: "Ounces" },
   { href: "/admin/inventory/buybacks", label: "Buybacks" },
   { href: "/admin/inventory/alerts", label: "Alerts" },
   { href: "/admin/inventory/reconcile", label: "Reconcile" },
-  { href: "/admin/inventory/ledger", label: "Audit Ledger" },
 ];
 
 export default function InventoryLayout({ children }: { children: React.ReactNode }) {

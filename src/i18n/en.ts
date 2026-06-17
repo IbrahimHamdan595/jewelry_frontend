@@ -21,6 +21,7 @@ export interface Translations {
     accountsPayable: string;
     goldPrice: string;
     zakat: string;
+    auditLedger: string;
     settings: string;
     signOut: string;
     admin: string;
@@ -339,6 +340,7 @@ const en: Translations = {
     accountsPayable: "Accounts Payable",
     goldPrice: "Gold Price",
     zakat: "Zakat",
+    auditLedger: "Audit Ledger",
     settings: "Settings",
     signOut: "Sign out",
     admin: "Admin",
