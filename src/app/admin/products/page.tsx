@@ -4,14 +4,15 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { Plus, Edit2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Edit2, ToggleLeft, ToggleRight, Trash2, Image as ImageIcon } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import { calculatePrice, cn } from "@/lib/utils";
-import type { ProductListResponse, Category } from "@/types/api";
+import type { ProductListResponse, Category, Product } from "@/types/api";
 import { UnitCatalog } from "@/components/admin/UnitCatalog";
+import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 
 type Tab = "products" | "coins" | "ounces";
 
@@ -98,6 +99,10 @@ function ProductsTab() {
   const [page, setPage] = useState(1);
   const { rate } = useGoldRate();
 
+  const [deleting, setDeleting] = useState<Product | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
+
   const { data: categories } = useSWR<Category[]>("/categories", apiFetcher);
 
   const params = new URLSearchParams({ search, karat, page: String(page) });
@@ -107,6 +112,21 @@ function ProductsTab() {
   async function toggleStatus(id: string) {
     await api.patch(`/products/${id}/status`);
     mutate();
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDelBusy(true);
+    setDelErr(null);
+    try {
+      await api.delete(`/products/${deleting.id}?hard=true`);
+      setDeleting(null);
+      mutate();
+    } catch (err) {
+      setDelErr(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDelBusy(false);
+    }
   }
 
   return (
@@ -148,17 +168,32 @@ function ProductsTab() {
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                {["Code", "Name", "Category", "Karat", "Weight", "Stock", "Live Price", "Status", "Actions"].map((h) => (
+                {["Image", "Code", "Name", "Category", "Karat", "Weight", "Stock", "Live Price", "Status", "Actions"].map((h) => (
                   <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {!data && <TableSkeleton cols={9} />}
+              {!data && <TableSkeleton cols={10} />}
               {data?.items.map((p) => {
+                const heroUrl = p.photos?.find(x => x.isHero)?.url ?? p.photos?.[0]?.url;
                 const priced = rate ? calculatePrice({ rate24k: rate.rate_24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;
                 return (
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      {heroUrl ? (
+                        <img
+                          src={heroUrl}
+                          loading="lazy"
+                          className="w-10 h-10 rounded object-cover border border-gray-100"
+                          alt={p.name_en}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded border border-gray-100 bg-gray-50 flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-gray-300" />
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.code}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">
                       <div className="flex items-center gap-2">
@@ -203,6 +238,13 @@ function ProductsTab() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Link href={`/admin/products/${p.id}`} className="text-gray-400 hover:text-gold transition-colors"><Edit2 className="w-4 h-4" /></Link>
+                        <button
+                          onClick={() => { setDelErr(null); setDeleting(p); }}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete permanently"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -221,6 +263,15 @@ function ProductsTab() {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        title={deleting ? `${deleting.name_en} (${deleting.code})` : ""}
+        busy={delBusy}
+        error={delErr}
+        onConfirm={confirmDelete}
+        onCancel={() => { setDeleting(null); setDelErr(null); }}
+      />
     </>
   );
 }

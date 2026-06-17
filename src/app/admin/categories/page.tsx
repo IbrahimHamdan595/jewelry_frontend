@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import useSWR from "swr";
-import { Plus, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import type { Category } from "@/types/api";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 
 export default function CategoriesPage() {
   const { data: categories, mutate } = useSWR<Category[]>(
@@ -15,6 +16,10 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState({ name_en: "", name_ar: "", slug: "" });
   const [saving, setSaving] = useState(false);
+
+  const [deleting, setDeleting] = useState<Category | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
 
   function openAdd() {
     setEditing(null);
@@ -54,6 +59,21 @@ export default function CategoriesPage() {
   async function handleToggle(cat: Category) {
     await api.patch(`/categories/${cat.id}`, { is_active: !cat.is_active });
     mutate();
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDelBusy(true);
+    setDelErr(null);
+    try {
+      await api.delete(`/categories/${deleting.id}?hard=true`);
+      setDeleting(null);
+      await mutate();
+    } catch (err) {
+      setDelErr(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDelBusy(false);
+    }
   }
 
   return (
@@ -169,6 +189,13 @@ export default function CategoriesPage() {
                       <button onClick={() => handleToggle(cat)} className="text-gray-400 hover:text-gray-600 transition-colors">
                         {cat.is_active ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5" />}
                       </button>
+                      <button
+                        onClick={() => { setDelErr(null); setDeleting(cat); }}
+                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete permanently"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -178,6 +205,15 @@ export default function CategoriesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        title={deleting ? deleting.name_en : ""}
+        busy={delBusy}
+        error={delErr}
+        onConfirm={confirmDelete}
+        onCancel={() => { setDeleting(null); setDelErr(null); }}
+      />
     </div>
   );
 }
