@@ -1,3 +1,5 @@
+import type { StaleRateErrorDetail } from "@/types/api";
+
 function getBase(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
@@ -20,6 +22,41 @@ function handleUnauthorized() {
   }
 }
 
+/**
+ * An API failure that keeps the parsed `detail` reachable.
+ *
+ * FastAPI's `detail` is sometimes a string and sometimes an object (the
+ * stale-rate guard returns `{code, message, rate_24k, ...}`). The old code did
+ * `new Error(body.detail)`, which rendered an object as the literal string
+ * "[object Object]" on screen. `message` keeps the old behaviour for the many
+ * callers that only read it; `detail` is there for the ones that branch on a code.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly detail: unknown;
+
+  constructor(status: number, detail: unknown) {
+    const message =
+      typeof detail === "string"
+        ? detail
+        : (detail as { message?: string })?.message ?? `API error ${status}`;
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Narrow an unknown catch value to a stale-rate guard rejection. */
+export function staleRateError(err: unknown): StaleRateErrorDetail | null {
+  if (!(err instanceof ApiError) || err.status !== 409) return null;
+  const d = err.detail as StaleRateErrorDetail | undefined;
+  if (d?.code === "STALE_RATE_ACK_REQUIRED" || d?.code === "STALE_RATE_ACK_MISMATCH") {
+    return d;
+  }
+  return null;
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -34,7 +71,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.detail ?? `API error ${res.status}`);
+    throw new ApiError(res.status, body?.detail);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -60,7 +97,9 @@ export async function downloadFile(path: string, filename: string): Promise<void
     throw new Error("Unauthorized");
   }
   if (!res.ok) {
-    throw new Error(`Download failed (${res.status})`);
+    // Body is expected to be binary, so there is no `detail` to parse — but the
+    // status is still worth carrying on the same error type as everything else.
+    throw new ApiError(res.status, `Download failed (${res.status})`);
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -86,7 +125,7 @@ export async function uploadFile<T>(path: string, formData: FormData): Promise<T
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.detail ?? `Upload error ${res.status}`);
+    throw new ApiError(res.status, body?.detail ?? `Upload error ${res.status}`);
   }
   return res.json();
 }
