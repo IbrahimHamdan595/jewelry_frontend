@@ -2,8 +2,10 @@
 import { useState } from "react";
 import { Gem } from "lucide-react";
 import { formatUSD } from "@/lib/utils";
+import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
+import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
 import type { CartItem } from "@/hooks/useCart";
-import type { PaymentMethod } from "@/types/api";
+import type { PaymentMethod, StaleRateAck } from "@/types/api";
 
 interface Props {
   open: boolean;
@@ -17,7 +19,8 @@ interface Props {
   paymentMethod: PaymentMethod;
   customerName: string;
   submitting: boolean;
-  onConfirm: () => void;
+  error?: string | null;
+  onConfirm: (ack?: StaleRateAck) => void;
   onCancel: () => void;
 }
 
@@ -44,7 +47,10 @@ function Thumb({ url }: { url?: string }) {
 
 export function CheckoutConfirmDialog(props: Props) {
   const { open, items, subtotal, vat, vatPercent, discountPercent, discountAmount,
-          total, paymentMethod, customerName, submitting, onConfirm, onCancel } = props;
+          total, paymentMethod, customerName, submitting, error, onConfirm, onCancel } = props;
+  // Called before the `open` early return — a hook that runs only while the
+  // dialog is mounted-and-open would change the hook count when it opens.
+  const guard = useStaleRateGuard();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
@@ -55,6 +61,14 @@ export function CheckoutConfirmDialog(props: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <StaleRateAckNotice
+            required={guard.required}
+            accepted={guard.accepted}
+            onChange={guard.setAccepted}
+            fetchedAt={guard.fetchedAt}
+            action="selling"
+          />
+
           {items.map((it) => (
             <div key={it.cartId} className="flex items-center gap-4">
               <Thumb url={it.imageUrl} />
@@ -85,6 +99,14 @@ export function CheckoutConfirmDialog(props: Props) {
           </div>
         </div>
 
+        {error && (
+          <div className="px-6 pt-3 shrink-0">
+            <p className="text-red-300 text-xs bg-red-500/10 border border-red-500/30 rounded p-2.5">
+              {error}
+            </p>
+          </div>
+        )}
+
         <div className="px-6 py-4 border-t border-white/10 shrink-0 flex gap-3">
           <button
             onClick={onCancel}
@@ -94,11 +116,15 @@ export function CheckoutConfirmDialog(props: Props) {
             Back to edit
           </button>
           <button
-            onClick={onConfirm}
-            disabled={submitting}
+            onClick={() => onConfirm(guard.ack)}
+            disabled={submitting || guard.blocked}
             className="flex-1 py-3 rounded bg-gold text-pos-bg text-sm font-medium tracking-widest hover:bg-gold/90 disabled:opacity-50"
           >
-            {submitting ? "PROCESSING…" : "CONFIRM & COMPLETE"}
+            {submitting
+              ? "PROCESSING…"
+              : guard.blocked
+                ? "CONFIRM THE RATE ABOVE"
+                : "CONFIRM & COMPLETE"}
           </button>
         </div>
       </div>

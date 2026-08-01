@@ -11,11 +11,11 @@ import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
 import { CheckoutConfirmDialog } from "@/components/pos/CheckoutConfirmDialog";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
-import { api } from "@/lib/api-client";
+import { api, staleRateError } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
-import type { OrderItemKind, ProductLookup } from "@/types/api";
+import type { OrderItemKind, ProductLookup, StaleRateAck } from "@/types/api";
 
 export default function POSPage() {
   const router = useRouter();
@@ -33,6 +33,7 @@ export default function POSPage() {
   } = useCart();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [addUnit, setAddUnit] = useState<"COIN" | "OUNCE" | null>(null);
@@ -77,8 +78,9 @@ export default function POSPage() {
     setConfirming(true);
   }
 
-  async function submitOrder() {
+  async function submitOrder(ack?: StaleRateAck) {
     if (items.length === 0) return;
+    setCheckoutError(null);
     setCheckingOut(true);
     try {
       const order = await api.post<{ id: string }>("/orders", {
@@ -94,10 +96,19 @@ export default function POSPage() {
         payment_method: paymentMethod,
         customer_name: customerName || null,
         discount_percent: discountPercent || 0,
+        stale_rate_ack: ack ?? null,
       });
       clear();
       setConfirming(false);
       router.push(`/pos/confirmation/${order.id}`);
+    } catch (err) {
+      // The server is the enforcement point. A 409 can arrive without the dialog
+      // ever having shown the notice — a stale tab, or the rate ageing past the
+      // threshold mid-cart. Keep the dialog open so the cashier can confirm.
+      const stale = staleRateError(err);
+      setCheckoutError(
+        stale ? stale.message : err instanceof Error ? err.message : "Checkout failed"
+      );
     } finally {
       setCheckingOut(false);
     }
@@ -206,8 +217,12 @@ export default function POSPage() {
         paymentMethod={paymentMethod}
         customerName={customerName}
         submitting={checkingOut}
+        error={checkoutError}
         onConfirm={submitOrder}
-        onCancel={() => setConfirming(false)}
+        onCancel={() => {
+          setCheckoutError(null);
+          setConfirming(false);
+        }}
       />
     </div>
   );
