@@ -104,7 +104,9 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-pos-bg">
+    // flex-1 (not h-screen): the POS layout is a column, so the till fills the
+    // space left under the stale-rate banner instead of overflowing the viewport.
+    <div className="flex flex-col flex-1 min-h-0 bg-pos-bg">
       {/* Top bar */}
       <header className="min-h-14 border-b border-white/10 flex flex-wrap items-center px-4 md:px-6 py-2 shrink-0 gap-3 md:gap-6">
         <div className="flex items-center gap-3 shrink-0">
