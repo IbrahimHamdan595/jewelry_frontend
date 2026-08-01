@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGoldRate } from "./useGoldRate";
 import type { StaleRateAck } from "@/types/api";
 
@@ -26,6 +26,13 @@ export function useStaleRateGuard() {
     setAccepted(false);
   }, [fetchedAt]);
 
+  // Memoised so a consumer can safely put `ack` in a dependency array.
+  const ack = useMemo<StaleRateAck | undefined>(
+    () =>
+      required && accepted && fetchedAt ? { rate_fetched_at: fetchedAt } : undefined,
+    [required, accepted, fetchedAt]
+  );
+
   return {
     /** The rate is stale enough that the server will demand an acknowledgement. */
     required,
@@ -34,8 +41,15 @@ export function useStaleRateGuard() {
     setAccepted,
     /** Submit must stay disabled while this is true. */
     blocked: required && !accepted,
-    /** Spread into the request body; undefined when no ack is needed. */
-    ack: required && fetchedAt ? ({ rate_fetched_at: fetchedAt } as StaleRateAck) : undefined,
+    /**
+     * Spread into the request body. Undefined unless an ack is both required and
+     * given — the token is never issued on the cashier's behalf, so a submit that
+     * slips past a disabled button fails safe with a 409 instead of silently
+     * accepting a stale price.
+     */
+    ack,
+    /** The timestamp being acknowledged — feed straight to StaleRateAckNotice. */
+    fetchedAt,
     rate,
   };
 }

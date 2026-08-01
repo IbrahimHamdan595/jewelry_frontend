@@ -50,7 +50,8 @@ export function MarketClosedBanner({ variant = "light" }: Props) {
 
   return (
     <div
-      role="status"
+      // Red blocks transactions, so it asserts; amber is informational.
+      role={closed ? "alert" : "status"}
       className={`flex items-center gap-3 border rounded-lg p-4 ${closed ? s.red : s.amber}`}
     >
       <AlertTriangle className={`w-5 h-5 shrink-0 ${closed ? s.redIcon : s.amberIcon}`} />
