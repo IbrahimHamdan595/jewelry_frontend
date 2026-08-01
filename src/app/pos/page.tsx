@@ -104,8 +104,9 @@ export default function POSPage() {
   }
 
   return (
-    // flex-1 (not h-screen): the POS layout is a column, so the till fills the
-    // space left under the stale-rate banner instead of overflowing the viewport.
+    // flex-1, not h-screen: the POS layout is a column with a definite height,
+    // so the till divides up what the stale-rate banner leaves. min-h-0 is what
+    // lets the inner overflow panes shrink instead of inflating the page.
     <div className="flex flex-col flex-1 min-h-0 bg-pos-bg">
       {/* Top bar */}
       <header className="min-h-14 border-b border-white/10 flex flex-wrap items-center px-4 md:px-6 py-2 shrink-0 gap-3 md:gap-6">
