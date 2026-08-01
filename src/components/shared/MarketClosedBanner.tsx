@@ -63,8 +63,13 @@ export function MarketClosedBanner({ variant = "light" }: Props) {
           {closed ? (
             <>
               The rate hasn&apos;t refreshed since {since}. Sales and buybacks now need
-              an on-screen confirmation — set a manual override on the Gold Price page
-              to price deliberately instead.
+              an on-screen confirmation before they complete.{" "}
+              {/* Setting an override is admin-only (require_admin on the endpoint),
+                  so don't tell a cashier to go and do it — the dark variant is the
+                  till, the light variant is the admin who can actually act. */}
+              {variant === "dark"
+                ? "Ask a manager to set a manual override if this continues."
+                : "Set a manual override on the Gold Price page to price deliberately instead."}
             </>
           ) : (
             <>Last refreshed {since}. Still trading on it; no action needed yet.</>
