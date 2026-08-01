@@ -5,9 +5,11 @@ import useSWR from "swr";
 import { LogOut, Coins, Layers, Recycle, Sparkles, Scale } from "lucide-react";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
-import { api, apiFetcher } from "@/lib/api-client";
+import { api, apiFetcher, staleRateError } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { logout, getStoredUser } from "@/lib/auth";
+import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
+import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
 import type {
   BuybackKind,
   Karat,
@@ -49,7 +51,10 @@ export default function BuybackPage() {
   const [kind, setKind] = useState<BuybackKind>("PURE_GOLD");
 
   return (
-    <div className="flex flex-col h-screen bg-pos-bg">
+    // flex-1, not h-screen: the POS layout is a column with a definite height,
+    // so this page claims exactly what the stale-rate banner leaves it. min-h-0
+    // lets the inner scroll pane shrink instead of overflowing the wrapper.
+    <div className="flex flex-col flex-1 min-h-0 bg-pos-bg">
       <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
         <div className="flex items-center gap-3 shrink-0">
           <span className="font-serif text-gold text-xl tracking-widest">Fawaz El Namel</span>
@@ -182,6 +187,7 @@ function PureGoldForm() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const guard = useStaleRateGuard();
 
   const quoteKey =
     priceMode === "FORMULA" && weight && Number(weight) > 0
@@ -210,10 +216,14 @@ function PureGoldForm() {
       } else if (quote) {
         body.expected_rate = quote.rate_24k;
       }
+      if (guard.ack) body.stale_rate_ack = guard.ack;
       const result = await api.post<{ id: string }>("/buybacks", body);
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Buyback failed");
+      const stale = staleRateError(err);
+      setError(
+        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -278,10 +288,18 @@ function PureGoldForm() {
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
+      <StaleRateAckNotice
+        required={guard.required}
+        accepted={guard.accepted}
+        onChange={guard.setAccepted}
+        fetchedAt={guard.fetchedAt}
+        action="buying"
+      />
+
       <SubmitButton
         label="Record buy back"
         onClick={submit}
-        disabled={submitting || !weight || (priceMode === "MANUAL" && !manualPrice)}
+        disabled={submitting || !weight || (priceMode === "MANUAL" && !manualPrice) || guard.blocked}
         submitting={submitting}
       />
     </div>
@@ -301,6 +319,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const guard = useStaleRateGuard();
 
   const { data: types } = useSWR<UnitTypeListResponse>(
     `/${resource}?is_active=true&page_size=200`,
@@ -341,11 +360,15 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
       else body.ounce_type_id = typeId;
       if (priceMode === "MANUAL") body.manual_price = manualPrice;
       else if (perUnitQuote) body.expected_rate = perUnitQuote.rate_24k;
+      if (guard.ack) body.stale_rate_ack = guard.ack;
 
       const result = await api.post<{ id: string }>("/buybacks", body);
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Buyback failed");
+      const stale = staleRateError(err);
+      setError(
+        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -428,10 +451,18 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
+      <StaleRateAckNotice
+        required={guard.required}
+        accepted={guard.accepted}
+        onChange={guard.setAccepted}
+        fetchedAt={guard.fetchedAt}
+        action="buying"
+      />
+
       <SubmitButton
         label="Record buy back"
         onClick={submit}
-        disabled={submitting || !typeId || (priceMode === "MANUAL" && !manualPrice)}
+        disabled={submitting || !typeId || (priceMode === "MANUAL" && !manualPrice) || guard.blocked}
         submitting={submitting}
       />
     </div>
@@ -449,6 +480,7 @@ function UsedProductForm() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const guard = useStaleRateGuard();
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
@@ -466,10 +498,14 @@ function UsedProductForm() {
         weight_grams: weight,
         manual_price: manualPrice,
         notes: notes || null,
+        stale_rate_ack: guard.ack ?? null,
       });
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Buyback failed");
+      const stale = staleRateError(err);
+      setError(
+        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -528,10 +564,18 @@ function UsedProductForm() {
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
+      <StaleRateAckNotice
+        required={guard.required}
+        accepted={guard.accepted}
+        onChange={guard.setAccepted}
+        fetchedAt={guard.fetchedAt}
+        action="buying"
+      />
+
       <SubmitButton
         label="Record buy back"
         onClick={submit}
-        disabled={submitting || !weight || !manualPrice}
+        disabled={submitting || !weight || !manualPrice || guard.blocked}
         submitting={submitting}
       />
     </div>
@@ -579,7 +623,9 @@ function QuoteCard({ quote }: { quote: QuoteOut }) {
         }
       />
       {quote.rate_is_stale && (
-        <div className="text-[10px] text-amber-400 mt-1">⚠️ Rate is stale — submit anyway, server will re-check.</div>
+        <div className="text-[10px] text-amber-400 mt-1">
+          ⚠️ This quote is based on an out-of-date rate.
+        </div>
       )}
     </div>
   );
