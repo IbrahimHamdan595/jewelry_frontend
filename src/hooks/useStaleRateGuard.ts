@@ -16,7 +16,7 @@ import type { StaleRateAck } from "@/types/api";
  * it as a mismatch anyway.
  */
 export function useStaleRateGuard() {
-  const { rate } = useGoldRate();
+  const { rate, refresh } = useGoldRate();
   const [accepted, setAccepted] = useState(false);
 
   const required = Boolean(rate?.market_closed);
@@ -50,6 +50,13 @@ export function useStaleRateGuard() {
     ack,
     /** The timestamp being acknowledged — feed straight to StaleRateAckNotice. */
     fetchedAt,
+    /**
+     * Re-fetch the rate now. Call this on a stale-rate 409: the poll runs every
+     * 30s, so without it the cashier can sit in front of a server that is
+     * rejecting the sale while the client still believes the rate is fine —
+     * an enabled button, no checkbox, and a message they cannot act on.
+     */
+    refresh,
     rate,
   };
 }

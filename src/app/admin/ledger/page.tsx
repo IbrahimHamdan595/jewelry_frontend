@@ -21,6 +21,7 @@ const EVENT_PRESETS = [
   "OUNCE_TYPE_CREATED", "OUNCE_TYPE_UPDATED", "OUNCE_STOCK_ADJUSTED",
   "BUYBACK_PURE_GOLD", "BUYBACK_COIN", "BUYBACK_OUNCE", "BUYBACK_USED_PRODUCT",
   "SALE_PRODUCT", "SALE_COIN", "SALE_OUNCE", "ORDER_VOID",
+  "SALE_ON_STALE_RATE_ACK",
   "SUPPLIER_CREATED", "SUPPLIER_UPDATED", "SUPPLIER_PURCHASE",
   "SUPPLIER_PAYMENT_CASH", "SUPPLIER_PAYMENT_GOLD", "SUPPLIER_BALANCE_CHANGED",
   "MELT", "POLISH",
@@ -320,6 +321,9 @@ function LedgerRow({ entry }: { entry: LedgerEntry }) {
 function EventBadge({ event }: { event: string }) {
   let color = "bg-gray-100 text-gray-700";
   if (event.startsWith("LOT_")) color = "bg-gold/10 text-gold";
+  // Before the SALE_ prefix branch, which would otherwise swallow it and paint
+  // "someone knowingly traded on a stale price" the same green as a routine sale.
+  else if (event === "SALE_ON_STALE_RATE_ACK") color = "bg-red-50 text-red-700";
   else if (event.startsWith("SALE_")) color = "bg-green-50 text-green-700";
   else if (event.startsWith("BUYBACK_")) color = "bg-blue-50 text-blue-700";
   else if (event.startsWith("SUPPLIER_PAYMENT")) color = "bg-emerald-50 text-emerald-700";

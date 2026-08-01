@@ -221,6 +221,8 @@ function PureGoldForm() {
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
       const stale = staleRateError(err);
+      // Pull market_closed immediately; don't wait for the 30s poll.
+      if (stale) guard.refresh();
       setError(
         stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
       );
@@ -366,6 +368,8 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
       const stale = staleRateError(err);
+      // Pull market_closed immediately; don't wait for the 30s poll.
+      if (stale) guard.refresh();
       setError(
         stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
       );
@@ -503,6 +507,8 @@ function UsedProductForm() {
       router.push(`/pos/buyback-receipt/${result.id}`);
     } catch (err) {
       const stale = staleRateError(err);
+      // Pull market_closed immediately; don't wait for the 30s poll.
+      if (stale) guard.refresh();
       setError(
         stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
       );

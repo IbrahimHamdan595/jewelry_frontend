@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, Coins, Layers } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useScanner } from "@/hooks/useScanner";
+import { useGoldRate } from "@/hooks/useGoldRate";
 import { ScanPanel } from "@/components/pos/ScanPanel";
 import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
@@ -31,6 +32,10 @@ export default function POSPage() {
     items, paymentMethod, addItem, clear, discountPercent,
     subtotal, vat, total, vatPercent, discountAmount,
   } = useCart();
+  // Only the re-fetch is needed here — the confirm dialog owns the guard state
+  // that gates the button. Both read the same SWR key, so refreshing from this
+  // side flows straight through to the dialog's `required` / `fetchedAt`.
+  const { refresh: refreshRate } = useGoldRate();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -106,6 +111,10 @@ export default function POSPage() {
       // ever having shown the notice — a stale tab, or the rate ageing past the
       // threshold mid-cart. Keep the dialog open so the cashier can confirm.
       const stale = staleRateError(err);
+      // Pull market_closed immediately; don't wait for the 30s poll. Without
+      // this the dialog shows the server's message with no checkbox and a still-
+      // enabled button, which just 409s again until the poll catches up.
+      if (stale) refreshRate();
       setCheckoutError(
         stale ? stale.message : err instanceof Error ? err.message : "Checkout failed"
       );

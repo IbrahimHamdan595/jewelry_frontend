@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Gem } from "lucide-react";
 import { formatUSD } from "@/lib/utils";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
@@ -51,7 +51,23 @@ export function CheckoutConfirmDialog(props: Props) {
   // Called before the `open` early return — a hook that runs only while the
   // dialog is mounted-and-open would change the hook count when it opens.
   const guard = useStaleRateGuard();
+
+  // A tick belongs to the one sale it was given for. This component stays
+  // mounted across open/close, so without this a cashier could tick, cancel,
+  // clear the cart, and reach checkout for a different customer with the
+  // confirmation already satisfied.
+  const { setAccepted } = guard;
+  useEffect(() => {
+    if (!open) setAccepted(false);
+  }, [open, setAccepted]);
+
   if (!open) return null;
+
+  // Mirrors StaleRateAckNotice's own "render nothing" condition. The notice
+  // still decides for itself; this only keeps the wrapper's padding from
+  // opening a gap above the buttons when there is nothing to show.
+  const showAck = guard.required && Boolean(guard.fetchedAt);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-xl bg-pos-bg border border-white/10 shadow-2xl">
@@ -61,14 +77,6 @@ export function CheckoutConfirmDialog(props: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <StaleRateAckNotice
-            required={guard.required}
-            accepted={guard.accepted}
-            onChange={guard.setAccepted}
-            fetchedAt={guard.fetchedAt}
-            action="selling"
-          />
-
           {items.map((it) => (
             <div key={it.cartId} className="flex items-center gap-4">
               <Thumb url={it.imageUrl} />
@@ -99,11 +107,22 @@ export function CheckoutConfirmDialog(props: Props) {
           </div>
         </div>
 
-        {error && (
-          <div className="px-6 pt-3 shrink-0">
-            <p className="text-red-300 text-xs bg-red-500/10 border border-red-500/30 rounded p-2.5">
-              {error}
-            </p>
+        {/* Outside the scrolling cart list: a disabled button reading "CONFIRM
+            THE RATE ABOVE" is useless if the thing to confirm has scrolled off. */}
+        {(showAck || error) && (
+          <div className="px-6 pt-3 shrink-0 space-y-2.5">
+            <StaleRateAckNotice
+              required={guard.required}
+              accepted={guard.accepted}
+              onChange={guard.setAccepted}
+              fetchedAt={guard.fetchedAt}
+              action="selling"
+            />
+            {error && (
+              <p className="text-red-300 text-xs bg-red-500/10 border border-red-500/30 rounded p-2.5">
+                {error}
+              </p>
+            )}
           </div>
         )}
 
