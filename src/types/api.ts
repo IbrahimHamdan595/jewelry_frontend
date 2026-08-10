@@ -583,3 +583,20 @@ export interface Receipt {
   payment_method: string | null;
   notes: string | null;
 }
+
+// ── Stale gold rate guard (see backend app/core/gold_guard.py) ───────────────
+
+/** Cashier's acceptance of one specific stale rate, sent with a sale/buyback. */
+export interface StaleRateAck {
+  rate_fetched_at: string;
+}
+
+export type StaleRateErrorCode = "STALE_RATE_ACK_REQUIRED" | "STALE_RATE_ACK_MISMATCH";
+
+export interface StaleRateErrorDetail {
+  code: StaleRateErrorCode;
+  message: string;
+  rate_24k: number;
+  rate_fetched_at: string;
+  age_minutes: number;
+}

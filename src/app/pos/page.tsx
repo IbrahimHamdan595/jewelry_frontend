@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, Coins, Layers } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useScanner } from "@/hooks/useScanner";
+import { useGoldRate } from "@/hooks/useGoldRate";
 import { ScanPanel } from "@/components/pos/ScanPanel";
 import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
@@ -11,11 +12,11 @@ import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
 import { CheckoutConfirmDialog } from "@/components/pos/CheckoutConfirmDialog";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
-import { api } from "@/lib/api-client";
+import { api, staleRateError } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
-import type { OrderItemKind, ProductLookup } from "@/types/api";
+import type { OrderItemKind, ProductLookup, StaleRateAck } from "@/types/api";
 
 export default function POSPage() {
   const router = useRouter();
@@ -31,8 +32,13 @@ export default function POSPage() {
     items, paymentMethod, addItem, clear, discountPercent,
     subtotal, vat, total, vatPercent, discountAmount,
   } = useCart();
+  // Only the re-fetch is needed here — the confirm dialog owns the guard state
+  // that gates the button. Both read the same SWR key, so refreshing from this
+  // side flows straight through to the dialog's `required` / `fetchedAt`.
+  const { refresh: refreshRate } = useGoldRate();
   const [scanError, setScanError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [addUnit, setAddUnit] = useState<"COIN" | "OUNCE" | null>(null);
@@ -77,8 +83,9 @@ export default function POSPage() {
     setConfirming(true);
   }
 
-  async function submitOrder() {
+  async function submitOrder(ack?: StaleRateAck) {
     if (items.length === 0) return;
+    setCheckoutError(null);
     setCheckingOut(true);
     try {
       const order = await api.post<{ id: string }>("/orders", {
@@ -94,17 +101,33 @@ export default function POSPage() {
         payment_method: paymentMethod,
         customer_name: customerName || null,
         discount_percent: discountPercent || 0,
+        stale_rate_ack: ack ?? null,
       });
       clear();
       setConfirming(false);
       router.push(`/pos/confirmation/${order.id}`);
+    } catch (err) {
+      // The server is the enforcement point. A 409 can arrive without the dialog
+      // ever having shown the notice — a stale tab, or the rate ageing past the
+      // threshold mid-cart. Keep the dialog open so the cashier can confirm.
+      const stale = staleRateError(err);
+      // Pull market_closed immediately; don't wait for the 30s poll. Without
+      // this the dialog shows the server's message with no checkbox and a still-
+      // enabled button, which just 409s again until the poll catches up.
+      if (stale) refreshRate();
+      setCheckoutError(
+        stale ? stale.message : err instanceof Error ? err.message : "Checkout failed"
+      );
     } finally {
       setCheckingOut(false);
     }
   }
 
   return (
-    <div className="flex flex-col h-screen bg-pos-bg">
+    // flex-1, not h-screen: the POS layout is a column with a definite height,
+    // so the till divides up what the stale-rate banner leaves. min-h-0 is what
+    // lets the inner overflow panes shrink instead of inflating the page.
+    <div className="flex flex-col flex-1 min-h-0 bg-pos-bg">
       {/* Top bar */}
       <header className="min-h-14 border-b border-white/10 flex flex-wrap items-center px-4 md:px-6 py-2 shrink-0 gap-3 md:gap-6">
         <div className="flex items-center gap-3 shrink-0">
@@ -203,8 +226,12 @@ export default function POSPage() {
         paymentMethod={paymentMethod}
         customerName={customerName}
         submitting={checkingOut}
+        error={checkoutError}
         onConfirm={submitOrder}
-        onCancel={() => setConfirming(false)}
+        onCancel={() => {
+          setCheckoutError(null);
+          setConfirming(false);
+        }}
       />
     </div>
   );

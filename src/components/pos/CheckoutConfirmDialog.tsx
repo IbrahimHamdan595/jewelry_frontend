@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Gem } from "lucide-react";
 import { formatUSD } from "@/lib/utils";
+import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
+import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
 import type { CartItem } from "@/hooks/useCart";
-import type { PaymentMethod } from "@/types/api";
+import type { PaymentMethod, StaleRateAck } from "@/types/api";
 
 interface Props {
   open: boolean;
@@ -17,7 +19,8 @@ interface Props {
   paymentMethod: PaymentMethod;
   customerName: string;
   submitting: boolean;
-  onConfirm: () => void;
+  error?: string | null;
+  onConfirm: (ack?: StaleRateAck) => void;
   onCancel: () => void;
 }
 
@@ -44,8 +47,27 @@ function Thumb({ url }: { url?: string }) {
 
 export function CheckoutConfirmDialog(props: Props) {
   const { open, items, subtotal, vat, vatPercent, discountPercent, discountAmount,
-          total, paymentMethod, customerName, submitting, onConfirm, onCancel } = props;
+          total, paymentMethod, customerName, submitting, error, onConfirm, onCancel } = props;
+  // Called before the `open` early return — a hook that runs only while the
+  // dialog is mounted-and-open would change the hook count when it opens.
+  const guard = useStaleRateGuard();
+
+  // A tick belongs to the one sale it was given for. This component stays
+  // mounted across open/close, so without this a cashier could tick, cancel,
+  // clear the cart, and reach checkout for a different customer with the
+  // confirmation already satisfied.
+  const { setAccepted } = guard;
+  useEffect(() => {
+    if (!open) setAccepted(false);
+  }, [open, setAccepted]);
+
   if (!open) return null;
+
+  // Mirrors StaleRateAckNotice's own "render nothing" condition. The notice
+  // still decides for itself; this only keeps the wrapper's padding from
+  // opening a gap above the buttons when there is nothing to show.
+  const showAck = guard.required && Boolean(guard.fetchedAt);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-xl bg-pos-bg border border-white/10 shadow-2xl">
@@ -85,6 +107,25 @@ export function CheckoutConfirmDialog(props: Props) {
           </div>
         </div>
 
+        {/* Outside the scrolling cart list: a disabled button reading "CONFIRM
+            THE RATE ABOVE" is useless if the thing to confirm has scrolled off. */}
+        {(showAck || error) && (
+          <div className="px-6 pt-3 shrink-0 space-y-2.5">
+            <StaleRateAckNotice
+              required={guard.required}
+              accepted={guard.accepted}
+              onChange={guard.setAccepted}
+              fetchedAt={guard.fetchedAt}
+              action="selling"
+            />
+            {error && (
+              <p className="text-red-300 text-xs bg-red-500/10 border border-red-500/30 rounded p-2.5">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="px-6 py-4 border-t border-white/10 shrink-0 flex gap-3">
           <button
             onClick={onCancel}
@@ -94,11 +135,15 @@ export function CheckoutConfirmDialog(props: Props) {
             Back to edit
           </button>
           <button
-            onClick={onConfirm}
-            disabled={submitting}
+            onClick={() => onConfirm(guard.ack)}
+            disabled={submitting || guard.blocked}
             className="flex-1 py-3 rounded bg-gold text-pos-bg text-sm font-medium tracking-widest hover:bg-gold/90 disabled:opacity-50"
           >
-            {submitting ? "PROCESSING…" : "CONFIRM & COMPLETE"}
+            {submitting
+              ? "PROCESSING…"
+              : guard.blocked
+                ? "CONFIRM THE RATE ABOVE"
+                : "CONFIRM & COMPLETE"}
           </button>
         </div>
       </div>
