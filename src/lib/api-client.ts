@@ -1,13 +1,6 @@
 import type { StaleRateErrorDetail } from "@/types/api";
 
 function getBase(): string {
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host.includes(".devtunnels.ms")) {
-      const backendHost = host.replace(/-3001\./, "-8001.");
-      return `https://${backendHost}/api`;
-    }
-  }
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api";
 }
 
