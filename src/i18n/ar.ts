@@ -222,6 +222,7 @@ const ar: Translations = {
     notFoundTitle: "الصفحة غير موجودة",
     notFoundHint: "هذا العنوان لا يطابق أي شاشة في النظام.",
     rateUnavailable: "السعر غير متاح",
+    lastKnownRate: "يُعرض آخر سعر معروف",
     rateFeedDown: "المصدر متوقف",
     rateAsOf: "بتاريخ",
     fetchingRate: "جارٍ جلب السعر…",
