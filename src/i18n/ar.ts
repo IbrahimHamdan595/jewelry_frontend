@@ -205,6 +205,28 @@ const ar: Translations = {
   },
 
   // TODO(ar): stone terms — Arabic gemological terminology to be verified by native speaker
+  errors: {
+    loadFailed: "تعذّر تحميل البيانات",
+    loadFailedHint: "لم يستجب الخادم. تحقق من الاتصال ثم حاول مجددًا.",
+    refreshFailed: "تعذّر التحديث — تُعرض آخر بيانات مستلمة",
+    tryAgain: "حاول مجددًا",
+    retryIn: (seconds) => `حاول مجددًا خلال ${seconds} ث`,
+    retrying: "جارٍ المحاولة…",
+    somethingWentWrong: "حدث خطأ ما",
+    boundaryHint: "واجهت هذه الشاشة مشكلة لم تستطع تجاوزها تلقائيًا. تسجيل الدخول والأصناف في السلة لم تتأثر.",
+    reloadPage: "إعادة تحميل الصفحة",
+    goToPos: "العودة إلى نقطة البيع",
+    goToDashboard: "العودة إلى لوحة التحكم",
+    goToLogin: "الانتقال إلى تسجيل الدخول",
+    reference: "المرجع",
+    notFoundTitle: "الصفحة غير موجودة",
+    notFoundHint: "هذا العنوان لا يطابق أي شاشة في النظام.",
+    rateUnavailable: "السعر غير متاح",
+    rateFeedDown: "المصدر متوقف",
+    rateAsOf: "بتاريخ",
+    fetchingRate: "جارٍ جلب السعر…",
+  },
+
   products: {
     stones: "Stones", // TODO(ar): stone terms
     carats: "Carats", // TODO(ar): stone terms
