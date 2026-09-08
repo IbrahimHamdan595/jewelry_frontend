@@ -66,3 +66,42 @@ describe("ErrorState retry", () => {
     expect(screen.getByRole("button")).toHaveTextContent(/2/);
   });
 });
+
+describe("ErrorRow", () => {
+  it("spans the table's columns so it replaces the skeleton rows in place", async () => {
+    const { ErrorRow } = await import("@/components/ui/error-state");
+    render(<table><tbody><ErrorRow cols={7} onRetry={() => {}} /></tbody></table>);
+    expect(screen.getByRole("cell")).toHaveAttribute("colspan", "7");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+});
+
+describe("RefreshFailedNotice", () => {
+  it("is a status strip with a retry, not an alert that hides the data", async () => {
+    const { RefreshFailedNotice } = await import("@/components/ui/error-state");
+    const onRetry = vi.fn();
+    render(<RefreshFailedNotice onRetry={onRetry} />);
+    expect(screen.getByRole("status")).toHaveTextContent(/couldn't refresh/i);
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ErrorState with a 404", () => {
+  it("says the record is missing and offers no retry", async () => {
+    const { ErrorState } = await import("@/components/ui/error-state");
+    const { ApiError } = await import("@/lib/api-client");
+    render(<ErrorState error={new ApiError(404, "Product 8f3a not found")} onRetry={() => {}} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/not found/i);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByText(/8f3a/)).toBeNull();
+  });
+
+  it("still offers a retry for any other failure", async () => {
+    const { ErrorState } = await import("@/components/ui/error-state");
+    const { ApiError } = await import("@/lib/api-client");
+    render(<ErrorState error={new ApiError(503, "upstream down")} onRetry={() => {}} />);
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    expect(screen.queryByText(/upstream/)).toBeNull();
+  });
+});

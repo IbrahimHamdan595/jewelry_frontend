@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Plus, Edit2, ToggleLeft, ToggleRight, Trash2, Image as ImageIcon } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { KaratBadge } from "@/components/shared/KaratBadge";
@@ -107,7 +108,7 @@ function ProductsTab() {
 
   const params = new URLSearchParams({ search, karat, page: String(page) });
   if (categoryId) params.set("category_id", categoryId);
-  const { data, mutate } = useSWR<ProductListResponse>(`/products?${params}`, apiFetcher);
+  const { data, error, isValidating, mutate } = useSWR<ProductListResponse>(`/products?${params}`, apiFetcher);
 
   async function toggleStatus(id: string) {
     await api.patch(`/products/${id}/status`);
@@ -174,7 +175,8 @@ function ProductsTab() {
               </tr>
             </thead>
             <tbody>
-              {!data && <TableSkeleton cols={10} />}
+              {error && !data && <ErrorRow cols={10} error={error} onRetry={() => mutate()} retrying={isValidating} />}
+              {!error && !data && <TableSkeleton cols={10} />}
               {data?.items.map((p) => {
                 const heroUrl = p.photos?.find(x => x.isHero)?.url ?? p.photos?.[0]?.url;
                 const priced = rate ? calculatePrice({ rate24k: rate.rate_24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;

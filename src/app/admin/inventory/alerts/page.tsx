@@ -3,15 +3,19 @@ import useSWR from "swr";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import type { InventoryAlertsResponse } from "@/types/api";
 
 export default function InventoryAlertsPage() {
-  const { data, isLoading } = useSWR<InventoryAlertsResponse>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<InventoryAlertsResponse>(
     "/inventory/alerts",
     apiFetcher,
     { refreshInterval: 60000 },
   );
 
+  if (error && !data) {
+    return <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />;
+  }
   if (isLoading || !data) {
     return (
       <div className="space-y-3">

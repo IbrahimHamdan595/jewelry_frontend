@@ -4,6 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { Plus, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type { Supplier, SupplierListResponse } from "@/types/api";
 
@@ -15,7 +16,7 @@ export default function SuppliersPage() {
   if (search) params.set("search", search);
   if (!includeInactive) params.set("is_active", "true");
 
-  const { data, mutate } = useSWR<SupplierListResponse>(
+  const { data, error: loadError, isValidating, mutate } = useSWR<SupplierListResponse>(
     `/suppliers?${params}`,
     apiFetcher,
   );
@@ -72,7 +73,9 @@ export default function SuppliersPage() {
       )}
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!data ? (
+        {loadError && !data ? (
+          <ErrorState className="m-4" error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+        ) : !data ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import type { ZakatSnapshot, ZakatSnapshotList, ZakatSummary } from "@/types/zakat";
 
@@ -27,7 +28,7 @@ export default function ZakatPage() {
   const { t } = useLang();
   const z = t.zakat;
 
-  const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary } =
+  const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary, isValidating: validatingSummary } =
     useSWR<ZakatSummary>("/zakat", apiFetcher);
 
   const { data: snapshotsData, mutate: mutateSnapshots } =
@@ -72,17 +73,27 @@ export default function ZakatPage() {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
-  if (summaryErr) {
+  if (summaryErr && !summary) {
     const msg = summaryErr.message ?? String(summaryErr);
     const isRateUnavail = msg.includes("Gold rate") || msg.toLowerCase().includes("rate");
+    // The rate-unavailable case is a deliberate backend message for the admin;
+    // anything else is a generic failure and gets the generic state.
+    if (!isRateUnavail) {
+      return (
+        <div className="max-w-3xl">
+          <ErrorState error={summaryErr} onRetry={() => mutateSummary()} retrying={validatingSummary} />
+        </div>
+      );
+    }
     return (
       <div className="max-w-3xl">
         <div className="bg-red-50 border border-red-200 rounded p-4 text-sm text-red-800 flex gap-3">
           <AlertTriangle className="w-5 h-5 shrink-0" />
-          <div>
-            <div className="font-medium mb-1">{isRateUnavail ? z.rateUnavailable : "Error"}</div>
+          <div className="flex-1">
+            <div className="font-medium mb-1">{z.rateUnavailable}</div>
             <div className="text-xs text-red-700">{msg}</div>
           </div>
+          <RetryButton onRetry={() => mutateSummary()} retrying={validatingSummary} />
         </div>
       </div>
     );

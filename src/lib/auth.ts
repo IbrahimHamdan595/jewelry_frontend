@@ -1,4 +1,5 @@
 import { api } from "./api-client";
+import { clearStoredCart } from "./cart-storage";
 
 export interface AuthUser {
   id: string;
@@ -44,6 +45,7 @@ export async function logout() {
     // Even if the request fails, clear local state.
   }
   sessionStorage.removeItem("mz_user");
+  clearStoredCart();
   clearTokenCookie();
 }
 

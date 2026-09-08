@@ -15,6 +15,7 @@
  */
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
+import { ApiError } from "@/lib/api-client";
 import { useRetryBackoff } from "@/hooks/useRetryBackoff";
 import { cn } from "@/lib/utils";
 
@@ -59,12 +60,21 @@ export function RetryButton({ onRetry, retrying = false, variant = "light", clas
 interface ErrorStateProps extends RetryProps {
   title?: string;
   description?: string;
+  /** Inspected for a 404 only — a missing record gets "not found" and no retry. Never rendered. */
+  error?: unknown;
   className?: string;
 }
 
-export function ErrorState({ title, description, onRetry, retrying, variant = "light", className }: ErrorStateProps) {
+function isNotFound(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
+export function ErrorState({ title, description, error, onRetry, retrying, variant = "light", className }: ErrorStateProps) {
   const { t } = useLang();
   const dark = variant === "dark";
+  const missing = isNotFound(error);
+  const heading = title ?? (missing ? t.errors.recordNotFound : t.errors.loadFailed);
+  const body = description ?? (missing ? t.errors.recordNotFoundHint : t.errors.loadFailedHint);
   return (
     <div
       role="alert"
@@ -76,12 +86,10 @@ export function ErrorState({ title, description, onRetry, retrying, variant = "l
     >
       <AlertTriangle className={cn("w-6 h-6", dark ? "text-red-400" : "text-red-500")} />
       <div>
-        <div className="text-sm font-semibold">{title ?? t.errors.loadFailed}</div>
-        <div className={cn("text-xs mt-1", dark ? "text-red-200/80" : "text-red-700/80")}>
-          {description ?? t.errors.loadFailedHint}
-        </div>
+        <div className="text-sm font-semibold">{heading}</div>
+        <div className={cn("text-xs mt-1", dark ? "text-red-200/80" : "text-red-700/80")}>{body}</div>
       </div>
-      {onRetry && <RetryButton onRetry={onRetry} retrying={retrying} variant={variant} />}
+      {onRetry && !missing && <RetryButton onRetry={onRetry} retrying={retrying} variant={variant} />}
     </div>
   );
 }

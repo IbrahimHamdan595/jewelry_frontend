@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { ArrowLeft, Plus, Banknote, Coins } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -20,10 +21,13 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 
 export default function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data, mutate } = useSWR<SupplierDetail>(`/suppliers/${id}`, apiFetcher);
+  const { data, error, isValidating, mutate } = useSWR<SupplierDetail>(`/suppliers/${id}`, apiFetcher);
   const [payCash, setPayCash] = useState(false);
   const [payGold, setPayGold] = useState(false);
 
+  if (error && !data) {
+    return <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />;
+  }
   if (!data) {
     return (
       <div className="space-y-6">

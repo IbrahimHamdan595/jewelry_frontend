@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import type { Settings, Staff } from "@/types/api";
 
 export default function SettingsPage() {
-  const { data: settings, mutate } = useSWR<Settings>("/settings", apiFetcher);
-  const { data: staff, mutate: mutateStaff } = useSWR<Staff[]>("/staff", apiFetcher);
+  const { data: settings, error: settingsError, isValidating: settingsValidating, mutate } = useSWR<Settings>("/settings", apiFetcher);
+  const { data: staff, error: staffError, isValidating: staffValidating, mutate: mutateStaff } = useSWR<Staff[]>("/staff", apiFetcher);
   const [tab, setTab] = useState<"store" | "pricing" | "receipt" | "staff" | "security">("store");
   const [form, setForm] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
@@ -65,6 +66,10 @@ export default function SettingsPage() {
     { id: "staff" as const, label: "Staff" },
     { id: "security" as const, label: "Security" },
   ];
+
+  if (settingsError && !settings) {
+    return <ErrorState error={settingsError} onRetry={() => mutate()} retrying={settingsValidating} />;
+  }
 
   return (
     <div className="max-w-2xl space-y-5">
@@ -261,6 +266,9 @@ export default function SettingsPage() {
               </div>
             )}
             <div className="divide-y divide-gray-100">
+              {staffError && !staff && (
+                <ErrorState error={staffError} onRetry={() => mutateStaff()} retrying={staffValidating} />
+              )}
               {staff?.map((s) => (
                 <div key={s.id} className="flex items-center py-3">
                   <div className="flex-1">

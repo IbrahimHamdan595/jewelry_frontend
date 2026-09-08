@@ -3,6 +3,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Sliders, History } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorRow, ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -25,11 +26,11 @@ export default function LotsPage() {
   if (karatFilter) listParams.set("karat", karatFilter);
   if (includeDepleted) listParams.set("include_depleted", "true");
 
-  const { data, mutate } = useSWR<LotListResponse>(
+  const { data, error: loadError, isValidating, mutate } = useSWR<LotListResponse>(
     `/lots?${listParams}`,
     apiFetcher,
   );
-  const { data: totals, mutate: mutateTotals } = useSWR<LotTotalsResponse>(
+  const { data: totals, error: totalsError, mutate: mutateTotals } = useSWR<LotTotalsResponse>(
     "/lots/totals",
     apiFetcher,
   );
@@ -45,7 +46,9 @@ export default function LotsPage() {
     <div className="space-y-5">
       {/* Per-karat pool totals */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {KARATS.map((k) => {
+        {totalsError && !totals ? (
+          <ErrorState className="col-span-full" error={totalsError} onRetry={() => mutateTotals()} />
+        ) : KARATS.map((k) => {
           if (!totals) return <CardSkeleton key={k} />;
           const row = totals.by_karat.find((r) => r.karat === k);
           return (
@@ -144,7 +147,9 @@ export default function LotsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {!data ? (
+            {loadError && !data ? (
+              <ErrorRow cols={7} error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+            ) : !data ? (
               <TableSkeleton cols={7} />
             ) : !data.items.length ? (
               <tr>

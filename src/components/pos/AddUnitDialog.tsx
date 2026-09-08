@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import type { UnitPrice, UnitTypeListResponse } from "@/types/api";
@@ -21,7 +22,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const { data: types } = useSWR<UnitTypeListResponse>(
+  const { data: types, error: typesError, isValidating: typesValidating, mutate: mutateTypes } = useSWR<UnitTypeListResponse>(
     `/${resource}?is_active=true&page_size=200`,
     apiFetcher,
   );
@@ -98,7 +99,11 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
         />
 
         <div className="border border-white/10 rounded max-h-60 overflow-y-auto divide-y divide-white/5">
-          {filtered.length === 0 ? (
+          {typesError && !types ? (
+            <ErrorState variant="dark" className="m-2 p-4" error={typesError} onRetry={() => mutateTypes()} retrying={typesValidating} />
+          ) : !types ? (
+            <div className="p-4 text-center text-pos-gray text-sm animate-pulse">Loading…</div>
+          ) : filtered.length === 0 ? (
             <div className="p-4 text-center text-pos-gray text-sm">
               No {kind.toLowerCase()} types found
             </div>

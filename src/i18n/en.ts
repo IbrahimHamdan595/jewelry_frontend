@@ -215,6 +215,8 @@ export interface Translations {
     reference: string;
     notFoundTitle: string;
     notFoundHint: string;
+    recordNotFound: string;
+    recordNotFoundHint: string;
     rateUnavailable: string;
     lastKnownRate: string;
     rateFeedDown: string;
@@ -557,6 +559,8 @@ const en: Translations = {
     reference: "Reference",
     notFoundTitle: "Page not found",
     notFoundHint: "That address doesn't match any screen in this system.",
+    recordNotFound: "Not found",
+    recordNotFoundHint: "This record doesn't exist or has been deleted.",
     rateUnavailable: "Rate unavailable",
     lastKnownRate: "Showing the last known rate",
     rateFeedDown: "Feed down",

@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Info, Lock,
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
   StockTake, StockTakeLine, StockTakeRefType,
@@ -18,17 +19,15 @@ interface Props { params: { id: string } }
 
 export default function StockTakeDetailPage({ params }: Props) {
   const takeId = params.id;
-  const { data: take, mutate, error } = useSWR<StockTake>(
+  const { data: take, mutate, error, isValidating } = useSWR<StockTake>(
     `/stock-takes/${takeId}`,
     apiFetcher,
   );
 
-  if (error) {
+  if (error && !take) {
     return (
       <div className="max-w-4xl">
-        <div className="bg-red-50 border border-red-200 rounded p-4 text-sm text-red-800">
-          {error.message ?? "Failed to load stock-take"}
-        </div>
+        <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />
       </div>
     );
   }

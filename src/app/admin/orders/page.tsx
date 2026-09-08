@@ -4,6 +4,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CalendarFilter, calendarParams, type CalendarValue } from "@/components/admin/CalendarFilter";
@@ -89,7 +90,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const params = new URLSearchParams({ status, page: String(page), ...calendarParams(cal) });
-  const { data } = useSWR<OrderListResponse>(`/orders?${params}`, apiFetcher);
+  const { data, error, isValidating, mutate } = useSWR<OrderListResponse>(`/orders?${params}`, apiFetcher);
 
   return (
     <div className="space-y-4">
@@ -118,7 +119,8 @@ function SellTab({ cal }: { cal: CalendarValue }) {
               </tr>
             </thead>
             <tbody>
-              {!data && <TableSkeleton cols={8} />}
+              {error && !data && <ErrorRow cols={8} error={error} onRetry={() => mutate()} retrying={isValidating} />}
+              {!error && !data && <TableSkeleton cols={8} />}
               {data && data.items.length === 0 && <EmptyRow cols={8} label="No orders for this period" />}
               {data?.items.map((o) => (
                 <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/50">
@@ -148,7 +150,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
 function PurchasesTab({ cal }: { cal: CalendarValue }) {
   const [page, setPage] = useState(1);
   const params = new URLSearchParams({ page: String(page), ...calendarParams(cal) });
-  const { data } = useSWR<PurchaseListResponse>(`/suppliers/purchases/list?${params}`, apiFetcher);
+  const { data, error, isValidating, mutate } = useSWR<PurchaseListResponse>(`/suppliers/purchases/list?${params}`, apiFetcher);
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
@@ -162,7 +164,8 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
             </tr>
           </thead>
           <tbody>
-            {!data && <TableSkeleton cols={7} />}
+            {error && !data && <ErrorRow cols={7} error={error} onRetry={() => mutate()} retrying={isValidating} />}
+            {!error && !data && <TableSkeleton cols={7} />}
             {data && data.items.length === 0 && <EmptyRow cols={7} label="No supplier purchases for this period" />}
             {data?.items.map((p) => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
@@ -194,7 +197,7 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
 function BuybacksTab({ cal }: { cal: CalendarValue }) {
   const [page, setPage] = useState(1);
   const params = new URLSearchParams({ page: String(page), ...calendarParams(cal) });
-  const { data } = useSWR<BuybackListResponse>(`/buybacks?${params}`, apiFetcher);
+  const { data, error, isValidating, mutate } = useSWR<BuybackListResponse>(`/buybacks?${params}`, apiFetcher);
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
@@ -208,7 +211,8 @@ function BuybacksTab({ cal }: { cal: CalendarValue }) {
             </tr>
           </thead>
           <tbody>
-            {!data && <TableSkeleton cols={7} />}
+            {error && !data && <ErrorRow cols={7} error={error} onRetry={() => mutate()} retrying={isValidating} />}
+            {!error && !data && <TableSkeleton cols={7} />}
             {data && data.items.length === 0 && <EmptyRow cols={7} label="No buybacks for this period" />}
             {data?.items.map((b) => (
               <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50/50">

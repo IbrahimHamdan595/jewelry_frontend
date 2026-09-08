@@ -221,6 +221,8 @@ const ar: Translations = {
     reference: "المرجع",
     notFoundTitle: "الصفحة غير موجودة",
     notFoundHint: "هذا العنوان لا يطابق أي شاشة في النظام.",
+    recordNotFound: "غير موجود",
+    recordNotFoundHint: "هذا السجل غير موجود أو تم حذفه.",
     rateUnavailable: "السعر غير متاح",
     lastKnownRate: "يُعرض آخر سعر معروف",
     rateFeedDown: "المصدر متوقف",

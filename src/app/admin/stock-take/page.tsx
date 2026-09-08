@@ -13,11 +13,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import type { StockTake, StockTakeList } from "@/types/stock-take";
 
 export default function StockTakeIndexPage() {
   const router = useRouter();
-  const { data, mutate } = useSWR<StockTakeList>(
+  const { data, error: loadError, isValidating, mutate } = useSWR<StockTakeList>(
     "/stock-takes?page_size=50",
     apiFetcher,
   );
@@ -68,7 +69,9 @@ export default function StockTakeIndexPage() {
         </div>
       )}
 
-      {!data ? (
+      {loadError && !data ? (
+        <ErrorState error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+      ) : !data ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
