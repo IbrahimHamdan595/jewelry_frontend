@@ -3,12 +3,13 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import type { Category } from "@/types/api";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 
 export default function CategoriesPage() {
-  const { data: categories, mutate } = useSWR<Category[]>(
+  const { data: categories, error: loadError, isValidating, mutate } = useSWR<Category[]>(
     "/categories?include_inactive=true",
     apiFetcher,
   );
@@ -139,7 +140,9 @@ export default function CategoriesPage() {
       )}
 
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-        {!categories ? (
+        {loadError && !categories ? (
+          <ErrorState className="m-4" error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+        ) : !categories ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[420px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">

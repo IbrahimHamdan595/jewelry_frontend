@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronRight, RefreshCw, CheckCircle, AlertTriangle, Bell, BellOff,
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorRow } from "@/components/ui/error-state";
 import { formatDateTime } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -168,7 +169,7 @@ function LedgerBrowser() {
   if (refType) params.set("ref_type", refType);
   if (refId) params.set("ref_id", refId);
 
-  const { data, isLoading } = useSWR<LedgerListResponse>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<LedgerListResponse>(
     `/ledger?${params}`,
     apiFetcher,
   );
@@ -239,7 +240,9 @@ function LedgerBrowser() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading ? (
+            {error && !data ? (
+              <ErrorRow cols={5} error={error} onRetry={() => mutate()} retrying={isValidating} />
+            ) : isLoading ? (
               <TableSkeleton cols={5} />
             ) : !data?.items.length ? (
               <tr>

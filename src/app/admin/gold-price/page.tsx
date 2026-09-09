@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { formatDateTime } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
@@ -21,7 +22,7 @@ const KARATS: { key: KaratKey; label: string }[] = [
 ];
 
 export default function GoldPricePage() {
-  const { rate, refresh } = useGoldRate();
+  const { rate, refresh, error: rateError, isValidating: rateValidating } = useGoldRate();
   const [range, setRange] = useState<Range>("24h");
   const [karat, setKarat] = useState<KaratKey>("24k");
   const [cal, setCal] = useState<CalendarValue>({ granularity: "", date: "" });
@@ -45,7 +46,7 @@ export default function GoldPricePage() {
   const historyQuery = Object.keys(calQs).length
     ? new URLSearchParams(calQs).toString()
     : `range=${range}`;
-  const { data: history } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?${historyQuery}`, apiFetcher, { refreshInterval: 30000 });
+  const { data: history, error: historyError, isValidating: historyValidating, mutate: mutateHistory } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?${historyQuery}`, apiFetcher, { refreshInterval: 30000 });
 
   async function handleSetOverride() {
     setOverrideError(null);
@@ -94,7 +95,10 @@ export default function GoldPricePage() {
       )}
 
       {/* Hero card */}
-      {!rate ? (
+      {rateError && rate && <RefreshFailedNotice onRetry={() => refresh()} retrying={rateValidating} />}
+      {rateError && !rate ? (
+        <ErrorState className="h-[120px]" error={rateError} onRetry={() => refresh()} retrying={rateValidating} />
+      ) : !rate ? (
         <CardSkeleton className="bg-admin-sidebar border-0 h-[120px]" />
       ) : (
         <div className="bg-admin-sidebar rounded-xl p-6">
@@ -167,7 +171,9 @@ export default function GoldPricePage() {
         <div className="mb-4">
           <CalendarFilter value={cal} onChange={setCal} />
         </div>
-        {!history ? (
+        {historyError && !history ? (
+          <ErrorState className="h-[200px]" error={historyError} onRetry={() => mutateHistory()} retrying={historyValidating} />
+        ) : !history ? (
           <Skeleton className="h-[200px]" />
         ) : history.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-sm text-gray-400">

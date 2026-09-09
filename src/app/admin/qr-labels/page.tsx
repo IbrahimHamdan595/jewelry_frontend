@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import useSWR from "swr";
 import JsBarcode from "jsbarcode";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import type { ProductListResponse, Product } from "@/types/api";
 
@@ -25,7 +26,7 @@ function generateBarcode(code: string): string {
 }
 
 export default function QRLabelsPage() {
-  const { data } = useSWR<ProductListResponse>(
+  const { data, error, isValidating, mutate } = useSWR<ProductListResponse>(
     "/products?status=active&page_size=100",
     apiFetcher
   );
@@ -154,6 +155,7 @@ export default function QRLabelsPage() {
             </label>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+            {error && !data && <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />}
             {data?.items.map((p) => (
               <div
                 key={p.id}

@@ -3,15 +3,19 @@ import useSWR from "swr";
 import Link from "next/link";
 import { Banknote, Coins, Users } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
 import type { AccountsPayable } from "@/types/api";
 
 export default function AccountsPayablePage() {
-  const { data } = useSWR<AccountsPayable>("/accounts-payable", apiFetcher, {
+  const { data, error, isValidating, mutate } = useSWR<AccountsPayable>("/accounts-payable", apiFetcher, {
     refreshInterval: 60000,
   });
 
+  if (error && !data) {
+    return <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />;
+  }
   if (!data) {
     return (
       <div className="space-y-6">

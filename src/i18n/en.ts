@@ -199,6 +199,31 @@ export interface Translations {
     checkout: string;
   };
 
+  errors: {
+    loadFailed: string;
+    loadFailedHint: string;
+    refreshFailed: string;
+    tryAgain: string;
+    retryIn: (seconds: number) => string;
+    retrying: string;
+    somethingWentWrong: string;
+    boundaryHint: string;
+    reloadPage: string;
+    goToPos: string;
+    goToDashboard: string;
+    goToLogin: string;
+    reference: string;
+    notFoundTitle: string;
+    notFoundHint: string;
+    recordNotFound: string;
+    recordNotFoundHint: string;
+    rateUnavailable: string;
+    lastKnownRate: string;
+    rateFeedDown: string;
+    rateAsOf: string;
+    fetchingRate: string;
+  };
+
   products: {
     stones: string;
     carats: string;
@@ -516,6 +541,31 @@ const en: Translations = {
     customer: "Customer",
     customerName: "Customer Name",
     checkout: "Checkout",
+  },
+
+  errors: {
+    loadFailed: "Couldn't load this data",
+    loadFailedHint: "The server didn't respond. Check the connection and try again.",
+    refreshFailed: "Couldn't refresh — showing the last data received",
+    tryAgain: "Try again",
+    retryIn: (seconds) => `Try again in ${seconds}s`,
+    retrying: "Retrying…",
+    somethingWentWrong: "Something went wrong",
+    boundaryHint: "This screen hit a problem it couldn't recover from on its own. Your sign-in and any items in the cart are unaffected.",
+    reloadPage: "Reload page",
+    goToPos: "Back to the register",
+    goToDashboard: "Back to the dashboard",
+    goToLogin: "Go to sign in",
+    reference: "Reference",
+    notFoundTitle: "Page not found",
+    notFoundHint: "That address doesn't match any screen in this system.",
+    recordNotFound: "Not found",
+    recordNotFoundHint: "This record doesn't exist or has been deleted.",
+    rateUnavailable: "Rate unavailable",
+    lastKnownRate: "Showing the last known rate",
+    rateFeedDown: "Feed down",
+    rateAsOf: "as of",
+    fetchingRate: "Fetching rate…",
   },
 
   products: {

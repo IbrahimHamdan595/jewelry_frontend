@@ -3,6 +3,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Sparkles, Flame, AlertCircle } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD, formatDateTime } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -21,7 +22,7 @@ export default function BuybacksTab() {
   const params = new URLSearchParams({ page: "1", page_size: "50" });
   if (kindFilter) params.set("kind", kindFilter);
 
-  const { data, mutate } = useSWR<BuybackListResponse>(
+  const { data, error: loadError, isValidating, mutate } = useSWR<BuybackListResponse>(
     `/buybacks?${params}`,
     apiFetcher,
   );
@@ -74,7 +75,9 @@ export default function BuybacksTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {!data ? (
+            {loadError && !data ? (
+              <ErrorRow cols={7} error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+            ) : !data ? (
               <TableSkeleton cols={7} />
             ) : items.length === 0 ? (
               <tr>

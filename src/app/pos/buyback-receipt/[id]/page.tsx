@@ -3,6 +3,7 @@ import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { CheckCircle, Printer, RotateCw } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { Receipt, ReceiptPrintStyles } from "@/components/shared/Receipt";
 import type { Receipt as ReceiptData } from "@/types/api";
@@ -10,8 +11,15 @@ import type { Receipt as ReceiptData } from "@/types/api";
 export default function BuybackReceiptPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: receipt } = useSWR<ReceiptData>(`/buybacks/${id}/receipt`, apiFetcher);
+  const { data: receipt, error, isValidating, mutate } = useSWR<ReceiptData>(`/buybacks/${id}/receipt`, apiFetcher);
 
+  if (error && !receipt) {
+    return (
+      <div className="min-h-screen bg-pos-bg flex items-center justify-center p-6">
+        <ErrorState variant="dark" error={error} onRetry={() => mutate()} retrying={isValidating} />
+      </div>
+    );
+  }
   if (!receipt) {
     return (
       <div className="min-h-screen bg-pos-bg flex items-center justify-center text-pos-cream">

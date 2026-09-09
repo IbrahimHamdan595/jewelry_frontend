@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
 import { apiFetcher, api, uploadFile } from "@/lib/api-client";
+import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -36,7 +37,7 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
   if (search) params.set("search", search);
   if (!includeInactive) params.set("is_active", "true");
 
-  const { data, mutate } = useSWR<UnitTypeListResponse>(
+  const { data, error: loadError, isValidating, mutate } = useSWR<UnitTypeListResponse>(
     `/${resource}?${params}`,
     apiFetcher,
   );
@@ -132,7 +133,9 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {!data ? (
+            {loadError && !data ? (
+              <ErrorRow cols={9} error={loadError} onRetry={() => mutate()} retrying={isValidating} />
+            ) : !data ? (
               <TableSkeleton cols={9} />
             ) : !data.items.length ? (
               <tr>

@@ -3,6 +3,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
+import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
 import { formatUSD, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
@@ -13,9 +14,15 @@ import { Skeleton, SkeletonText, CardSkeleton, TableSkeleton } from "@/component
 import type { DashboardData } from "@/types/api";
 
 export default function DashboardPage() {
-  const { data, isLoading } = useSWR<DashboardData>("/reports/dashboard", apiFetcher, { refreshInterval: 60000 });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<DashboardData>("/reports/dashboard", apiFetcher, { refreshInterval: 60000 });
   const { t } = useLang();
 
+  // Precedence matters: SWR keeps the last good `data` through a failed
+  // refresh, so "error with data" renders the data plus a notice, and only
+  // "error without data" replaces the skeleton. The skeleton is for loading.
+  if (error && !data) {
+    return <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />;
+  }
   if (isLoading || !data) {
     return <DashboardSkeleton />;
   }
@@ -27,6 +34,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <MarketClosedBanner />
+      {error && <RefreshFailedNotice onRetry={() => mutate()} retrying={isValidating} />}
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">

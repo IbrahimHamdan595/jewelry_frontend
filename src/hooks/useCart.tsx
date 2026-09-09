@@ -1,6 +1,7 @@
 "use client";
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from "react";
 import type { Karat, OrderItemKind, PaymentMethod } from "@/types/api";
+import { readStoredCart, writeStoredCart, clearStoredCart } from "@/lib/cart-storage";
 
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "CASH";
 
@@ -67,6 +68,29 @@ export function CartProvider({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(DEFAULT_PAYMENT_METHOD);
   const [discountPercentRaw, setDiscountPercentRaw] = useState(0);
 
+  // Rehydrate after mount (not in the initial state) so server and client
+  // render the same empty cart and hydration does not mismatch. The flag stops
+  // the persist effect from overwriting storage with that empty cart first.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const stored = readStoredCart();
+    if (stored) {
+      setItems(stored.items);
+      setPaymentMethod(stored.paymentMethod);
+      setDiscountPercentRaw(stored.discountPercent);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (items.length === 0 && paymentMethod === DEFAULT_PAYMENT_METHOD && discountPercentRaw === 0) {
+      clearStoredCart();
+      return;
+    }
+    writeStoredCart({ items, paymentMethod, discountPercent: discountPercentRaw });
+  }, [hydrated, items, paymentMethod, discountPercentRaw]);
+
   const capFor = (item: CartItem) =>
     item.available != null ? Math.min(item.available, HARD_QTY_CAP) : HARD_QTY_CAP;
 
@@ -108,6 +132,7 @@ export function CartProvider({
   const clear = useCallback(() => {
     setItems([]);
     setDiscountPercentRaw(0);
+    clearStoredCart();
   }, []);
 
   // Clamp the discount to [0, maxDiscountPercent] — the server enforces the same

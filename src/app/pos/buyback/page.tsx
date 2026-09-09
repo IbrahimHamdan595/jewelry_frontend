@@ -6,6 +6,7 @@ import { LogOut, Coins, Layers, Recycle, Sparkles, Scale } from "lucide-react";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { api, apiFetcher, staleRateError } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
@@ -193,7 +194,7 @@ function PureGoldForm() {
     priceMode === "FORMULA" && weight && Number(weight) > 0
       ? `/buybacks/quote?karat=${karat}&weight_grams=${weight}`
       : null;
-  const { data: quote } = useSWR<QuoteOut>(quoteKey, apiFetcher);
+  const { data: quote, error: quoteError, isValidating: quoteValidating, mutate: mutateQuote } = useSWR<QuoteOut>(quoteKey, apiFetcher);
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
@@ -262,6 +263,8 @@ function PureGoldForm() {
 
       {priceMode === "FORMULA" && quote ? (
         <QuoteCard quote={quote} />
+      ) : priceMode === "FORMULA" && quoteError ? (
+        <ErrorState variant="dark" className="p-4" error={quoteError} onRetry={() => mutateQuote()} retrying={quoteValidating} />
       ) : priceMode === "FORMULA" ? (
         <div className="text-xs text-pos-gray italic">
           Enter weight to see the live quote.
@@ -333,7 +336,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
     priceMode === "FORMULA" && selected
       ? `/buybacks/quote?karat=${selected.karat}&weight_grams=${selected.weight_grams}`
       : null;
-  const { data: perUnitQuote } = useSWR<QuoteOut>(quoteKey, apiFetcher);
+  const { data: perUnitQuote, error: perUnitQuoteError, isValidating: perUnitQuoteValidating, mutate: mutatePerUnitQuote } = useSWR<QuoteOut>(quoteKey, apiFetcher);
 
   const quantity = Math.max(1, Number(qty) || 1);
   const totalQuote =
@@ -412,6 +415,9 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
 
       <PriceModeToggle priceMode={priceMode} setPriceMode={setPriceMode} />
 
+      {priceMode === "FORMULA" && perUnitQuoteError && !perUnitQuote && (
+        <ErrorState variant="dark" className="p-4" error={perUnitQuoteError} onRetry={() => mutatePerUnitQuote()} retrying={perUnitQuoteValidating} />
+      )}
       {priceMode === "FORMULA" && perUnitQuote && (
         <div className="bg-white/5 border border-white/10 rounded p-4 space-y-1.5 text-xs">
           <Row label="Per unit (formula)" value={formatUSD(perUnitQuote.buy_price)} />

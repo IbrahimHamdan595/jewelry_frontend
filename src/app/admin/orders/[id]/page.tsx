@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import { formatUSD, formatLBP, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -25,7 +26,7 @@ function KindPill({ kind }: { kind: OrderItemKind }) {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: order, mutate } = useSWR<Order>(`/orders/${id}`, apiFetcher);
+  const { data: order, error: loadError, isValidating, mutate } = useSWR<Order>(`/orders/${id}`, apiFetcher);
   const [voidReason, setVoidReason] = useState("");
   const [showVoid, setShowVoid] = useState(false);
   const [refundItem, setRefundItem] = useState<OrderItem | null>(null);
@@ -33,6 +34,8 @@ export default function OrderDetailPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  if (loadError && !order)
+    return <ErrorState error={loadError} onRetry={() => mutate()} retrying={isValidating} />;
   if (!order)
     return (
       <div className="max-w-3xl space-y-6">

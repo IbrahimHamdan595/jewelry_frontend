@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import useSWR from "swr";
 import { Flame, Recycle, AlertCircle, Gem } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
@@ -14,7 +15,7 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: product, mutate } = useSWR<Product>(`/products/${id}`, apiFetcher);
+  const { data: product, error, isValidating, mutate } = useSWR<Product>(`/products/${id}`, apiFetcher);
   const [melting, setMelting] = useState(false);
 
   async function handleSave(data: any) {
@@ -22,6 +23,8 @@ export default function EditProductPage() {
     router.push("/admin/products");
   }
 
+  if (error && !product)
+    return <ErrorState error={error} onRetry={() => mutate()} retrying={isValidating} />;
   if (!product)
     return (
       <div className="space-y-6">
