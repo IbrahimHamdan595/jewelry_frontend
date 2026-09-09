@@ -94,7 +94,7 @@ function Header({ take }: { take: StockTake }) {
             )}
           </p>
           {take.notes && (
-            <p className="text-xs text-gray-600 mt-2 italic">"{take.notes}"</p>
+            <p className="text-xs text-gray-600 mt-2 italic">&quot;{take.notes}&quot;</p>
           )}
         </div>
         <StatusBadgeLarge
@@ -307,7 +307,7 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
             {take.lines.length} {take.lines.length === 1 ? "line" : "lines"} counted so far
           </div>
           <p className="text-xs text-gray-500 mt-1 max-w-md">
-            Submitting will freeze these counts and compute variances. You'll
+            Submitting will freeze these counts and compute variances. You&apos;ll
             then review each variance on the next screen and approve or reject
             individually. <span className="font-medium">Inventory is NOT
             changed by submit — only by approving variances afterwards.</span>
@@ -493,7 +493,7 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
           <div className="font-medium">Variances awaiting decision</div>
           <p className="text-xs text-amber-800/90 mt-1">
             Each variance is described in plain words below
-            (e.g. "short by 2", "over by 1"). Approving applies the
+            (e.g. &quot;short by 2&quot;, &quot;over by 1&quot;). Approving applies the
             adjustment to inventory; rejecting leaves the system
             knowingly different from your physical count and records the
             reason. Both actions are permanent and audited.
@@ -603,7 +603,7 @@ function ClosedView({ take }: { take: StockTake }) {
                       <td className="px-4 py-2 text-right text-gray-800">{l.counted_qty}</td>
                       <td className="px-4 py-2 text-red-800 font-medium">{v.label}</td>
                       <td className="px-4 py-2 text-xs text-red-900 italic">
-                        "{l.rejection_reason}"
+                        &quot;{l.rejection_reason}&quot;
                       </td>
                     </tr>
                   );
@@ -690,7 +690,7 @@ function VarianceTable({
                     <ResolutionBadge resolution={l.resolution} />
                     {l.resolution === "REJECTED" && l.rejection_reason && (
                       <div className="text-[11px] text-red-700/80 italic mt-0.5 max-w-xs">
-                        "{l.rejection_reason}"
+                        &quot;{l.rejection_reason}&quot;
                       </div>
                     )}
                   </td>

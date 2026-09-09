@@ -82,7 +82,7 @@ export default function StockTakeIndexPage() {
           <ClipboardCheck className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <div className="text-sm font-medium text-gray-800">No stock-takes yet</div>
           <div className="text-xs text-gray-500 mt-1">
-            Click "Start new count" to begin a physical count.
+            Click &quot;Start new count&quot; to begin a physical count.
           </div>
         </div>
       ) : (
