@@ -200,6 +200,26 @@ export interface Translations {
     checkout: string;
   };
 
+  settings: {
+    accountingTab: string;
+    autoPostTitle: string;
+    autoPostHelp: string;
+    autoPostOn: string;
+    autoPostOff: string;
+    autoPostUnavailable: string;
+    autoPostEnableTitle: string;
+    autoPostEnableWarning: string;
+    autoPostEnableConfirm: string;
+    autoPostDisableTitle: string;
+    autoPostDisableWarning: string;
+    autoPostDisableConfirm: string;
+    autoPostDisableBlocked: string;
+    autoPostStateUnknownBlocked: string;
+    cancel: string;
+    close: string;
+    saving: string;
+  };
+
   errors: {
     loadFailed: string;
     loadFailedHint: string;
@@ -245,7 +265,10 @@ export interface Translations {
       ledgerChain: string; intact: string; broken: string; fxRate: string;
     };
     landing: {
-      title: string; description: string;
+      title: string;
+      descriptionOn: string; descriptionOff: string; descriptionUnknown: string;
+      stateTitle: string; entriesLabel: string; chainLabel: string; autoPostLabel: string;
+      noEntriesYet: string; couldNotVerify: string; on: string; off: string; notReported: string; openSettings: string;
       groupLedger: string; groupLedgerDesc: string;
       groupMoney: string; groupMoneyDesc: string;
       groupReports: string; groupReportsDesc: string;
@@ -545,6 +568,26 @@ const en: Translations = {
     checkout: "Checkout",
   },
 
+  settings: {
+    accountingTab: "Accounting",
+    autoPostTitle: "Post sales to the books automatically",
+    autoPostHelp: "When this is on, each sale, purchase, buyback and payment is written to the general ledger as a balanced journal entry the moment it happens. When it is off, the shop keeps trading and the inventory ledger records it, but the accounting books stay empty.",
+    autoPostOn: "On",
+    autoPostOff: "Off",
+    autoPostUnavailable: "Not available yet: the server doesn't report this setting. It needs the backend change (NEX-52) before it can be switched from here.",
+    autoPostEnableTitle: "Start posting to the books?",
+    autoPostEnableWarning: "From now on, every sale, purchase, buyback and payment will be written to the ledger. Anything sold before this moment stays out of the books unless it is posted separately — agree the start date with your accountant first.",
+    autoPostEnableConfirm: "Turn on",
+    autoPostDisableTitle: "Stop posting to the books?",
+    autoPostDisableWarning: "New sales will stop reaching the ledger. The books are empty right now, so nothing is left behind.",
+    autoPostDisableConfirm: "Turn off",
+    autoPostDisableBlocked: "The ledger already has entries. Turning auto-posting off now would leave a gap in the books, so it can't be switched off from here. Ask your accountant how to close the books instead.",
+    autoPostStateUnknownBlocked: "The ledger's state couldn't be checked, so auto-posting can't be switched off from here right now. Try again in a moment.",
+    cancel: "Cancel",
+    close: "Close",
+    saving: "Saving…",
+  },
+
   errors: {
     loadFailed: "Couldn't load this data",
     loadFailedHint: "The server didn't respond. Check the connection and try again.",
@@ -591,7 +634,19 @@ const en: Translations = {
     },
     landing: {
       title: "Accounting",
-      description: "The books for Fawaz El Namel. Every sale, purchase, and payment is recorded here as double-entry accounting. Start with the section you need — each page explains what it's for.",
+      descriptionOn: "The books for Fawaz El Namel. Every sale, purchase, and payment is recorded here as double-entry accounting. Start with the section you need — each page explains what it's for.",
+      descriptionOff: "The books for Fawaz El Namel. Auto-posting is off, so sales are not being written to the books yet — the shop's trading is recorded in the inventory ledger only. An admin can turn it on under Settings › Accounting.",
+      descriptionUnknown: "The books for Fawaz El Namel. The server does not report whether sales post here automatically; check Settings › Accounting once that is available.",
+      stateTitle: "Ledger state",
+      entriesLabel: "Journal entries",
+      chainLabel: "Chain",
+      autoPostLabel: "Auto-posting",
+      noEntriesYet: "No entries yet",
+      couldNotVerify: "Couldn't verify",
+      on: "On",
+      off: "Off",
+      notReported: "Not reported by the server",
+      openSettings: "Open Settings",
       groupLedger: "Ledger",
       groupLedgerDesc: "The core books — accounts, entries, and the balance proof.",
       groupMoney: "Money",

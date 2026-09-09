@@ -184,7 +184,20 @@ export interface Settings {
   buyback_rate_drift_pct_max: number | string;
   nisab_grams: number | string;
   max_discount_percent: number | string;
+  /**
+   * Whether sales/purchases/payments post to the general ledger. Optional
+   * until the backend exposes it on GET/PATCH /settings (NEX-52); the UI
+   * treats "absent" as unknown, never as off.
+   */
+  accounting_auto_post_enabled?: boolean;
   updated_at: string;
+}
+
+/** GET /accounting/ledger/verify — the GL hash chain and its head row. */
+export interface LedgerVerify {
+  status: "empty" | "intact" | "broken" | string;
+  head_matches: boolean;
+  head_row_count: number;
 }
 
 export interface Staff {

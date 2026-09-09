@@ -3,12 +3,23 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
-import type { Settings, Staff } from "@/types/api";
+import { Switch } from "@/components/ui/switch";
+import { useLang } from "@/context/LanguageContext";
+import type { LedgerVerify, Settings, Staff } from "@/types/api";
+
+type Tab = "store" | "pricing" | "receipt" | "accounting" | "staff" | "security";
+type AutoPostPrompt = "enable" | "disable" | "blocked-entries" | "blocked-unknown";
 
 export default function SettingsPage() {
+  const { t } = useLang();
   const { data: settings, error: settingsError, isValidating: settingsValidating, mutate } = useSWR<Settings>("/settings", apiFetcher);
   const { data: staff, error: staffError, isValidating: staffValidating, mutate: mutateStaff } = useSWR<Staff[]>("/staff", apiFetcher);
-  const [tab, setTab] = useState<"store" | "pricing" | "receipt" | "staff" | "security">("store");
+  const [tab, setTab] = useState<Tab>("store");
+  // The chain check walks every journal entry, so only ask while the tab is open.
+  const { data: ledger } = useSWR<LedgerVerify>(tab === "accounting" ? "/accounting/ledger/verify" : null, apiFetcher);
+  const [autoPostPrompt, setAutoPostPrompt] = useState<AutoPostPrompt | null>(null);
+  const [autoPostBusy, setAutoPostBusy] = useState(false);
+  const [autoPostError, setAutoPostError] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: "", email: "", password: "" });
@@ -20,10 +31,45 @@ export default function SettingsPage() {
 
   useEffect(() => { if (settings) setForm(settings); }, [settings]);
 
+  // Auto-post is switched through its own confirmed PATCH below, never as a
+  // side effect of saving another tab — the form copy is stripped of it.
+  const autoPostFlag = settings?.accounting_auto_post_enabled;
+  const autoPostExposed = typeof autoPostFlag === "boolean";
+  const ledgerHasEntries = ledger ? ledger.status !== "empty" || ledger.head_row_count > 0 : null;
+
+  function requestAutoPostToggle() {
+    if (!autoPostExposed) return;
+    setAutoPostError(null);
+    if (!autoPostFlag) {
+      setAutoPostPrompt("enable");
+    } else if (ledgerHasEntries === null) {
+      setAutoPostPrompt("blocked-unknown"); // can't prove the books are empty: fail safe
+    } else if (ledgerHasEntries) {
+      setAutoPostPrompt("blocked-entries");
+    } else {
+      setAutoPostPrompt("disable");
+    }
+  }
+
+  async function applyAutoPost(next: boolean) {
+    setAutoPostBusy(true);
+    setAutoPostError(null);
+    try {
+      await api.patch("/settings", { accounting_auto_post_enabled: next });
+      await mutate(); // the switch renders the server's answer, never the click
+      setAutoPostPrompt(null);
+    } catch (e) {
+      setAutoPostError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setAutoPostBusy(false);
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      await api.patch("/settings", form);
+      const { accounting_auto_post_enabled: _autoPost, ...payload } = form;
+      await api.patch("/settings", payload);
       mutate();
     } finally {
       setSaving(false);
@@ -63,6 +109,7 @@ export default function SettingsPage() {
     { id: "store" as const, label: "Store Info" },
     { id: "pricing" as const, label: "Default Pricing" },
     { id: "receipt" as const, label: "Receipt" },
+    { id: "accounting" as const, label: t.settings.accountingTab },
     { id: "staff" as const, label: "Staff" },
     { id: "security" as const, label: "Security" },
   ];
@@ -75,7 +122,7 @@ export default function SettingsPage() {
     <div className="max-w-2xl space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Settings</h2>
-        {tab !== "staff" && tab !== "security" && (
+        {tab !== "staff" && tab !== "security" && tab !== "accounting" && (
           <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors">
             {saving ? "Saving…" : "Save Changes"}
           </button>
@@ -245,6 +292,66 @@ export default function SettingsPage() {
             >
               {pwSaving ? "Saving…" : "Update Password"}
             </button>
+          </div>
+        )}
+
+        {tab === "accounting" && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-800">{t.settings.autoPostTitle}</div>
+                <p className="text-xs text-gray-500 mt-1">{t.settings.autoPostHelp}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs font-medium ${autoPostFlag ? "text-green-700" : "text-gray-500"}`}>
+                  {autoPostExposed ? (autoPostFlag ? t.settings.autoPostOn : t.settings.autoPostOff) : "—"}
+                </span>
+                <Switch
+                  label={t.settings.autoPostTitle}
+                  checked={autoPostFlag === true}
+                  disabled={!autoPostExposed || autoPostBusy}
+                  onClick={requestAutoPostToggle}
+                />
+              </div>
+            </div>
+
+            {!autoPostExposed && (
+              <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-600">{t.settings.autoPostUnavailable}</div>
+            )}
+
+            {autoPostPrompt && (
+              <div
+                role="alertdialog"
+                aria-labelledby="autopost-prompt-title"
+                className={`rounded p-4 space-y-3 border ${autoPostPrompt === "enable" ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}
+              >
+                <div id="autopost-prompt-title" className="text-sm font-semibold text-gray-800">
+                  {autoPostPrompt === "enable" ? t.settings.autoPostEnableTitle : t.settings.autoPostDisableTitle}
+                </div>
+                <p className="text-xs text-gray-700">
+                  {autoPostPrompt === "enable" && t.settings.autoPostEnableWarning}
+                  {autoPostPrompt === "disable" && t.settings.autoPostDisableWarning}
+                  {autoPostPrompt === "blocked-entries" && t.settings.autoPostDisableBlocked}
+                  {autoPostPrompt === "blocked-unknown" && t.settings.autoPostStateUnknownBlocked}
+                </p>
+                {autoPostError && <p className="text-xs text-red-600">{autoPostError}</p>}
+                <div className="flex gap-2">
+                  {autoPostPrompt === "enable" && (
+                    <button onClick={() => applyAutoPost(true)} disabled={autoPostBusy} className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-xs rounded disabled:opacity-60">
+                      {autoPostBusy ? t.settings.saving : t.settings.autoPostEnableConfirm}
+                    </button>
+                  )}
+                  {autoPostPrompt === "disable" && (
+                    <button onClick={() => applyAutoPost(false)} disabled={autoPostBusy} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs rounded disabled:opacity-60">
+                      {autoPostBusy ? t.settings.saving : t.settings.autoPostDisableConfirm}
+                    </button>
+                  )}
+                  <button onClick={() => setAutoPostPrompt(null)} disabled={autoPostBusy} className="px-4 py-2 border border-gray-200 rounded text-xs text-gray-700 hover:bg-gray-50">
+                    {autoPostPrompt.startsWith("blocked") ? t.settings.close : t.settings.cancel}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
