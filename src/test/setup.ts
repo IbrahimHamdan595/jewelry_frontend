@@ -1,3 +1,7 @@
+// Run every test on a UTC clock, like CI and Vercel. This machine happens to
+// sit in Asia/Beirut, which would let timezone bugs pass locally by accident.
+process.env.TZ = "UTC";
+
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";

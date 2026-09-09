@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { LogOut, Coins, Layers, Recycle, Sparkles, Scale } from "lucide-react";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
+import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { api, apiFetcher, staleRateError } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
@@ -68,9 +69,7 @@ export default function BuybackPage() {
         </div>
         <div className="ml-auto flex items-center gap-5 shrink-0">
           <div className="hidden md:flex flex-col items-end">
-            <span className="text-pos-gray text-[10px] uppercase tracking-widest">
-              {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" })}
-            </span>
+            <TodayInBeirut className="text-pos-gray text-[10px] uppercase tracking-widest" />
             {mounted && user && (
               <span className="text-pos-cream text-xs mt-0.5">{user.name}</span>
             )}
