@@ -11,6 +11,9 @@ const ar: Translations = {
     signIn: "تسجيل الدخول",
     signingIn: "جارٍ الدخول…",
     roleHasNoScreens: "لا توجد شاشات لهذا الدور بعد. اطلب من المسؤول تغييره.",
+    showPassword: "إظهار كلمة المرور",
+    hidePassword: "إخفاء كلمة المرور",
+    failed: "فشل تسجيل الدخول",
   },
 
   nav: {
@@ -204,8 +207,6 @@ const ar: Translations = {
     customerName: "اسم العميل",
     checkout: "إتمام الشراء",
   },
-
-  // TODO(ar): stone terms — Arabic gemological terminology to be verified by native speaker
   settings: {
     accountingTab: "المحاسبة",
     autoPostTitle: "ترحيل المبيعات إلى الدفاتر تلقائياً",
@@ -252,13 +253,50 @@ const ar: Translations = {
   },
 
   products: {
-    stones: "Stones", // TODO(ar): stone terms
-    carats: "Carats", // TODO(ar): stone terms
-    stoneCount: "Stone count", // TODO(ar): stone terms
-    certificate: "Certificate", // TODO(ar): stone terms
-    stoneValue: "Stone value", // TODO(ar): stone terms
-    stoneNote: "Note", // TODO(ar): stone terms
-    stoneDetails: "Stone / Diamond Details", // TODO(ar): stone terms
+    stones: "الأحجار",
+    carats: "القيراط",
+    stoneCount: "عدد الأحجار",
+    certificate: "رقم الشهادة",
+    stoneValue: "قيمة الأحجار (دولار)",
+    stoneNote: "ملاحظة عن الأحجار",
+    stoneDetails: "تفاصيل الأحجار / الألماس",
+    stoneCost: "تكلفة الأحجار (دولار)",
+    hasStones: "يحتوي على ألماس / أحجار",
+    itemCode: "رمز الصنف",
+    category: "الفئة",
+    selectCategory: "اختر فئة…",
+    categoryPlaceholder: "أساور، خواتم، قلائد…",
+    karat: "العيار",
+    weightGrams: "الوزن (غ)",
+    marginPct: "هامش الربح %",
+    makingUsd: "المصنعية (دولار)",
+    qtyOnHand: "الكمية المتوفرة",
+    lowStockAlert: "تنبيه انخفاض المخزون عند (اختياري)",
+    noAlert: "بدون تنبيه",
+    certPlaceholder: "GIA-123456 (اختياري)",
+    notePlaceholder: "مثال: نقاء VS1، لون G (اختياري)",
+    productImages: "صور المنتج",
+    uploading: "جارٍ الرفع…",
+    dropHint: "انقر أو اسحب الصور إلى هنا",
+    fileHint: "JPG أو PNG أو WEBP — بحد أقصى 10 ميغابايت لكل صورة",
+    uploadFailed: "فشل الرفع",
+    hero: "الرئيسية",
+    setAsHero: "تعيين كصورة رئيسية",
+    removePhoto: "إزالة",
+    saving: "جارٍ الحفظ…",
+    saveProduct: "حفظ المنتج",
+    livePreview: "معاينة مباشرة",
+    productName: "اسم المنتج",
+    marketRate24k: "سعر السوق عيار 24",
+    purityRate: "سعر النقاء",
+    markup: "العلاوة",
+    effectiveRate: "السعر الفعلي",
+    metalValue: "قيمة المعدن",
+    margin: "هامش الربح",
+    makingCharge: "أجرة المصنعية",
+    retailPrice: "سعر البيع",
+    previewHint: "أدخل الوزن والأسعار لعرض السعر",
+    perGram: "/غ",
   },
 
   accounting: {

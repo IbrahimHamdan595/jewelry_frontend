@@ -60,3 +60,48 @@ describe("login landing", () => {
     expect(nav.push).not.toHaveBeenCalled();
   });
 });
+
+describe("login accessibility (NEX-64)", () => {
+  beforeEach(() => {
+    nav.push.mockClear();
+    auth.login.mockReset();
+    window.history.replaceState({}, "", "/login");
+  });
+
+  it("names both fields by their labels, not just placeholders", () => {
+    render(<LoginPage />);
+    expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
+  });
+
+  it("clicking a label reaches its input", () => {
+    render(<LoginPage />);
+    const input = screen.getByLabelText("Email");
+    const label = screen.getByText("Email").closest("label") as HTMLLabelElement;
+    expect(label.control).toBe(input);
+  });
+
+  it("lets password managers fill the form", () => {
+    render(<LoginPage />);
+    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
+  });
+
+  it("the show-password toggle is keyboard reachable and announced, in the current language", () => {
+    render(<LoginPage />);
+    const toggle = screen.getByRole("button", { name: /show password/i });
+    expect(toggle).not.toHaveAttribute("tabindex", "-1");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: /hide password/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "text");
+  });
+
+  it("announces a failed login to assistive technology", async () => {
+    auth.login.mockRejectedValue(new Error("Invalid credentials"));
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "x@y.z" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "pw" } });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/invalid credentials/i);
+  });
+});

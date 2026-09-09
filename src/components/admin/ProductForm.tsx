@@ -6,6 +6,7 @@ import { ImagePlus, Star, Trash2, Loader2 } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { apiFetcher, uploadFile } from "@/lib/api-client";
 import { calculatePrice, formatUSD, KARAT_LABEL } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
 import type { Category, Product, Settings } from "@/types/api";
 
 interface Photo {
@@ -41,6 +42,8 @@ interface Props {
 }
 
 export function ProductForm({ initial, onSave }: Props) {
+  const { t } = useLang();
+  const p = t.products;
   const { rate } = useGoldRate();
   const { data: categories } = useSWR<Category[]>("/categories", apiFetcher);
   const { data: settings } = useSWR<Settings>("/settings", apiFetcher);
@@ -131,7 +134,7 @@ export function ProductForm({ initial, onSave }: Props) {
         ]);
       }
     } catch (err: any) {
-      setUploadError(err.message ?? "Upload failed");
+      setUploadError(err.message ?? p.uploadFailed);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -189,26 +192,29 @@ export function ProductForm({ initial, onSave }: Props) {
         })}
         className="col-span-3 space-y-5"
       >
+        {/* Every input sits inside its <label>: a click focuses the field and a
+            screen reader names it, with no ids to keep in sync. Display-only
+            values use a plain heading instead of a label with no control. */}
         {initial && (
           <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Item Code</label>
+            <div className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.itemCode}</div>
             <div className="bg-gray-50 border border-gray-200 rounded px-3 py-2.5 text-sm font-mono text-gray-500">{initial.code}</div>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Name (English)</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.common.nameEn}</span>
             <input {...register("name_en", { required: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Name (Arabic)</label>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.common.nameAr}</span>
             <input {...register("name_ar")} dir="rtl" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold text-right" />
-          </div>
+          </label>
         </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Category</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.category}</span>
           {categories?.length ? (
             <select
               {...register("category_id")}
@@ -219,19 +225,19 @@ export function ProductForm({ initial, onSave }: Props) {
               }}
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold bg-white"
             >
-              <option value="">Select a category…</option>
+              <option value="">{p.selectCategory}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name_en}</option>
               ))}
             </select>
           ) : (
-            <input {...register("category", { required: true })} placeholder="Bracelets, Rings, Necklaces…" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+            <input {...register("category", { required: true })} placeholder={p.categoryPlaceholder} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
           )}
           <input type="hidden" {...register("category")} />
-        </div>
+        </label>
 
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-2">Karat</label>
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <legend className="block text-xs text-gray-400 uppercase tracking-widest mb-2">{p.karat}</legend>
           <div className="flex gap-2">
             {["K18", "K21", "K24"].map((k) => (
               <label key={k} className="flex-1">
@@ -242,37 +248,36 @@ export function ProductForm({ initial, onSave }: Props) {
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Weight (g)</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.weightGrams}</span>
             <input type="number" step="0.001" {...register("weight_grams", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin %</label>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.marginPct}</span>
             <input type="number" step="0.01" {...register("margin_percent", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Making (USD)</label>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.makingUsd}</span>
             <input type="number" step="0.01" {...register("making_charge", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
+          </label>
         </div>
 
         {/* Stock (Phase 3 — products are stocked-by-quantity) */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Quantity on hand</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.qtyOnHand}</span>
             <input type="number" step="1" min="0" {...register("on_hand_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Low-stock alert at (optional)</label>
-            <input type="number" step="1" min="0" placeholder="No alert" {...register("min_stock_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-          </div>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.lowStockAlert}</span>
+            <input type="number" step="1" min="0" placeholder={p.noAlert} {...register("min_stock_qty", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+          </label>
         </div>
 
         {/* Diamond / stone fields */}
-        {/* TODO(ar): stone labels */}
         <div className="border border-gray-200 rounded-lg p-4 space-y-4">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
@@ -280,138 +285,108 @@ export function ProductForm({ initial, onSave }: Props) {
               {...register("has_stones")}
               className="h-4 w-4 rounded border-gray-300 accent-gold cursor-pointer"
             />
-            <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">Has diamonds / stones</span>
+            <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">{p.hasStones}</span>
           </label>
 
           {watched.has_stones && (
             <div className="space-y-4 pt-1">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone value (USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register("stone_value_usd", { valueAsNumber: true })}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone cost (USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register("stone_cost_usd", { valueAsNumber: true })}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                  />
-                </div>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.stoneValue}</span>
+                  <input type="number" step="0.01" min="0" {...register("stone_value_usd", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.stoneCost}</span>
+                  <input type="number" step="0.01" min="0" {...register("stone_cost_usd", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                </label>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Carats</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register("stone_carats", { valueAsNumber: true })}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone count</label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="Optional"
-                    {...register("stone_count", { valueAsNumber: true })}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                  />
-                </div>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.carats}</span>
+                  <input type="number" step="0.01" min="0" {...register("stone_carats", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.stoneCount}</span>
+                  <input type="number" step="1" min="0" placeholder={t.common.optional} {...register("stone_count", { valueAsNumber: true })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                </label>
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Certificate #</label>
-                <input
-                  type="text"
-                  placeholder="GIA-123456 (optional)"
-                  {...register("stone_cert")}
-                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Stone note</label>
-                <input
-                  type="text"
-                  placeholder="e.g. VS1 clarity, G colour (optional)"
-                  {...register("stone_note")}
-                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-                />
-              </div>
+              <label className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.certificate}</span>
+                <input type="text" placeholder={p.certPlaceholder} {...register("stone_cert")} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{p.stoneNote}</span>
+                <input type="text" placeholder={p.notePlaceholder} {...register("stone_note")} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+              </label>
             </div>
           )}
         </div>
 
         {/* Image upload */}
         <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-2">Product Images</label>
+          <div className="block text-xs text-gray-400 uppercase tracking-widest mb-2">{p.productImages}</div>
 
-          {/* Drop zone */}
-          <div
+          {/* Drop zone — a real button, so it is reachable by keyboard too. */}
+          <button
+            type="button"
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gold hover:bg-gold/5 transition-colors"
+            className="w-full border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gold hover:bg-gold/5 transition-colors"
           >
             {uploading ? (
-              <Loader2 className="w-6 h-6 text-gold animate-spin" />
+              <Loader2 className="w-6 h-6 text-gold animate-spin" aria-hidden />
             ) : (
-              <ImagePlus className="w-6 h-6 text-gray-300" />
+              <ImagePlus className="w-6 h-6 text-gray-300" aria-hidden />
             )}
             <span className="text-xs text-gray-400">
-              {uploading ? "Uploading…" : "Click or drag images here"}
+              {uploading ? p.uploading : p.dropHint}
             </span>
-            <span className="text-[10px] text-gray-300">JPG, PNG, WEBP — max 10 MB each</span>
-          </div>
+            <span className="text-[10px] text-gray-300">{p.fileHint}</span>
+          </button>
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
             multiple
             className="hidden"
+            aria-label={p.productImages}
             onChange={handleFileChange}
           />
-          {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
+          {uploadError && <p role="alert" className="text-red-500 text-xs mt-1">{uploadError}</p>}
 
           {/* Photo grid */}
           {photos.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mt-3">
-              {photos.map((p) => (
-                <div key={p.url} className="relative group rounded-lg overflow-hidden aspect-square bg-gray-100">
-                  <img src={p.url} alt="" className="w-full h-full object-cover" />
-                  {p.isHero && (
+              {photos.map((photo) => (
+                <div key={photo.url} className="relative group rounded-lg overflow-hidden aspect-square bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- R2 URL, served as-is */}
+                  <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                  {photo.isHero && (
                     <div className="absolute top-1 left-1 bg-gold text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5" /> Hero
+                      <Star className="w-2.5 h-2.5" aria-hidden /> {p.hero}
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    {!p.isHero && (
+                    {!photo.isHero && (
                       <button
                         type="button"
-                        onClick={() => setHero(p.url)}
-                        title="Set as hero"
+                        onClick={() => setHero(photo.url)}
+                        title={p.setAsHero}
+                        aria-label={p.setAsHero}
                         className="bg-gold text-white rounded p-1"
                       >
-                        <Star className="w-3.5 h-3.5" />
+                        <Star className="w-3.5 h-3.5" aria-hidden />
                       </button>
                     )}
                     <button
                       type="button"
-                      onClick={() => removePhoto(p.url)}
-                      title="Remove"
+                      onClick={() => removePhoto(photo.url)}
+                      title={p.removePhoto}
+                      aria-label={p.removePhoto}
                       className="bg-red-500 text-white rounded p-1"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden />
                     </button>
                   </div>
                 </div>
@@ -422,7 +397,7 @@ export function ProductForm({ initial, onSave }: Props) {
 
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={isSubmitting || uploading} className="bg-gold hover:bg-gold-dark text-white px-6 py-2.5 rounded text-sm font-medium disabled:opacity-60 transition-colors">
-            {isSubmitting ? "Saving…" : "Save Product"}
+            {isSubmitting ? p.saving : p.saveProduct}
           </button>
         </div>
       </form>
@@ -431,74 +406,75 @@ export function ProductForm({ initial, onSave }: Props) {
       <div className="col-span-2">
         <div className="bg-admin-sidebar rounded-lg p-6 space-y-4 sticky top-0">
           <div className="flex items-center justify-between">
-            <span className="text-white/40 text-xs uppercase tracking-widest">Live Preview</span>
+            <span className="text-white/40 text-xs uppercase tracking-widest">{p.livePreview}</span>
             {watched.karat && <span className="bg-gold/20 text-gold text-[10px] font-bold tracking-wider px-2 py-0.5 rounded">{KARAT_LABEL[watched.karat]}</span>}
           </div>
 
           {/* Hero image preview */}
-          {photos.find((p) => p.isHero) ? (
+          {photos.find((photo) => photo.isHero) ? (
+            // eslint-disable-next-line @next/next/no-img-element -- R2 URL, served as-is
             <img
-              src={photos.find((p) => p.isHero)!.url}
-              alt="Hero"
+              src={photos.find((photo) => photo.isHero)!.url}
+              alt={p.hero}
               className="w-full aspect-square object-cover rounded-lg"
             />
           ) : (
             <div className="w-full aspect-square bg-white/5 rounded-lg flex items-center justify-center">
-              <ImagePlus className="w-8 h-8 text-white/10" />
+              <ImagePlus className="w-8 h-8 text-white/10" aria-hidden />
             </div>
           )}
 
           <div>
-            <div className="text-white/60 text-sm">{watched.name_en || "Product name"}</div>
+            <div className="text-white/60 text-sm">{watched.name_en || p.productName}</div>
             {watched.name_ar && <div className="text-white/40 text-sm mt-0.5" dir="rtl">{watched.name_ar}</div>}
           </div>
           {priced && (
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-white/40">
-                <span>24K market rate</span>
-                <span>${rate?.rate_24k.toFixed(2)}/g</span>
+                <span>{p.marketRate24k}</span>
+                <span>{formatUSD(rate?.rate_24k ?? 0)}{p.perGram}</span>
               </div>
               <div className="flex justify-between text-white/40">
-                <span>Purity rate ({watched.karat ?? ""})</span>
-                <span>${priced.purityRate.toFixed(2)}/g</span>
+                <span>{p.purityRate} ({KARAT_LABEL[watched.karat ?? ""] ?? ""})</span>
+                <span>{formatUSD(priced.purityRate)}{p.perGram}</span>
               </div>
               {(markupMap[watched.karat ?? ""] ?? 0) > 0 && (
                 <div className="flex justify-between text-gold/60">
-                  <span>Markup</span>
-                  <span>+${(markupMap[watched.karat ?? ""] ?? 0).toFixed(2)}/g</span>
+                  <span>{p.markup}</span>
+                  <span>+{formatUSD(markupMap[watched.karat ?? ""] ?? 0)}{p.perGram}</span>
                 </div>
               )}
               {(markupMap[watched.karat ?? ""] ?? 0) > 0 && (
                 <div className="flex justify-between text-white/60">
-                  <span>Effective rate</span>
-                  <span>${priced.effectiveRate.toFixed(2)}/g</span>
+                  <span>{p.effectiveRate}</span>
+                  <span>{formatUSD(priced.effectiveRate)}{p.perGram}</span>
                 </div>
               )}
               <div className="flex justify-between text-white/40">
-                <span>Metal value</span>
+                <span>{p.metalValue}</span>
                 <span>{formatUSD(priced.metalValue)}</span>
               </div>
               <div className="flex justify-between text-white/40">
-                <span>Margin {watched.margin_percent}%</span>
+                <span>{p.margin} {watched.margin_percent}%</span>
                 <span>+{formatUSD(priced.marginAmount)}</span>
               </div>
               <div className="flex justify-between text-white/40">
-                <span>Making charge</span>
+                <span>{p.makingCharge}</span>
                 <span>+{formatUSD(Number(watched.making_charge ?? 0))}</span>
               </div>
               {priced.stoneValue > 0 && (
                 <div className="flex justify-between text-white/40">
-                  <span>Stones</span>
+                  <span>{p.stones}</span>
                   <span>+{formatUSD(priced.stoneValue)}</span>
                 </div>
               )}
               <div className="border-t border-white/10 pt-2 flex justify-between text-gold font-serif text-lg font-bold">
-                <span>Retail Price</span>
+                <span>{p.retailPrice}</span>
                 <span>{formatUSD(priced.finalPrice)}</span>
               </div>
             </div>
           )}
-          {!priced && <div className="text-white/20 text-xs">Enter weight and rates to see price</div>}
+          {!priced && <div className="text-white/20 text-xs">{p.previewHint}</div>}
         </div>
       </div>
     </div>
