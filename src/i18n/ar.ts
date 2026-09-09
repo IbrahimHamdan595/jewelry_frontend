@@ -10,6 +10,7 @@ const ar: Translations = {
     password: "كلمة المرور",
     signIn: "تسجيل الدخول",
     signingIn: "جارٍ الدخول…",
+    roleHasNoScreens: "لا توجد شاشات لهذا الدور بعد. اطلب من المسؤول تغييره.",
   },
 
   nav: {
