@@ -1,7 +1,30 @@
+const { IMAGE_HOSTS } = require("./image-hosts.js");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "**" }],
+    // Only the hosts product photos actually live on. A wildcard here made
+    // /_next/image an open proxy: anyone could have this deployment fetch,
+    // optimise, cache and serve any URL on the internet (NEX-55).
+    remotePatterns: IMAGE_HOSTS.map((hostname) => ({ protocol: "https", hostname })),
+  },
+  /**
+   * Static security headers for every response. The Content-Security-Policy
+   * itself is set by the middleware, because it carries a per-request nonce.
+   */
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          // Legacy anti-framing; frame-ancestors 'none' in the CSP is the modern one.
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
   },
   /**
    * Proxy the API through this origin. The backend sets its session cookie as
