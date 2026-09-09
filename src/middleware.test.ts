@@ -88,3 +88,28 @@ describe("route middleware", () => {
     expect(r.setCookie).toMatch(/mz_token=;/);
   });
 });
+
+describe("RS256 readiness (NEX-54)", () => {
+  it("verifies with the public key only when JWT_PUBLIC_KEY is set, and rejects HS256 tokens", async () => {
+    const { generateKeyPair, exportSPKI } = await import("jose");
+    const { publicKey, privateKey } = await generateKeyPair("RS256");
+    vi.stubEnv("JWT_PUBLIC_KEY", await exportSPKI(publicKey));
+    vi.stubEnv("JWT_ALGORITHM", "RS256");
+    vi.resetModules();
+    const { middleware: mw } = await import("@/middleware");
+
+    const rs = await new SignJWT({ role: "ADMIN" })
+      .setProtectedHeader({ alg: "RS256" })
+      .setSubject("user-1")
+      .setExpirationTime("1h")
+      .sign(privateKey);
+    const ok = new NextRequest(new URL("/admin/dashboard", "http://till.test"));
+    ok.cookies.set("mz_token", rs);
+    expect((await mw(ok)).headers.get("location")).toBeNull();
+
+    // The old shared-secret token must not get in once the public key is configured.
+    const hs = new NextRequest(new URL("/admin/dashboard", "http://till.test"));
+    hs.cookies.set("mz_token", await tokenFor("ADMIN"));
+    expect(new URL((await mw(hs)).headers.get("location")!).pathname).toBe("/login");
+  });
+});

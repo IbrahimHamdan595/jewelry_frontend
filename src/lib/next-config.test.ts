@@ -1,0 +1,24 @@
+// @vitest-environment node
+import { describe, it, expect, vi, afterEach } from "vitest";
+import nextConfig from "../../next.config.js";
+
+type Rule = { source: string; destination: string };
+
+async function rules(): Promise<Rule[]> {
+  const out = await nextConfig.rewrites!();
+  return (Array.isArray(out) ? out : [...out.beforeFiles, ...out.afterFiles, ...out.fallback]) as Rule[];
+}
+
+describe("next.config rewrites", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("proxies /api/* to BACKEND_API_URL so the backend's HttpOnly cookie lands on this origin", async () => {
+    vi.stubEnv("BACKEND_API_URL", "https://api.fawaz.example/api");
+    expect(await rules()).toContainEqual({ source: "/api/:path*", destination: "https://api.fawaz.example/api/:path*" });
+  });
+
+  it("falls back to the local backend for development", async () => {
+    vi.stubEnv("BACKEND_API_URL", "");
+    expect(await rules()).toContainEqual({ source: "/api/:path*", destination: "http://localhost:8001/api/:path*" });
+  });
+});

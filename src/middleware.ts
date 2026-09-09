@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { importSPKI, jwtVerify, type KeyLike } from "jose";
 import { canAccess, homeFor, isRole, type Role } from "@/lib/access";
 
 const PUBLIC_PATHS = ["/login"];
 
-const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_ALGORITHM = process.env.JWT_ALGORITHM ?? "HS256";
+// Vercel-style env vars often carry PEM newlines as the two characters "\n".
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, "\n");
+const JWT_SECRET = process.env.JWT_SECRET;
 
-const secretKey = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
+/**
+ * The verification key. With JWT_PUBLIC_KEY set (the backend's RS256 move,
+ * NEX-54) this side holds a public key only and can never mint a token.
+ * Until then it is the shared HS256 secret. Both paths are Edge-safe (jose).
+ * Resolved once per isolate; no key at all means every token fails closed.
+ */
+const verificationKey: Promise<KeyLike | Uint8Array | null> = JWT_PUBLIC_KEY
+  ? importSPKI(JWT_PUBLIC_KEY, JWT_ALGORITHM).catch(() => null)
+  : Promise.resolve(JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null);
 
 /**
  * The role claim from a verified token, or null. The claim is a snapshot: a
@@ -15,9 +25,10 @@ const secretKey = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
  * is not exactly one of the backend's roles is treated as no role at all.
  */
 async function verifiedRole(token: string): Promise<Role | null> {
-  if (!secretKey) return null;
+  const key = await verificationKey;
+  if (!key) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey, { algorithms: [JWT_ALGORITHM] });
+    const { payload } = await jwtVerify(token, key, { algorithms: [JWT_ALGORITHM] });
     return isRole(payload.role) ? payload.role : null;
   } catch {
     return null;

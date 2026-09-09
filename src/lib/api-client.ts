@@ -1,16 +1,30 @@
 import type { StaleRateErrorDetail } from "@/types/api";
 
+/**
+ * Every request goes to the same-origin /api proxy (see next.config.js),
+ * never straight to the backend. That is what keeps the backend's HttpOnly
+ * session cookie on this origin, where the middleware can read it and page
+ * scripts cannot. Deliberately not configurable from the client: an absolute
+ * NEXT_PUBLIC_API_URL would silently move the cookie out of reach again.
+ */
 function getBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api";
+  return "/api";
 }
 
-// Kept as no-ops for callers that still import these symbols. Auth is now
-// driven by the HttpOnly cookie the backend sets on /auth/login.
-export function saveToken(_token: string) {}
-export function clearToken() {}
+/** Absolute-on-this-origin URL for an API path, for plain <a href> links (exports, receipts). */
+export function apiUrl(path: string): string {
+  return `${getBase()}${path}`;
+}
 
 function handleUnauthorized() {
   if (typeof window !== "undefined") {
+    // The cookie is gone or invalid; forget the display user with it so the
+    // UI cannot look signed in while every request fails.
+    try {
+      sessionStorage.removeItem("mz_user");
+    } catch {
+      // storage unavailable — nothing to forget
+    }
     window.location.href = "/login";
   }
 }
