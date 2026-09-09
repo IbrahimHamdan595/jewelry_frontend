@@ -1,11 +1,12 @@
 import { api } from "./api-client";
 import { clearStoredCart } from "./cart-storage";
+import type { Role } from "@/types/api";
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "ADMIN" | "CASHIER";
+  role: Role;
   is_active: boolean;
 }
 

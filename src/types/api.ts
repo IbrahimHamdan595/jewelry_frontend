@@ -13,7 +13,12 @@ export interface Category {
 }
 export type OrderStatus = "COMPLETED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "VOIDED";
 export type PaymentMethod = "CASH" | "CARD" | "MIXED";
-export type Role = "ADMIN" | "CASHIER";
+/**
+ * Mirrors the backend Role enum (jewelry_backend/app/models/__init__.py).
+ * MANAGER is reserved there for a future approvals role and has no screens;
+ * see src/lib/access.ts for what each role may open.
+ */
+export type Role = "ADMIN" | "CASHIER" | "ACCOUNTANT" | "MANAGER";
 
 export type ProductStatus = "AVAILABLE" | "SOLD" | "MELTED" | "RESERVED" | "INACTIVE";
 

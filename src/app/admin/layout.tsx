@@ -8,6 +8,7 @@ import {
   ClipboardCheck, BookOpen, ScrollText,
 } from "lucide-react";
 import { logout, getStoredUser } from "@/lib/auth";
+import { canAccess } from "@/lib/access";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
@@ -22,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => { setUser(getStoredUser()); }, []);
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
-  const NAV = [
+  const ALL_NAV = [
     { href: "/admin/dashboard", icon: LayoutDashboard, label: t.nav.dashboard },
     { href: "/admin/products", icon: Package, label: t.nav.products },
     { href: "/admin/categories", icon: Tag, label: t.nav.categories },
@@ -38,6 +39,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/accounting", icon: BookOpen, label: (t.nav as Record<string, string>).accounting ?? "Accounting" },
     { href: "/admin/settings", icon: Settings, label: t.nav.settings },
   ];
+  // Middleware is the gate; this just keeps the sidebar honest so an accountant
+  // never sees a link that would bounce them. Before the user is read from
+  // sessionStorage (one hydration frame) show nothing rather than everything.
+  const NAV = user ? ALL_NAV.filter((n) => canAccess(user.role, n.href)) : [];
 
   async function handleLogout() {
     await logout();

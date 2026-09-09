@@ -7,6 +7,7 @@ export interface Translations {
     password: string;
     signIn: string;
     signingIn: string;
+    roleHasNoScreens: string;
   };
 
   nav: {
@@ -351,6 +352,7 @@ const en: Translations = {
     password: "Password",
     signIn: "SIGN IN",
     signingIn: "SIGNING IN…",
+    roleHasNoScreens: "This role has no screens yet. Ask an admin to change it.",
   },
 
   nav: {

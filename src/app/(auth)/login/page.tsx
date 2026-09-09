@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { login } from "@/lib/auth";
+import { canAccess, homeFor, safeNextPath } from "@/lib/access";
 import { useLang } from "@/context/LanguageContext";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
@@ -21,7 +22,16 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      router.push(user.role === "ADMIN" ? "/admin/dashboard" : "/pos");
+      const home = homeFor(user.role);
+      if (!home) {
+        // MANAGER: the backend reserves the role but wires nothing to it.
+        setError(t.login.roleHasNoScreens);
+        return;
+      }
+      // Read at submit time (not via useSearchParams) so /login stays a plain
+      // static page with no Suspense boundary requirement.
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
+      router.push(next && canAccess(user.role, next.split("?")[0]) ? next : home);
     } catch (err: any) {
       setError(err.message ?? "Login failed");
     } finally {
