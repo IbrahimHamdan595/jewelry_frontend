@@ -1,4 +1,5 @@
 import { api } from "./api-client";
+import type { LedgerVerify } from "@/types/api";
 
 export type GLAccount = {
   id: string; code: string; name: string; type: string;
@@ -63,7 +64,7 @@ export const accounting = {
     api.post<JournalEntry>("/accounting/journal-entries", b),
   reverseEntry: (id: string) => api.post<JournalEntry>(`/accounting/journal-entries/${id}/reverse`),
   trialBalance: (asOf: string) => api.get<TrialBalance>(`/accounting/trial-balance?as_of=${asOf}`),
-  verify: () => api.get<{ status: string; head_matches: boolean }>("/accounting/ledger/verify"),
+  verify: () => api.get<LedgerVerify>("/accounting/ledger/verify"),
 };
 
 export type BankAccountT = {
