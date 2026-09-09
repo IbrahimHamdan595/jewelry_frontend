@@ -16,26 +16,19 @@ interface LoginResponse {
   user: AuthUser;
 }
 
-// Must match backend JWT_EXPIRES_MINUTES (480 min = 8 h)
-const COOKIE_MAX_AGE = 480 * 60;
-
-function setTokenCookie(token: string) {
-  const secure = typeof window !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
-  // SameSite=Lax is safe here: the cookie lives on the frontend domain (Vercel),
-  // not the backend domain, so no cross-site write is happening.
-  document.cookie = `mz_token=${token}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
-}
-
-function clearTokenCookie() {
-  document.cookie = "mz_token=; path=/; max-age=0";
-}
-
+/**
+ * The session is the backend's HttpOnly cookie. Because every API call goes
+ * through the same-origin /api proxy (next.config.js), that cookie is set on
+ * THIS origin, so the middleware can read it and no script ever can. The
+ * token in the login body is deliberately not kept anywhere.
+ *
+ * sessionStorage.mz_user is display data (name, role), not a credential; it
+ * is cleared on logout and on any 401 (api-client) so the UI cannot look
+ * signed in after the cookie is gone.
+ */
 export async function login(email: string, password: string): Promise<AuthUser> {
   const data = await api.post<LoginResponse>("/auth/login", { email, password });
   sessionStorage.setItem("mz_user", JSON.stringify(data.user));
-  // Write the JWT onto the FRONTEND domain so the Next.js middleware can read it.
-  // (The backend also sets its own HttpOnly cookie for its own cross-origin API calls.)
-  setTokenCookie(data.access_token);
   return data.user;
 }
 
@@ -47,7 +40,6 @@ export async function logout() {
   }
   sessionStorage.removeItem("mz_user");
   clearStoredCart();
-  clearTokenCookie();
 }
 
 export function getStoredUser(): AuthUser | null {
