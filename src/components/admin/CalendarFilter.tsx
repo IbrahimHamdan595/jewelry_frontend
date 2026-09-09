@@ -8,6 +8,7 @@
  * granularity === "" means "all" (no date filter).
  */
 import { useMemo } from "react";
+import { today } from "@/lib/utils";
 
 export type Granularity = "" | "day" | "month" | "year";
 
@@ -16,11 +17,10 @@ export interface CalendarValue {
   date: string; // YYYY-MM-DD anchor; ignored when granularity === ""
 }
 
-const TODAY_ANCHOR = "2026-06-02"; // SSR-safe default; replaced on first user edit
-
+// Beirut day on both server and client (see utils.today), so the server HTML
+// and the first client render agree — no typeof-window branch needed.
 function defaultAnchor(): string {
-  if (typeof window === "undefined") return TODAY_ANCHOR;
-  return new Date().toISOString().slice(0, 10);
+  return today();
 }
 
 export function CalendarFilter({

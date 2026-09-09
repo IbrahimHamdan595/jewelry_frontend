@@ -55,32 +55,55 @@ export function formatLBP(n: number | string) {
   return `ل.ل ${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
-// ── Report date helpers ───────────────────────────────────────────────────────
-// Default ranges for accounting reports, computed at call time from the LOCAL
-// date (not UTC) so an evening in a positive-offset zone doesn't roll to tomorrow.
-// Use these for `useState` defaults / report params instead of hardcoded literals.
-function _pad(n: number) {
-  return String(n).padStart(2, "0");
+// ── Dates ─────────────────────────────────────────────────────────────────────
+// The shop runs on Beirut time, and every date here is pinned to it (NEX-62).
+// A calendar day computed from the process's local clock differs between the
+// server (UTC on Vercel) and the cashier's browser for three hours a night,
+// and React throws the server HTML away when the two disagree. Pinning the
+// IANA zone (DST included) makes both sides compute the same day from the
+// same instant, and shows Beirut dates to a viewer in any timezone.
+export const SHOP_TIME_ZONE = "Asia/Beirut";
+
+/** YYYY-MM-DD of an instant, on the Beirut calendar. */
+function beirutDay(d: Date): { y: string; m: string; day: string } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SHOP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return { y: get("year"), m: get("month"), day: get("day") };
 }
 
+// Defaults for report ranges and date inputs; safe in useState initialisers
+// because server and client agree on the Beirut day.
 export function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`;
+  const { y, m, day } = beirutDay(new Date());
+  return `${y}-${m}-${day}`;
 }
 
 export function firstOfMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-01`;
+  const { y, m } = beirutDay(new Date());
+  return `${y}-${m}-01`;
 }
 
 export function firstOfYear() {
-  return `${new Date().getFullYear()}-01-01`;
+  return `${beirutDay(new Date()).y}-01-01`;
 }
 
 export function formatDate(d: string | Date) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-GB", { timeZone: SHOP_TIME_ZONE, day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function formatDateTime(d: string | Date) {
-  return new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleString("en-GB", {
+    timeZone: SHOP_TIME_ZONE,
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+/** "Wed 09 Sep" — the POS header date. Render it client-only (TodayInBeirut). */
+export function formatShortDate(d: string | Date) {
+  return new Date(d).toLocaleDateString("en-GB", { timeZone: SHOP_TIME_ZONE, weekday: "short", day: "2-digit", month: "short" });
 }
