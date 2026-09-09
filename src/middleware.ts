@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { importSPKI, jwtVerify, type KeyLike } from "jose";
 import { canAccess, homeFor, isRole, type Role } from "@/lib/access";
-
-const PUBLIC_PATHS = ["/login"];
+import { buildCsp, newNonce } from "@/lib/csp";
 
 const JWT_ALGORITHM = process.env.JWT_ALGORITHM ?? "HS256";
 // Vercel-style env vars often carry PEM newlines as the two characters "\n".
@@ -35,21 +34,50 @@ async function verifiedRole(token: string): Promise<Role | null> {
   }
 }
 
-function toLogin(req: NextRequest, next?: string) {
-  const url = new URL("/login", req.url);
-  if (next) url.searchParams.set("next", next);
-  return NextResponse.redirect(url);
+function inSection(pathname: string, section: string): boolean {
+  return pathname === section || pathname.startsWith(section + "/");
+}
+
+/** Only these sections need a session; everything else (login, root redirect, not-found) is public. */
+function needsAuth(pathname: string): boolean {
+  return inSection(pathname, "/admin") || inSection(pathname, "/pos");
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
+  // One nonce per request. It goes on the REQUEST too: Next reads the nonce
+  // from the incoming CSP header when it renders its inline/bootstrap scripts
+  // (app-render), which is why every route is dynamic (root layout).
+  const nonce = newNonce();
+  const csp = buildCsp({
+    nonce,
+    mode: process.env.CSP_MODE === "enforce" ? "enforce" : "report-only",
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+  });
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set(csp.header, csp.value);
+
+  const secured = (res: NextResponse) => {
+    res.headers.set(csp.header, csp.value);
+    return res;
+  };
+  const toLogin = (next?: string) => {
+    const url = new URL("/login", req.url);
+    if (next) url.searchParams.set("next", next);
+    return secured(NextResponse.redirect(url));
+  };
+  const pass = () => secured(NextResponse.next({ request: { headers: requestHeaders } }));
+
+  if (!needsAuth(pathname)) return pass();
 
   const token = req.cookies.get("mz_token")?.value;
 
   if (!token) {
     // Keep the deep link: the login page sends the user on to it (if their role may open it).
-    return toLogin(req, pathname + search);
+    return toLogin(pathname + search);
   }
 
   const role = await verifiedRole(token);
@@ -57,7 +85,7 @@ export async function middleware(req: NextRequest) {
   if (!role) {
     // Bad signature, expired, or an unknown role: fail closed to /login and
     // drop the cookie so the login page starts clean instead of looping.
-    const res = toLogin(req);
+    const res = toLogin();
     res.cookies.delete("mz_token");
     return res;
   }
@@ -66,12 +94,14 @@ export async function middleware(req: NextRequest) {
     const home = homeFor(role);
     // Every role with a home can open it (see access.ts), so this cannot loop.
     // A role without one (MANAGER) gets the login page, which explains why.
-    return home ? NextResponse.redirect(new URL(home, req.url)) : toLogin(req);
+    return home ? secured(NextResponse.redirect(new URL(home, req.url))) : toLogin();
   }
 
-  return NextResponse.next();
+  return pass();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/pos/:path*"],
+  // Every HTML route (for the CSP), but not the /api proxy, Next's static
+  // assets, the image optimizer, or files with an extension.
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

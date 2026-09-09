@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { SignJWT } from "jose";
 import { NextRequest } from "next/server";
 
@@ -111,5 +111,57 @@ describe("RS256 readiness (NEX-54)", () => {
     const hs = new NextRequest(new URL("/admin/dashboard", "http://till.test"));
     hs.cookies.set("mz_token", await tokenFor("ADMIN"));
     expect(new URL((await mw(hs)).headers.get("location")!).pathname).toBe("/login");
+  });
+});
+
+describe("security headers (NEX-55)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("attaches a report-only CSP with a fresh nonce, and forwards the nonce to Next", async () => {
+    const res = await middleware(new NextRequest(new URL("/login", "http://till.test")));
+    const csp = res.headers.get("content-security-policy-report-only")!;
+    expect(csp).toContain("frame-ancestors 'none'");
+    const nonce = csp.match(/'nonce-([^']+)'/)![1];
+    expect(nonce.length).toBeGreaterThanOrEqual(16);
+    // Next reads the nonce from the request's CSP header (app-render.js) and
+    // the x-nonce header is what server components can read explicitly.
+    expect(res.headers.get("x-middleware-request-x-nonce")).toBe(nonce);
+    expect(res.headers.get("x-middleware-request-content-security-policy-report-only")).toBe(csp);
+    expect(res.headers.get("content-security-policy")).toBeNull();
+  });
+
+  it("uses a different nonce for every request", async () => {
+    const a = await middleware(new NextRequest(new URL("/login", "http://till.test")));
+    const b = await middleware(new NextRequest(new URL("/login", "http://till.test")));
+    expect(a.headers.get("x-middleware-request-x-nonce")).not.toBe(b.headers.get("x-middleware-request-x-nonce"));
+  });
+
+  it("enforces the policy when CSP_MODE=enforce", async () => {
+    vi.stubEnv("CSP_MODE", "enforce");
+    const res = await middleware(new NextRequest(new URL("/login", "http://till.test")));
+    expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(res.headers.get("content-security-policy-report-only")).toBeNull();
+  });
+
+  it("puts the CSP on redirects too, and still gates /admin and /pos", async () => {
+    const res = await middleware(new NextRequest(new URL("/admin/dashboard", "http://till.test")));
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
+    expect(res.headers.get("content-security-policy-report-only")).toContain("frame-ancestors 'none'");
+  });
+
+  it("leaves routes outside /admin and /pos public: the root redirect and unknown URLs", async () => {
+    for (const p of ["/", "/no-such-page"]) {
+      const res = await middleware(new NextRequest(new URL(p, "http://till.test")));
+      expect(res.headers.get("location"), p).toBeNull();
+      expect(res.headers.get("content-security-policy-report-only"), p).toContain("script-src");
+    }
+  });
+
+  it("matches every HTML route but not the API proxy or static assets", async () => {
+    const { config } = await import("@/middleware");
+    const { pathToRegexp } = await import("next/dist/compiled/path-to-regexp");
+    const matches = (p: string) => config.matcher.some((m: string) => pathToRegexp(m).test(p));
+    for (const p of ["/", "/login", "/pos", "/pos/buyback", "/admin/dashboard", "/no-such-page"]) expect(matches(p), p).toBe(true);
+    for (const p of ["/api/settings", "/api/auth/login", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/robots.txt"]) expect(matches(p), p).toBe(false);
   });
 });
