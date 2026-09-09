@@ -8,6 +8,9 @@ export interface Translations {
     signIn: string;
     signingIn: string;
     roleHasNoScreens: string;
+    showPassword: string;
+    hidePassword: string;
+    failed: string;
   };
 
   nav: {
@@ -253,6 +256,43 @@ export interface Translations {
     stoneValue: string;
     stoneNote: string;
     stoneDetails: string;
+    stoneCost: string;
+    hasStones: string;
+    itemCode: string;
+    category: string;
+    selectCategory: string;
+    categoryPlaceholder: string;
+    karat: string;
+    weightGrams: string;
+    marginPct: string;
+    makingUsd: string;
+    qtyOnHand: string;
+    lowStockAlert: string;
+    noAlert: string;
+    certPlaceholder: string;
+    notePlaceholder: string;
+    productImages: string;
+    uploading: string;
+    dropHint: string;
+    fileHint: string;
+    uploadFailed: string;
+    hero: string;
+    setAsHero: string;
+    removePhoto: string;
+    saving: string;
+    saveProduct: string;
+    livePreview: string;
+    productName: string;
+    marketRate24k: string;
+    purityRate: string;
+    markup: string;
+    effectiveRate: string;
+    metalValue: string;
+    margin: string;
+    makingCharge: string;
+    retailPrice: string;
+    previewHint: string;
+    perGram: string;
   };
 
   accounting: {
@@ -376,6 +416,9 @@ const en: Translations = {
     signIn: "SIGN IN",
     signingIn: "SIGNING IN…",
     roleHasNoScreens: "This role has no screens yet. Ask an admin to change it.",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    failed: "Login failed",
   },
 
   nav: {
@@ -617,10 +660,47 @@ const en: Translations = {
     stones: "Stones",
     carats: "Carats",
     stoneCount: "Stone count",
-    certificate: "Certificate",
-    stoneValue: "Stone value",
-    stoneNote: "Note",
+    certificate: "Certificate #",
+    stoneValue: "Stone value (USD)",
+    stoneNote: "Stone note",
     stoneDetails: "Stone / Diamond Details",
+    stoneCost: "Stone cost (USD)",
+    hasStones: "Has diamonds / stones",
+    itemCode: "Item Code",
+    category: "Category",
+    selectCategory: "Select a category…",
+    categoryPlaceholder: "Bracelets, Rings, Necklaces…",
+    karat: "Karat",
+    weightGrams: "Weight (g)",
+    marginPct: "Margin %",
+    makingUsd: "Making (USD)",
+    qtyOnHand: "Quantity on hand",
+    lowStockAlert: "Low-stock alert at (optional)",
+    noAlert: "No alert",
+    certPlaceholder: "GIA-123456 (optional)",
+    notePlaceholder: "e.g. VS1 clarity, G colour (optional)",
+    productImages: "Product Images",
+    uploading: "Uploading…",
+    dropHint: "Click or drag images here",
+    fileHint: "JPG, PNG, WEBP — max 10 MB each",
+    uploadFailed: "Upload failed",
+    hero: "Hero",
+    setAsHero: "Set as hero",
+    removePhoto: "Remove",
+    saving: "Saving…",
+    saveProduct: "Save Product",
+    livePreview: "Live Preview",
+    productName: "Product name",
+    marketRate24k: "24K market rate",
+    purityRate: "Purity rate",
+    markup: "Markup",
+    effectiveRate: "Effective rate",
+    metalValue: "Metal value",
+    margin: "Margin",
+    makingCharge: "Making charge",
+    retailPrice: "Retail Price",
+    previewHint: "Enter weight and rates to see price",
+    perGram: "/g",
   },
 
   accounting: {

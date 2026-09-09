@@ -33,7 +33,7 @@ export default function LoginPage() {
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       router.push(next && canAccess(user.role, next.split("?")[0]) ? next : home);
     } catch (err: any) {
-      setError(err.message ?? "Login failed");
+      setError(err.message ?? t.login.failed);
     } finally {
       setLoading(false);
     }
@@ -53,12 +53,15 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-lg p-8 space-y-5">
-          <div>
-            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
+          {/* Inputs live inside their labels: no ids to keep in sync, a label click
+              focuses the field, and a screen reader announces it by name. */}
+          <label className="block">
+            <span className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
               {t.login.email}
-            </label>
+            </span>
             <input
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -66,33 +69,37 @@ export default function LoginPage() {
               className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
               placeholder="owner@fawazelnamel.com"
             />
-          </div>
+          </label>
           <div>
-            <label className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
-              {t.login.password}
+            <label className="block">
+              <span className="block text-pos-gray text-xs uppercase tracking-widest mb-2">
+                {t.login.password}
+              </span>
+              <span className="relative block">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  dir="ltr"
+                  className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 pe-10 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? t.login.hidePassword : t.login.showPassword}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 end-3 flex items-center text-pos-gray hover:text-pos-cream transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
+                </button>
+              </span>
             </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                dir="ltr"
-                className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 pe-10 text-pos-cream placeholder-pos-gray/50 focus:outline-none focus:border-gold text-sm"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 end-3 flex items-center text-pos-gray hover:text-pos-cream transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p role="alert" className="text-red-400 text-sm">{error}</p>}
 
           <button
             type="submit"
