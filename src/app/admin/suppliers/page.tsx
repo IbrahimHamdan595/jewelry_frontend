@@ -1,4 +1,5 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
@@ -117,7 +118,7 @@ export default function SuppliersPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{s.contact_name ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.phone ? <Ltr>{s.phone}</Ltr> : "—"}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs truncate max-w-xs">{s.payment_terms ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>

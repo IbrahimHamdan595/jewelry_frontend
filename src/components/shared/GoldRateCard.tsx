@@ -2,7 +2,7 @@
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { api } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
-import { formatDateTime } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { RetryButton } from "@/components/ui/error-state";
 
 /**
@@ -18,6 +18,7 @@ import { RetryButton } from "@/components/ui/error-state";
  * different actions: revalidate the GET vs. ask the server to re-pull.
  */
 export function GoldRateCard({ compact = false }: { compact?: boolean }) {
+  const { formatDateTime } = useFormat();
   const { rate, refresh, error, isValidating } = useGoldRate();
   const { t } = useLang();
 

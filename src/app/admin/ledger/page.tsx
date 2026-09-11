@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
-import { formatDateTime } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
   LedgerEntry,
@@ -283,6 +283,7 @@ function LedgerBrowser() {
 }
 
 function LedgerRow({ entry }: { entry: LedgerEntry }) {
+  const { formatDateTime } = useFormat();
   const [expanded, setExpanded] = useState(false);
   return (
     <>

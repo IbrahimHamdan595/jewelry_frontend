@@ -1,4 +1,5 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 /**
  * Shared printable receipt (Phase 0).
  *
@@ -12,7 +13,8 @@
  * Arabic store name / line descriptions are used when present.
  */
 import { useLang } from "@/context/LanguageContext";
-import { formatUSD, formatLBP, formatDateTime } from "@/lib/utils";
+import { formatUSD, formatLBP } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import type { Receipt as ReceiptData } from "@/types/api";
 
 function num(v: number | string | null | undefined): number {
@@ -76,6 +78,7 @@ export function ReceiptPrintStyles() {
 }
 
 export function Receipt({ data }: { data: ReceiptData }) {
+  const { formatDateTime } = useFormat();
   const { lang, isRTL } = useLang();
   const isAr = lang === "ar";
   const pick = (m: { en: string; ar: string }) => (isAr ? m.ar : m.en);
@@ -101,7 +104,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
         ) : null}
         <div className="font-serif text-lg font-bold tracking-widest">{storeName}</div>
         {data.store.address ? <div className="text-[10px] mt-1 text-gray-500">{data.store.address}</div> : null}
-        {data.store.phone ? <div className="text-[9px] text-gray-500">{data.store.phone}</div> : null}
+        {data.store.phone ? <div className="text-[9px] text-gray-500"><Ltr>{data.store.phone}</Ltr></div> : null}
         {data.store.vat_number ? <div className="text-[9px] text-gray-500">VAT: {data.store.vat_number}</div> : null}
         <div className="text-[10px] mt-1 font-bold tracking-wider text-gold-dark">{pick(TYPE_TITLE[data.type])}</div>
       </div>
@@ -119,7 +122,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
           <div className="flex justify-between"><span className="text-gray-500">{pick(role)}</span><span>{data.party.name}</span></div>
         )}
         {data.party.phone && (
-          <div className="flex justify-between"><span className="text-gray-500">PHONE</span><span>{data.party.phone}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">PHONE</span><span><Ltr>{data.party.phone}</Ltr></span></div>
         )}
       </div>
 

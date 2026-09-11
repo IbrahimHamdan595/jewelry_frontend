@@ -1,11 +1,13 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { apiFetcher, apiUrl } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
-import { formatUSD, formatDateTime } from "@/lib/utils";
+import { formatUSD } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CalendarFilter, calendarParams, type CalendarValue } from "@/components/admin/CalendarFilter";
 import type {
@@ -87,6 +89,7 @@ function EmptyRow({ cols, label }: { cols: number; label: string }) {
 
 // ── Sell tab ──────────────────────────────────────────────────────────────────
 function SellTab({ cal }: { cal: CalendarValue }) {
+  const { formatDateTime } = useFormat();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const params = new URLSearchParams({ status, page: String(page), ...calendarParams(cal) });
@@ -114,7 +117,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 {["Order #", "Date", "Cashier", "Customer", "Items", "Total", "Status", ""].map((h) => (
-                  <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                  <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h.includes("#") ? <Ltr>{h}</Ltr> : h}</th>
                 ))}
               </tr>
             </thead>
@@ -124,7 +127,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
               {data && data.items.length === 0 && <EmptyRow cols={8} label="No orders for this period" />}
               {data?.items.map((o) => (
                 <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-4 py-3 font-mono text-xs">{o.order_number}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><Ltr>{o.order_number}</Ltr></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{formatDateTime(o.created_at)}</td>
                   <td className="px-4 py-3 text-gray-600">{o.cashier.name}</td>
                   <td className="px-4 py-3 text-gray-600">{o.customer_name ?? "—"}</td>
@@ -148,6 +151,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
 
 // ── Supplier purchases tab ──────────────────────────────────────────────────────
 function PurchasesTab({ cal }: { cal: CalendarValue }) {
+  const { formatDateTime } = useFormat();
   const [page, setPage] = useState(1);
   const params = new URLSearchParams({ page: String(page), ...calendarParams(cal) });
   const { data, error, isValidating, mutate } = useSWR<PurchaseListResponse>(`/suppliers/purchases/list?${params}`, apiFetcher);
@@ -195,6 +199,7 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
 
 // ── Buybacks tab ────────────────────────────────────────────────────────────────
 function BuybacksTab({ cal }: { cal: CalendarValue }) {
+  const { formatDateTime } = useFormat();
   const [page, setPage] = useState(1);
   const params = new URLSearchParams({ page: String(page), ...calendarParams(cal) });
   const { data, error, isValidating, mutate } = useSWR<BuybackListResponse>(`/buybacks?${params}`, apiFetcher);

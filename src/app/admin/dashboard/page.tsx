@@ -1,10 +1,12 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import useSWR from "swr";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
-import { formatUSD, formatDateTime } from "@/lib/utils";
+import { formatUSD } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -14,6 +16,7 @@ import { Skeleton, SkeletonText, CardSkeleton, TableSkeleton } from "@/component
 import type { DashboardData } from "@/types/api";
 
 export default function DashboardPage() {
+  const { formatDateTime } = useFormat();
   const { data, error, isLoading, isValidating, mutate } = useSWR<DashboardData>("/reports/dashboard", apiFetcher, { refreshInterval: 60000 });
   const { t } = useLang();
 
@@ -357,14 +360,14 @@ export default function DashboardPage() {
           <thead>
             <tr className="border-b border-gray-100">
               {[t.dashboard.orderNum, t.dashboard.cashier, t.dashboard.total, t.dashboard.status, t.dashboard.date].map((h) => (
-                <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-5 py-3 font-medium">{h}</th>
+                <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-5 py-3 font-medium">{h.includes("#") ? <Ltr>{h}</Ltr> : h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {data.recent_orders.map((o) => (
               <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                <td className="px-5 py-3 font-mono text-xs">{o.order_number}</td>
+                <td className="px-5 py-3 font-mono text-xs"><Ltr>{o.order_number}</Ltr></td>
                 <td className="px-5 py-3 text-gray-600">{o.cashier}</td>
                 <td className="px-5 py-3 font-semibold">{formatUSD(o.total_usd)}</td>
                 <td className="px-5 py-3"><StatusBadge status={o.status} /></td>

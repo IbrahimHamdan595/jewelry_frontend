@@ -13,9 +13,8 @@ vi.mock("@/hooks/useGoldRate", () => ({
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), uploadFile: vi.fn() }));
 
 function renderForm(lang: "en" | "ar") {
-  localStorage.setItem("lang", lang);
   return render(
-    <LanguageProvider>
+    <LanguageProvider initialLang={lang}>
       <ProductForm onSave={vi.fn()} />
     </LanguageProvider>,
   );

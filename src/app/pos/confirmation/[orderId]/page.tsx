@@ -1,4 +1,5 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -43,7 +44,7 @@ export default function ConfirmationPage() {
 
       {order && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-8 w-full max-w-sm space-y-4 text-center">
-          <div className="font-mono text-xs text-pos-gray">{order.order_number}</div>
+          <div className="font-mono text-xs text-pos-gray"><Ltr>{order.order_number}</Ltr></div>
           <div className="font-serif text-5xl text-gold font-bold">{formatUSD(order.total_usd)}</div>
           <div className="text-pos-gray text-xs">{formatLBP(order.total_lbp)}</div>
           <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/10">

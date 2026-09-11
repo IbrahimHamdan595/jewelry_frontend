@@ -46,3 +46,22 @@ describe("display formatters pin Beirut", () => {
     expect(formatDateTime("2026-01-15T22:30:00Z")).toMatch(/^16 Jan.* 00:30$/);
   });
 });
+
+describe("formatters take a locale (NEX-63)", () => {
+  const AR = "ar-LB-u-nu-latn";
+  it("show Arabic month names with Western digits in Arabic mode", () => {
+    const d = formatDate("2026-09-05T12:00:00Z", AR);
+    expect(d).toMatch(/أيلول|سبتمبر/);
+    expect(d).toMatch(/05/);
+    expect(d).toMatch(/2026/);
+    expect(d).not.toMatch(/[٠-٩]/);
+  });
+  it("keep English by default", () => {
+    expect(formatDate("2026-09-05T12:00:00Z")).toMatch(/^05 Sep/);
+    expect(formatDateTime("2026-09-05T12:00:00Z", AR)).toMatch(/أيلول|سبتمبر/);
+  });
+  it("localise the short header date too", async () => {
+    const { formatShortDate } = await import("@/lib/utils");
+    expect(formatShortDate("2026-09-05T12:00:00Z", AR)).toMatch(/[؀-ۿ]/);
+  });
+});

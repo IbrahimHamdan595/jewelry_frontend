@@ -1,11 +1,13 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
-import { formatUSD, formatLBP, formatDateTime } from "@/lib/utils";
+import { formatUSD, formatLBP } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import { Dialog } from "@/components/ui/dialog";
@@ -25,6 +27,7 @@ function KindPill({ kind }: { kind: OrderItemKind }) {
 }
 
 export default function OrderDetailPage() {
+  const { formatDateTime } = useFormat();
   const { id } = useParams<{ id: string }>();
   const { data: order, error: loadError, isValidating, mutate } = useSWR<Order>(`/orders/${id}`, apiFetcher);
   const [voidReason, setVoidReason] = useState("");
@@ -90,7 +93,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">{order.order_number}</h2>
+          <h2 className="text-lg font-semibold text-gray-800"><Ltr>{order.order_number}</Ltr></h2>
           <div className="flex items-center gap-3 mt-1">
             <StatusBadge status={order.status} />
             <span className="text-xs text-gray-400">{formatDateTime(order.created_at)}</span>
