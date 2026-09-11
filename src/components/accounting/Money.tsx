@@ -13,9 +13,11 @@ interface MoneyProps {
  * with an optional "—" for zero/empty values (keeps tables readable).
  */
 export function Money({ value, dash, className }: MoneyProps) {
-  const n = value === null || value === undefined || value === "" ? 0 : Number(value);
+  const raw = value === null || value === undefined || value === "" ? 0 : value;
+  const n = Number(raw);
   if (dash && (Number.isNaN(n) || n === 0)) {
     return <span className={`tabular-nums text-gray-300 ${className ?? ""}`}>—</span>;
   }
-  return <span className={`tabular-nums ${className ?? ""}`}>{formatUSD(Number.isNaN(n) ? 0 : n)}</span>;
+  // A non-numeric string comes back from formatUSD as a dash, not a fake $0.00.
+  return <span className={`tabular-nums ${className ?? ""}`}>{formatUSD(raw)}</span>;
 }

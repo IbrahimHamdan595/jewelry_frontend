@@ -47,12 +47,39 @@ function round(n: number, places = 2) {
   return Math.round(n * 10 ** places) / 10 ** places;
 }
 
-export function formatUSD(n: number | string) {
-  return `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+/** What a money cell shows when there is no finite number to show. */
+export const MISSING_AMOUNT = "—";
+
+/**
+ * The backend serialises money as strings; the UI also passes numbers. Anything
+ * that is not a finite number is a bug upstream, and showing "$NaN" or a fake
+ * "$0.00" hides it — so it renders as a dash instead.
+ */
+function toFiniteNumber(n: unknown): number | null {
+  if (typeof n === "number") return Number.isFinite(n) ? n : null;
+  if (typeof n === "string" && n.trim() !== "") {
+    const v = Number(n);
+    return Number.isFinite(v) ? v : null;
+  }
+  return null;
 }
 
+/**
+ * Money, always two decimals (NEX-56: a minimum with no maximum let
+ * $20,572.483 through). Intl rounds half away from zero (roundingMode
+ * "halfExpand"), which matches the receipts.
+ */
+export function formatUSD(n: number | string) {
+  const v = toFiniteNumber(n);
+  if (v === null) return MISSING_AMOUNT;
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Lira has no useful sub-unit: whole numbers only. */
 export function formatLBP(n: number | string) {
-  return `ل.ل ${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  const v = toFiniteNumber(n);
+  if (v === null) return MISSING_AMOUNT;
+  return `ل.ل ${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
 // ── Dates ─────────────────────────────────────────────────────────────────────
