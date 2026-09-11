@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { formatShortDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 
 /**
  * Today's date, Beirut calendar, rendered only after mount.
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
  */
 export function TodayInBeirut({ className }: { className?: string }) {
   const [label, setLabel] = useState<string | null>(null);
+  const { formatShortDate } = useFormat();
 
   useEffect(() => {
     const tick = () => setLabel((prev) => {
@@ -24,7 +25,7 @@ export function TodayInBeirut({ className }: { className?: string }) {
     tick();
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [formatShortDate]);
 
   return (
     <span className={cn("inline-block min-w-[6.5rem] text-end", className)}>

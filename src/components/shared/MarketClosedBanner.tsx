@@ -17,7 +17,7 @@
  */
 import { AlertTriangle } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { formatDateTime } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 
 interface Props {
   variant?: "light" | "dark";
@@ -41,6 +41,7 @@ const STYLES = {
 } as const;
 
 export function MarketClosedBanner({ variant = "light" }: Props) {
+  const { formatDateTime } = useFormat();
   const { rate } = useGoldRate();
   if (!rate?.is_stale && !rate?.market_closed) return null;
 

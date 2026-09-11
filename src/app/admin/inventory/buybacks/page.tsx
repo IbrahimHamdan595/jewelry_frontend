@@ -4,7 +4,8 @@ import useSWR from "swr";
 import { Sparkles, Flame, AlertCircle } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
-import { formatUSD, formatDateTime } from "@/lib/utils";
+import { formatUSD } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import type {
   BuybackKind,
@@ -130,6 +131,7 @@ function BuybackRow({
   onPolish: () => void;
   onMelt: () => void;
 }) {
+  const { formatDateTime } = useFormat();
   const isPendingUsed =
     buyback.kind === "USED_PRODUCT" && !buyback.product_id && !buyback.result_lot_id;
 

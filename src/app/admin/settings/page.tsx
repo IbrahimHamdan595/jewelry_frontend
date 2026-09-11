@@ -1,4 +1,5 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
@@ -380,7 +381,7 @@ export default function SettingsPage() {
                 <div key={s.id} className="flex items-center py-3">
                   <div className="flex-1">
                     <div className="text-sm font-medium">{s.name}</div>
-                    <div className="text-xs text-gray-400">{s.email}</div>
+                    <div className="text-xs text-gray-400"><Ltr>{s.email}</Ltr></div>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>{s.is_active ? "Active" : "Disabled"}</span>
                 </div>

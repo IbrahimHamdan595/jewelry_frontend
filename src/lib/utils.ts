@@ -92,18 +92,23 @@ export function firstOfYear() {
   return `${beirutDay(new Date()).y}-01-01`;
 }
 
-export function formatDate(d: string | Date) {
-  return new Date(d).toLocaleDateString("en-GB", { timeZone: SHOP_TIME_ZONE, day: "2-digit", month: "short", year: "numeric" });
+// `locale` is the UI language's Intl locale (see lang-cookie.localeFor);
+// components get it pre-bound from useFormat(). The default keeps English for
+// non-React callers.
+const DEFAULT_LOCALE = "en-GB";
+
+export function formatDate(d: string | Date, locale: string = DEFAULT_LOCALE) {
+  return new Date(d).toLocaleDateString(locale, { timeZone: SHOP_TIME_ZONE, day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function formatDateTime(d: string | Date) {
-  return new Date(d).toLocaleString("en-GB", {
+export function formatDateTime(d: string | Date, locale: string = DEFAULT_LOCALE) {
+  return new Date(d).toLocaleString(locale, {
     timeZone: SHOP_TIME_ZONE,
     day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }
 
 /** "Wed 09 Sep" — the POS header date. Render it client-only (TodayInBeirut). */
-export function formatShortDate(d: string | Date) {
-  return new Date(d).toLocaleDateString("en-GB", { timeZone: SHOP_TIME_ZONE, weekday: "short", day: "2-digit", month: "short" });
+export function formatShortDate(d: string | Date, locale: string = DEFAULT_LOCALE) {
+  return new Date(d).toLocaleDateString(locale, { timeZone: SHOP_TIME_ZONE, weekday: "short", day: "2-digit", month: "short" });
 }

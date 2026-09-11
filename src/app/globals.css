@@ -16,6 +16,14 @@
 
   /* Ensure Arabic numerals render correctly in Arabic locale */
   [dir="rtl"] input[type="number"] { text-align: start; }
+
+  /* Machine identifiers (product codes, order and entry numbers) are set in
+     font-mono throughout the app. In RTL the bidi algorithm scrambles their
+     neutral characters ("-", "+", "#"), so isolate every such run and lay it
+     out left-to-right. Right-aligned so a mono <td> keeps its column's
+     alignment; on inline spans text-align has no effect. See <Ltr> for
+     identifiers that are not monospace (phones, emails). */
+  [dir="rtl"] .font-mono { direction: ltr; unicode-bidi: isolate; text-align: right; }
 }
 
 @media print {

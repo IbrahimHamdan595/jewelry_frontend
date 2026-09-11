@@ -9,7 +9,7 @@
  * is not symmetric: buying gold on an old rate is money leaving the till.
  */
 import { AlertTriangle } from "lucide-react";
-import { formatDateTime } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 
 interface Props {
   required: boolean;
@@ -22,6 +22,7 @@ interface Props {
 export function StaleRateAckNotice({
   required, accepted, onChange, fetchedAt, action,
 }: Props) {
+  const { formatDateTime } = useFormat();
   if (!required || !fetchedAt) return null;
 
   return (

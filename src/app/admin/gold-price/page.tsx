@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { formatDateTime } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { TradingViewChart } from "@/components/admin/TradingViewChart";
 import { CalendarFilter, calendarParams, type CalendarValue } from "@/components/admin/CalendarFilter";
@@ -22,6 +22,7 @@ const KARATS: { key: KaratKey; label: string }[] = [
 ];
 
 export default function GoldPricePage() {
+  const { formatDateTime } = useFormat();
   const { rate, refresh, error: rateError, isValidating: rateValidating } = useGoldRate();
   const [range, setRange] = useState<Range>("24h");
   const [karat, setKarat] = useState<KaratKey>("24k");

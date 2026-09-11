@@ -1,4 +1,5 @@
 "use client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -88,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div className="min-w-0">
             <div className="text-white text-xs font-medium truncate">{user?.name ?? t.nav.admin}</div>
-            <div className="text-white/40 text-[10px] truncate">{user?.email}</div>
+            <div className="text-white/40 text-[10px] truncate"><Ltr>{user?.email}</Ltr></div>
           </div>
         </div>
         <button
