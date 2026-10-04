@@ -82,7 +82,7 @@ export interface Translations {
     lotRemaining: (grams: string) => string;
     lotSource: { BUYBACK: string; MELT: string; SUPPLIER: string; SEED: string; ADJUSTMENT: string };
     gramsPlaceholder: string;
-    gramsFromLot: string;
+    gramsFromLot: (lot: string) => string;
     payGold: (grams: string, karat: string) => string;
   };
 
@@ -664,7 +664,7 @@ const en: Translations = {
     lotRemaining: (grams) => `remaining ${grams}g`,
     lotSource: { BUYBACK: "BUYBACK", MELT: "MELT", SUPPLIER: "SUPPLIER", SEED: "SEED", ADJUSTMENT: "ADJUSTMENT" },
     gramsPlaceholder: "grams",
-    gramsFromLot: "Grams from this lot",
+    gramsFromLot: (lot) => `Grams from lot ${lot}`,
     payGold: (grams, karat) => `Pay ${grams}g ${karat}`,
   },
 

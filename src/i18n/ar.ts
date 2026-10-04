@@ -85,7 +85,7 @@ const ar: Translations = {
     lotRemaining: (grams) => `المتبقي ${grams}g`,
     lotSource: { BUYBACK: "استرداد", MELT: "صهر", SUPPLIER: "مورّد", SEED: "رصيد افتتاحي", ADJUSTMENT: "تعديل" },
     gramsPlaceholder: "غرام",
-    gramsFromLot: "الغرامات من هذه الدفعة",
+    gramsFromLot: (lot) => `الغرامات من الدفعة ${lot}`,
     payGold: (grams, karat) => `سداد ${grams}g ${karat}`,
   },
 

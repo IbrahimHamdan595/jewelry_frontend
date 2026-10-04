@@ -9,6 +9,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
+import { Ltr } from "@/components/shared/Ltr";
 import type {
   Karat,
   Lot,
@@ -70,7 +72,7 @@ export default function SupplierDetailPage() {
         href="/admin/suppliers"
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" aria-hidden />
+        <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
         {su.backToList}
       </Link>
 
@@ -81,8 +83,8 @@ export default function SupplierDetailPage() {
             <h2 className="text-xl font-semibold text-gray-800">{supplier.name}</h2>
             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-xs text-gray-600">
               {supplier.contact_name && <Meta label={su.contact} value={supplier.contact_name} />}
-              {supplier.phone && <Meta label={su.phone} value={supplier.phone} />}
-              {supplier.email && <Meta label={su.email} value={supplier.email} />}
+              {supplier.phone && <Meta label={su.phone} value={<Ltr>{supplier.phone}</Ltr>} />}
+              {supplier.email && <Meta label={su.email} value={<Ltr>{supplier.email}</Ltr>} />}
               {supplier.payment_terms && <Meta label={su.terms} value={supplier.payment_terms} />}
             </div>
             {supplier.address && (
@@ -126,8 +128,12 @@ export default function SupplierDetailPage() {
                   <div key={b.karat ?? "k"} className="flex items-baseline gap-2">
                     <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium">{b.karat}</span>
                     <span className="text-lg font-semibold text-gray-800">
-                      {Number(b.balance).toFixed(3)}
-                      <span className="text-xs text-gray-400 ml-1">g</span>
+                      {/* A number and its unit read left-to-right in both
+                          languages: isolated, so the gap stays between them. */}
+                      <Ltr>
+                        {Number(b.balance).toFixed(3)}
+                        <span className="text-xs text-gray-400 ms-1">g</span>
+                      </Ltr>
                     </span>
                   </div>
                 ))}
@@ -203,10 +209,10 @@ export default function SupplierDetailPage() {
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <span className="text-gray-400 uppercase tracking-widest text-[10px] mr-1">{label}</span>
+      <span className="text-gray-400 uppercase tracking-widest text-[10px] me-1">{label}</span>
       <span className="text-gray-700">{value}</span>
     </div>
   );
@@ -236,6 +242,7 @@ function BalanceCard({
 function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
   const { t } = useLang();
   const su = t.suppliers;
+  const { formatDateTime } = useFormat();
   if (purchases.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
@@ -248,19 +255,19 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colMode}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colCashDuePaid}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colGoldDuePaid}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colItems}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
-            <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colReceipt}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colMode}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colCashDuePaid}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colGoldDuePaid}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colItems}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
+            <th className="text-end px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colReceipt}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {purchases.map((p) => (
             <tr key={p.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-xs text-gray-600">{new Date(p.occurred_at).toLocaleString()}</td>
+              <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(p.occurred_at)}</td>
               <td className="px-4 py-3"><ModePill mode={p.payment_mode} /></td>
               <td className="px-4 py-3 text-xs font-mono text-gray-700">
                 {formatUSD(Number(p.total_cash_due))} / {formatUSD(Number(p.cash_paid_at_creation))}
@@ -284,7 +291,7 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
                 {su.itemCount(p.items.length)}
               </td>
               <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">{p.notes ?? "—"}</td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-end">
                 <a
                   href={`/admin/suppliers/purchases/${p.id}/receipt`}
                   target="_blank"
@@ -305,6 +312,7 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
 function PaymentsTable({ payments }: { payments: SupplierPayment[] }) {
   const { t } = useLang();
   const su = t.suppliers;
+  const { formatDateTime } = useFormat();
   if (payments.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
@@ -317,17 +325,17 @@ function PaymentsTable({ payments }: { payments: SupplierPayment[] }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colUnit}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colAmount}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colSourceLots}</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colUnit}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colAmount}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colSourceLots}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {payments.map((p) => (
             <tr key={p.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-xs text-gray-600">{new Date(p.paid_at).toLocaleString()}</td>
+              <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(p.paid_at)}</td>
               <td className="px-4 py-3">
                 {p.unit === "CASH" ? (
                   <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{su.unitCash}</span>
@@ -565,7 +573,7 @@ function GoldPaymentDialog({
                       step="0.001"
                       max={lot.weight_remaining_grams}
                       placeholder={su.gramsPlaceholder}
-                      aria-label={su.gramsFromLot}
+                      aria-label={su.gramsFromLot(`${lot.id.slice(0, 12)}…`)}
                       value={picks[pickIdx]?.grams ?? ""}
                       onChange={(e) => {
                         const newPicks = [...picks];

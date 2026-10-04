@@ -11,6 +11,7 @@ vi.mock("swr", () => ({ default: (key: string) => ({ data: swr.byKey[key], error
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn() } }));
 
 const LOT_ID = "7b1e4c90-55aa-4d2f-9c11-0a1b2c3d4e5f";
+const SECOND_LOT_ID = "91d2f0a7-3c44-4b6e-8f20-5e6f7a8b9c0d";
 const SOURCE_LOT_ID = "c0ffee12-0000-4000-8000-000000000001";
 const PURCHASE_NOTE = "Eid stock";
 const PAYMENT_NOTE = "From the melt lot";
@@ -26,7 +27,7 @@ const detail = {
   ],
   purchases: [
     {
-      id: "p1", supplier_id: "s1", occurred_at: "2026-09-05T10:00:00Z", payment_mode: "MIXED", trade_markup_per_gram: null,
+      id: "p1", supplier_id: "s1", occurred_at: "2026-09-05T22:30:00Z", payment_mode: "MIXED", trade_markup_per_gram: null,
       total_cash_due: 1500, total_grams_due_by_karat: { K21: "20.000" }, cash_paid_at_creation: 249.5,
       grams_paid_at_creation_by_karat: { K21: "7.500" }, notes: PURCHASE_NOTE, created_by_user_id: "u1", created_at: "2026-09-05T10:00:00Z",
       items: [{ id: "i1" }, { id: "i2" }],
@@ -34,13 +35,18 @@ const detail = {
   ],
   payments: [
     { id: "pay1", supplier_id: "s1", paid_at: "2026-09-06T09:30:00Z", unit: "CASH", karat: null, amount: 100, source_lot_ids: null, paid_by_user_id: "u1", notes: null },
-    { id: "pay2", supplier_id: "s1", paid_at: "2026-09-07T09:30:00Z", unit: "GOLD", karat: "K21", amount: 2.5, source_lot_ids: [SOURCE_LOT_ID], paid_by_user_id: "u1", notes: PAYMENT_NOTE },
+    { id: "pay2", supplier_id: "s1", paid_at: "2026-09-07T22:45:00Z", unit: "GOLD", karat: "K21", amount: 2.5, source_lot_ids: [SOURCE_LOT_ID], paid_by_user_id: "u1", notes: PAYMENT_NOTE },
   ],
 };
 const lots = {
-  items: [{ id: LOT_ID, karat: "K21", weight_grams: 50, weight_remaining_grams: 30.25, source: "SUPPLIER", is_depleted: false }],
-  total: 1, page: 1, page_size: 100,
+  items: [
+    { id: LOT_ID, karat: "K21", weight_grams: 50, weight_remaining_grams: 30.25, source: "SUPPLIER", is_depleted: false },
+    { id: SECOND_LOT_ID, karat: "K21", weight_grams: 20, weight_remaining_grams: 8, source: "MELT", is_depleted: false },
+  ],
+  total: 2, page: 1, page_size: 100,
 };
+/** A lot as the dialog shows it. */
+const shown = (id: string) => `${id.slice(0, 12)}…`;
 
 /** Every string a user can see or hear: text nodes plus placeholder / title / aria-label. */
 function uiStrings(root: HTMLElement): string[] {
@@ -58,15 +64,19 @@ function englishLeft(root: HTMLElement, data: (string | RegExp)[]): string[] {
   return uiStrings(root).filter((s) => /[A-Za-z]{2,}/.test(data.reduce<string>((rest, d) => rest.split(d).join(""), s)));
 }
 
-// Left as-is on purpose: values that come from the database, lot ids, and
-// the timestamps (this page still formats them with the browser's own locale
-// rather than the app language — out of scope for NEX-64).
+/** Elements whose classes pin a side (text-left, ml-2, pr-4 …) instead of following the reading direction. */
+function physicalClasses(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll("[class]"))
+    .map((el) => el.getAttribute("class") ?? "")
+    .filter((classes) => /(^|\s)(text-(left|right)|-?m[lr]-\S+|p[lr]-\S+)(\s|$)/.test(classes));
+}
+
+// Left as-is on purpose: values that come from the database, and lot ids.
 const DATA = [
   detail.supplier.name, detail.supplier.contact_name, detail.supplier.email, detail.supplier.address,
   detail.supplier.payment_terms, detail.supplier.notes,
   PURCHASE_NOTE, PAYMENT_NOTE,
-  LOT_ID.slice(0, 12), SOURCE_LOT_ID.slice(0, 8),
-  ...[detail.purchases[0].occurred_at, detail.payments[0].paid_at, detail.payments[1].paid_at].map((d) => new Date(d).toLocaleString()),
+  LOT_ID.slice(0, 12), SECOND_LOT_ID.slice(0, 12), SOURCE_LOT_ID.slice(0, 8),
 ];
 
 function renderPage(lang: "en" | "ar") {
@@ -121,6 +131,43 @@ describe("supplier detail labels and i18n (NEX-64)", () => {
     }
   });
 
+  it("shows purchase and payment dates in the app language, at Beirut wall-clock time", () => {
+    // 22:30 UTC on the 5th is 01:30 on the 6th in Beirut; 22:45 UTC on the 7th is 01:45 on the 8th.
+    const { unmount } = renderPage("ar");
+    const purchase = within(screen.getByRole("row", { name: new RegExp(PURCHASE_NOTE) })).getAllByRole("cell")[0];
+    expect(purchase).toHaveTextContent(/^06 (أيلول|سبتمبر) 2026/);
+    expect(purchase).toHaveTextContent(/01:30/);
+    expect(purchase.textContent).not.toMatch(/[A-Za-z]/);
+    const payment = within(screen.getByRole("row", { name: new RegExp(PAYMENT_NOTE) })).getAllByRole("cell")[0];
+    expect(payment).toHaveTextContent(/^08 (أيلول|سبتمبر) 2026/);
+    expect(payment).toHaveTextContent(/01:45/);
+    unmount();
+
+    renderPage("en");
+    expect(within(screen.getByRole("row", { name: new RegExp(PURCHASE_NOTE) })).getAllByRole("cell")[0]).toHaveTextContent(/^06 Sept? 2026, 01:30$/);
+    expect(within(screen.getByRole("row", { name: new RegExp(PAYMENT_NOTE) })).getAllByRole("cell")[0]).toHaveTextContent(/^08 Sept? 2026, 01:45$/);
+  });
+
+  it("keeps the phone number and the email left-to-right and intact", () => {
+    renderPage("ar");
+    expect(screen.getByText("+961-00-555555").closest("bdi")).toHaveAttribute("dir", "ltr");
+    expect(screen.getByText("ali@example.com").closest("bdi")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("follows the reading direction: logical utilities only, and the back arrow flips", () => {
+    const { container } = renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.suppliers.recordGoldPaymentLink }));
+    expect(physicalClasses(container)).toEqual([]);
+    expect(container.querySelector("svg.lucide-arrow-left")).toHaveClass("rtl:rotate-180");
+    // The label and its value keep a gap on the label's reading-end side.
+    expect(screen.getByText(ar.suppliers.phone)).toHaveClass("me-1");
+    // Headers align with the start of the line; the receipt column with its end.
+    expect(screen.getByRole("columnheader", { name: ar.suppliers.colMode })).toHaveClass("text-start");
+    expect(screen.getByRole("columnheader", { name: ar.suppliers.colReceipt })).toHaveClass("text-end");
+    // A weight and its unit are one left-to-right run, so the gap stays between them.
+    expect(screen.getByText("g", { selector: "span" }).closest("bdi")).toHaveTextContent("12.500g");
+  });
+
   it("leaves database values untranslated", () => {
     renderPage("ar");
     for (const value of [detail.supplier.name, detail.supplier.payment_terms, detail.supplier.notes, PURCHASE_NOTE, PAYMENT_NOTE]) {
@@ -163,7 +210,7 @@ describe("supplier detail labels and i18n (NEX-64)", () => {
     expect(within(karat).getByRole("option", { name: s.karatNoneOwed("K18") })).toBeDisabled();
 
     // The lot's id and remaining weight are the checkbox's label.
-    const checkbox = screen.getByRole("checkbox");
+    const [checkbox, secondCheckbox] = screen.getAllByRole("checkbox");
     const lotLabel = checkbox.closest("label") as HTMLLabelElement;
     expect(lotLabel.control).toBe(checkbox);
     expect(lotLabel).toHaveTextContent(LOT_ID.slice(0, 12));
@@ -171,11 +218,19 @@ describe("supplier detail labels and i18n (NEX-64)", () => {
 
     fireEvent.click(lotLabel);
     expect(checkbox).toBeChecked();
-    const grams = screen.getByLabelText(s.gramsFromLot);
+    const grams = screen.getByLabelText(s.gramsFromLot(shown(LOT_ID)));
     expect(grams).toHaveAttribute("placeholder", s.gramsPlaceholder);
     fireEvent.change(grams, { target: { value: "5" } });
     expect(screen.getByRole("button", { name: s.payGold("5.000", "K21") })).toBeEnabled();
     expectLabelled(s.notesOptional, "INPUT");
+
+    // With two lots picked, each grams input is named after its own lot.
+    fireEvent.click(secondCheckbox);
+    const secondGrams = screen.getByLabelText(s.gramsFromLot(shown(SECOND_LOT_ID)));
+    expect(secondGrams).not.toBe(grams);
+    expect(screen.getByLabelText(s.gramsFromLot(shown(LOT_ID)))).toBe(grams);
+    fireEvent.change(secondGrams, { target: { value: "2.5" } });
+    expect(screen.getByRole("button", { name: s.payGold("7.500", "K21") })).toBeEnabled();
   });
 
   it("gold payment dialog in Arabic has no English left behind", () => {
@@ -189,11 +244,14 @@ describe("supplier detail labels and i18n (NEX-64)", () => {
     expect(screen.getByText(s.outstandingKarat("K21"))).toBeInTheDocument();
     expect(screen.getByText(s.pickLots)).toBeInTheDocument();
 
-    const checkbox = screen.getByRole("checkbox");
+    const [checkbox, secondCheckbox] = screen.getAllByRole("checkbox");
     // The lot's source is an enum from the API: shown through the dictionary.
     expect(checkbox.closest("label")).toHaveTextContent(`${s.lotRemaining("30.250")} · ${s.lotSource.SUPPLIER}`);
+    expect(secondCheckbox.closest("label")).toHaveTextContent(`${s.lotRemaining("8.000")} · ${s.lotSource.MELT}`);
     fireEvent.click(checkbox);
-    expect(screen.getByLabelText(s.gramsFromLot)).toHaveAttribute("placeholder", s.gramsPlaceholder);
+    fireEvent.click(secondCheckbox);
+    expect(screen.getByLabelText(s.gramsFromLot(shown(LOT_ID)))).toHaveAttribute("placeholder", s.gramsPlaceholder);
+    expect(screen.getByLabelText(s.gramsFromLot(shown(SECOND_LOT_ID)))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: s.payGold("0.000", "K21") })).toBeDisabled();
     expect(englishLeft(container, DATA)).toEqual([]);
   });
