@@ -135,6 +135,19 @@ export interface Translations {
     loadingReceipt: string;
   };
 
+  payables: {
+    title: string;
+    cashOwedStoreWide: string;
+    goldOwed: string;
+    none: string;
+    suppliersWithDebt: string;
+    empty: string;
+    colSupplier: string;
+    colCash: string;
+    colGold: string;
+    settle: string;
+  };
+
   nav: {
     dashboard: string;
     products: string;
@@ -672,6 +685,19 @@ const en: Translations = {
     recording: "Recording…",
     recordPurchase: "Record Purchase",
     loadingReceipt: "Loading receipt…",
+  },
+
+  payables: {
+    title: "Accounts Payable",
+    cashOwedStoreWide: "Cash owed (store-wide)",
+    goldOwed: "Gold owed",
+    none: "None",
+    suppliersWithDebt: "Suppliers with debt",
+    empty: "No outstanding supplier debt",
+    colSupplier: "Supplier",
+    colCash: "Cash",
+    colGold: "Gold",
+    settle: "Settle →",
   },
 
   nav: {

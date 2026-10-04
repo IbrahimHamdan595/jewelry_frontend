@@ -6,9 +6,12 @@ import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
 import type { AccountsPayable } from "@/types/api";
 
 export default function AccountsPayablePage() {
+  const { t } = useLang();
+  const ap = t.payables;
   const { data, error, isValidating, mutate } = useSWR<AccountsPayable>("/accounts-payable", apiFetcher, {
     refreshInterval: 60000,
   });
@@ -41,22 +44,22 @@ export default function AccountsPayablePage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-800">Accounts Payable</h2>
+      <h2 className="text-lg font-semibold text-gray-800">{ap.title}</h2>
 
       {/* Headline totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
-          icon={<Banknote className="w-5 h-5" />}
-          label="Cash owed (store-wide)"
+          icon={<Banknote className="w-5 h-5" aria-hidden />}
+          label={ap.cashOwedStoreWide}
           value={formatUSD(data.total_cash_owed)}
         />
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-2 text-xs text-gray-400 uppercase tracking-widest mb-2">
-            <Coins className="w-5 h-5 text-gray-500" />
-            Gold owed
+            <Coins className="w-5 h-5 text-gray-500" aria-hidden />
+            {ap.goldOwed}
           </div>
           {goldKarats.length === 0 ? (
-            <div className="text-lg text-gray-400">None</div>
+            <div className="text-lg text-gray-400">{ap.none}</div>
           ) : (
             <div className="space-y-1.5">
               {goldKarats.map(([k, g]) => (
@@ -72,8 +75,8 @@ export default function AccountsPayablePage() {
           )}
         </div>
         <SummaryCard
-          icon={<Users className="w-5 h-5" />}
-          label="Suppliers with debt"
+          icon={<Users className="w-5 h-5" aria-hidden />}
+          label={ap.suppliersWithDebt}
           value={String(data.suppliers.length)}
         />
       </div>
@@ -81,7 +84,7 @@ export default function AccountsPayablePage() {
       {/* Per-supplier breakdown */}
       {data.suppliers.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-10 text-center text-sm text-gray-400">
-          No outstanding supplier debt
+          {ap.empty}
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
@@ -90,15 +93,15 @@ export default function AccountsPayablePage() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Supplier
+                  {ap.colSupplier}
                 </th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Cash
+                  {ap.colCash}
                 </th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                  Gold
+                  {ap.colGold}
                 </th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -139,7 +142,7 @@ export default function AccountsPayablePage() {
                         href={`/admin/suppliers/${s.supplier_id}`}
                         className="text-xs text-gold hover:text-gold-dark"
                       >
-                        Settle →
+                        {ap.settle}
                       </Link>
                     </td>
                   </tr>

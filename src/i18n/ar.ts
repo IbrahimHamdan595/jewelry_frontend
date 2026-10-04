@@ -147,6 +147,19 @@ const ar: Translations = {
     loadingReceipt: "جارٍ تحميل الإيصال…",
   },
 
+  payables: {
+    title: "الحسابات الدائنة",
+    cashOwedStoreWide: "النقد المستحق (إجمالي المحل)",
+    goldOwed: "الذهب المستحق",
+    none: "لا يوجد",
+    suppliersWithDebt: "موردون لهم مستحقات",
+    empty: "لا توجد ديون مستحقة للموردين",
+    colSupplier: "المورّد",
+    colCash: "النقد",
+    colGold: "الذهب",
+    settle: "سداد ←",
+  },
+
   nav: {
     dashboard: "لوحة التحكم",
     products: "المنتجات",
