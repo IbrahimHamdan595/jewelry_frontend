@@ -1,7 +1,21 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
-import { SignJWT, UnsecuredJWT, base64url, exportPKCS8, exportSPKI, generateKeyPair, type KeyLike } from "jose";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, type MockInstance } from "vitest";
+import { generateKeyPairSync, sign as signWithNode } from "node:crypto";
+import { SignJWT, UnsecuredJWT, base64url, exportPKCS8, exportSPKI, generateKeyPair, type JWTVerifyOptions, type KeyLike } from "jose";
 import { NextRequest } from "next/server";
+
+// Counts the middleware's signature checks; the real jwtVerify still runs.
+const verifications = vi.hoisted(() => ({ count: 0 }));
+vi.mock("jose", async (importOriginal) => {
+  const jose = await importOriginal<typeof import("jose")>();
+  return {
+    ...jose,
+    jwtVerify: (token: string, key: KeyLike | Uint8Array, options?: JWTVerifyOptions) => {
+      verifications.count++;
+      return jose.jwtVerify(token, key, options);
+    },
+  };
+});
 
 const SECRET = "nex-60-test-secret-with-enough-length";
 vi.stubEnv("JWT_SECRET", SECRET);
@@ -13,12 +27,13 @@ beforeAll(async () => {
   ({ middleware } = await import("@/middleware"));
 });
 
-async function tokenFor(role: unknown, secret = SECRET, exp: string | number = "1h") {
-  return new SignJWT({ role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject("user-1")
-    .setExpirationTime(exp)
-    .sign(new TextEncoder().encode(secret));
+type TokenOptions = { alg?: string; key?: string | Uint8Array | KeyLike; exp?: string | number | null; claims?: Record<string, unknown> };
+
+/** A session token as the backend issues it: HS256 under the shared secret unless told otherwise. */
+async function tokenFor(role: unknown, { alg = "HS256", key = SECRET, exp = "1h", claims = {} }: TokenOptions = {}) {
+  const jwt = new SignJWT({ role, ...claims }).setProtectedHeader({ alg }).setSubject("user-1");
+  if (exp !== null) jwt.setExpirationTime(exp);
+  return jwt.sign(typeof key === "string" ? new TextEncoder().encode(key) : key);
 }
 
 async function run(path: string, token?: string, mw = middleware) {
@@ -82,7 +97,7 @@ describe("route middleware", () => {
   });
 
   it("a token signed with the wrong secret fails closed", async () => {
-    const r = await run("/admin/dashboard", await tokenFor("ADMIN", "some-other-secret-that-is-long-enough"));
+    const r = await run("/admin/dashboard", await tokenFor("ADMIN", { key: "some-other-secret-that-is-long-enough" }));
     expect(r.to?.pathname).toBe("/login");
     expect(r.setCookie).toMatch(/mz_token=;/);
   });
@@ -90,11 +105,18 @@ describe("route middleware", () => {
 
 describe("RS256 verification (NEX-54)", () => {
   let pem: string;
-  let privateKey: KeyLike;
+  let rs: { alg: "RS256"; key: KeyLike };
+  let logged: MockInstance<typeof console.error>;
+  let warned: MockInstance<typeof console.warn>;
   beforeAll(async () => {
     const pair = await generateKeyPair("RS256", { extractable: true });
     pem = await exportSPKI(pair.publicKey);
-    privateKey = pair.privateKey;
+    rs = { alg: "RS256", key: pair.privateKey };
+  });
+  beforeEach(() => {
+    logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+    verifications.count = 0;
   });
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -102,43 +124,60 @@ describe("RS256 verification (NEX-54)", () => {
   });
 
   /** A fresh middleware for one key configuration: it resolves its keys at module load. */
-  async function load(env: { publicKey?: string; secret?: string }) {
+  async function load(env: { publicKey?: string; secret?: string; algorithm?: string }) {
     vi.stubEnv("JWT_PUBLIC_KEY", env.publicKey);
     vi.stubEnv("JWT_SECRET", env.secret);
+    vi.stubEnv("JWT_ALGORITHM", env.algorithm);
     vi.resetModules();
     return (await import("@/middleware")).middleware;
-  }
-
-  async function rsTokenFor(role: unknown, key: KeyLike = privateKey, exp: string | number = "1h") {
-    return new SignJWT({ role })
-      .setProtectedHeader({ alg: "RS256" })
-      .setSubject("user-1")
-      .setExpirationTime(exp)
-      .sign(key);
   }
 
   /** Turned away like any bad token: to /login, cookie cleared. */
   const rejected = (r: Awaited<ReturnType<typeof run>>) => r.to?.pathname === "/login" && /mz_token=;/.test(r.setCookie);
 
+  /** The same claims under another header alg, with the signature kept or dropped. */
+  const relabel = (token: string, alg: unknown, keepSignature = true) => {
+    const [, body, sig] = token.split(".");
+    return `${base64url.encode(JSON.stringify({ alg, typ: "JWT" }))}.${body}.${keepSignature ? sig : ""}`;
+  };
+
+  const unsecured = () => new UnsecuredJWT({ role: "ADMIN" }).setSubject("user-1").setExpirationTime("1h").encode();
+
   it("accepts an RS256 token with only the public key configured", async () => {
     const mw = await load({ publicKey: pem });
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
   });
 
-  it("accepts the public key with literal \\n for newlines, as hosting dashboards store it", async () => {
-    const mw = await load({ publicKey: pem.replace(/\n/g, "\\n") });
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+  it("accepts the public key however a dashboard or .env file hands it over", async () => {
+    const shapes: Record<string, string> = {
+      "literal \\n for newlines": pem.replace(/\n/g, "\\n"),
+      "literal \\r\\n for newlines": pem.replace(/\n/g, "\\r\\n"),
+      "real \\r\\n newlines": pem.replace(/\n/g, "\r\n"),
+      "a leading newline and spaces": `\n  ${pem}`,
+      "trailing spaces": `${pem}  `,
+      "double quotes": `"${pem}"`,
+      "single quotes": `'${pem}'`,
+      "quotes around literal \\n, as .env.example shows it": `"${pem.replace(/\n/g, "\\n")}"`,
+      "spaces around the quotes": `  "${pem}"  `,
+      "spaces inside the quotes": `" ${pem} "`,
+      "a leading literal \\n": `\\n${pem.replace(/\n/g, "\\n")}`,
+    };
+    for (const [shape, publicKey] of Object.entries(shapes)) {
+      const mw = await load({ publicKey });
+      expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw)), shape).toBe(true);
+    }
+    expect(logged).not.toHaveBeenCalled();
   });
 
   it("gates ADMIN, ACCOUNTANT and CASHIER under RS256 exactly as under HS256", async () => {
     const mw = await load({ publicKey: pem });
 
-    const admin = await rsTokenFor("ADMIN");
+    const admin = await tokenFor("ADMIN", rs);
     for (const p of ["/admin/dashboard", "/admin/products", "/admin/ledger", "/admin/accounting/journal", "/pos"]) {
       expect(pass(await run(p, admin, mw)), p).toBe(true);
     }
 
-    const accountant = await rsTokenFor("ACCOUNTANT");
+    const accountant = await tokenFor("ACCOUNTANT", rs);
     for (const p of ["/admin/accounting", "/admin/accounting/journal", "/admin/accounting/trial-balance", "/admin/accounting/periods", "/admin/accounting/kpis"]) {
       expect(pass(await run(p, accountant, mw)), p).toBe(true);
     }
@@ -146,7 +185,7 @@ describe("RS256 verification (NEX-54)", () => {
       expect((await run(p, accountant, mw)).to?.pathname, p).toBe("/admin/accounting");
     }
 
-    const cashier = await rsTokenFor("CASHIER");
+    const cashier = await tokenFor("CASHIER", rs);
     for (const p of ["/admin/dashboard", "/admin/accounting/journal", "/admin/settings"]) {
       expect((await run(p, cashier, mw)).to?.pathname, p).toBe("/pos");
     }
@@ -155,53 +194,105 @@ describe("RS256 verification (NEX-54)", () => {
 
   it("fails closed on an unknown role under RS256 too", async () => {
     const mw = await load({ publicKey: pem });
-    expect(pass(await run("/pos", await rsTokenFor("CASHIER"), mw))).toBe(true);
+    expect(pass(await run("/pos", await tokenFor("CASHIER", rs), mw))).toBe(true);
     for (const role of ["OWNER", "admin", "", 7, undefined]) {
-      expect(rejected(await run("/pos", await rsTokenFor(role), mw)), String(role)).toBe(true);
+      expect(rejected(await run("/pos", await tokenFor(role, rs), mw)), String(role)).toBe(true);
     }
-    expect((await run("/admin/accounting", await rsTokenFor("MANAGER"), mw)).to?.pathname).toBe("/login");
+    expect((await run("/admin/accounting", await tokenFor("MANAGER", rs), mw)).to?.pathname).toBe("/login");
   });
 
   it("ignores claims it does not read, such as a token version from the backend", async () => {
     const mw = await load({ publicKey: pem });
-    const versioned = await new SignJWT({ role: "CASHIER", token_version: 3 })
-      .setProtectedHeader({ alg: "RS256" })
-      .setSubject("user-1")
-      .setExpirationTime("1h")
-      .sign(privateKey);
+    const versioned = await tokenFor("CASHIER", { ...rs, claims: { token_version: 3 } });
     expect(pass(await run("/pos", versioned, mw))).toBe(true);
     expect((await run("/admin/dashboard", versioned, mw)).to?.pathname).toBe("/pos");
   });
 
   it("rejects HS256 once only the public key is configured", async () => {
     const mw = await load({ publicKey: pem });
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
     expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), mw))).toBe(true);
   });
 
   it("accepts both kinds during the migration window, each only with its own key", async () => {
     const mw = await load({ publicKey: pem, secret: SECRET });
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
     expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), mw))).toBe(true);
 
     const stranger = await generateKeyPair("RS256");
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN", stranger.privateKey), mw))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", "some-other-secret-that-is-long-enough"), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { ...rs, key: stranger.privateKey }), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { key: "some-other-secret-that-is-long-enough" }), mw))).toBe(true);
   });
 
-  it("ignores a leftover JWT_ALGORITHM: the algorithm is pinned to the key, not configured", async () => {
-    vi.stubEnv("JWT_ALGORITHM", "HS256");
-    const rsOnly = await load({ publicKey: pem });
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), rsOnly))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), rsOnly))).toBe(true);
+  it("checks one signature per request, under the key the token's alg selects, and none without such a key", async () => {
+    const mw = await load({ publicKey: pem, secret: SECRET });
+    const genuine = await tokenFor("ADMIN", rs);
+    for (const t of [genuine, await tokenFor("ADMIN")]) {
+      verifications.count = 0;
+      expect(pass(await run("/admin/dashboard", t, mw))).toBe(true);
+      expect(verifications.count).toBe(1);
+    }
 
-    vi.stubEnv("JWT_ALGORITHM", "RS256");
-    const hsOnly = await load({ secret: SECRET });
-    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), hsOnly))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), hsOnly))).toBe(true);
+    // No configured key answers to these, so they are turned away unverified.
+    verifications.count = 0;
+    const strays = [
+      await tokenFor("ADMIN", { alg: "HS384" }),
+      await tokenFor("ADMIN", { alg: "HS512" }),
+      relabel(genuine, "RS512"),
+      relabel(genuine, "PS256"),
+      relabel(genuine, ["RS256"]),
+      relabel(genuine, undefined),
+      `${base64url.encode('"RS256"')}.${genuine.split(".")[1]}.${genuine.split(".")[2]}`,
+      unsecured(),
+      "a.b.c",
+      "not-a-token",
+    ];
+    for (const t of strays) expect(rejected(await run("/admin/dashboard", t, mw)), t).toBe(true);
+    expect(verifications.count).toBe(0);
+    expect(logged).not.toHaveBeenCalled();
   });
 
-  it("rejects the algorithm-confusion token: HS256 keyed with the public key itself", async () => {
+  it("still takes the secret's HMAC from JWT_ALGORITHM, pinned to that one value", async () => {
+    const mw = await load({ secret: SECRET, algorithm: "HS512" });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", { alg: "HS512" }), mw))).toBe(true);
+    for (const alg of ["HS256", "HS384"]) {
+      expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { alg }), mw)), alg).toBe(true);
+    }
+
+    // The same during the window, next to the public key.
+    const both = await load({ publicKey: pem, secret: SECRET, algorithm: "HS512" });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), both))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", { alg: "HS512" }), both))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), both))).toBe(true);
+
+    // Unset, the secret is HS256 only.
+    const unset = await load({ secret: SECRET });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), unset))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { alg: "HS512" }), unset))).toBe(true);
+  });
+
+  it("leaves the secret on HS256 when JWT_ALGORITHM is not an HMAC algorithm", async () => {
+    const genuine = await tokenFor("ADMIN", rs);
+    for (const algorithm of ["RS256", "PS256", "none", "hs512", ""]) {
+      const mw = await load({ secret: SECRET, algorithm });
+      expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), mw)), algorithm).toBe(true);
+      for (const t of [genuine, await tokenFor("ADMIN", { alg: "HS512" }), unsecured()]) {
+        expect(rejected(await run("/admin/dashboard", t, mw)), algorithm).toBe(true);
+      }
+    }
+  });
+
+  it("never applies JWT_ALGORITHM to the public key: RS256 only", async () => {
+    const genuine = await tokenFor("ADMIN", rs);
+    for (const algorithm of ["HS256", "HS512", "RS512", "PS256", "none"]) {
+      const mw = await load({ publicKey: pem, algorithm });
+      expect(pass(await run("/admin/dashboard", genuine, mw)), algorithm).toBe(true);
+      const others = [await tokenFor("ADMIN"), await tokenFor("ADMIN", { alg: "HS512" }), relabel(genuine, "RS512"), relabel(genuine, "PS256")];
+      for (const t of others) expect(rejected(await run("/admin/dashboard", t, mw)), algorithm).toBe(true);
+    }
+  });
+
+  it("rejects the algorithm-confusion token: an HMAC token keyed with the public key itself", async () => {
     // The public key is public. If the verifier let the header choose HS256
     // and used the key text as the HMAC secret, anyone could mint an ADMIN.
     const der = Buffer.from(pem.replace(/-----[^-]+-----|\s/g, ""), "base64");
@@ -211,41 +302,47 @@ describe("RS256 verification (NEX-54)", () => {
       "the PEM with literal \\n": new TextEncoder().encode(pem.replace(/\n/g, "\\n")),
       "the DER bytes": new Uint8Array(der),
     };
-    for (const env of [{ publicKey: pem }, { publicKey: pem.replace(/\n/g, "\\n") }, { publicKey: pem, secret: SECRET }]) {
+    const configurations = [
+      { publicKey: pem },
+      { publicKey: pem.replace(/\n/g, "\\n") },
+      { publicKey: pem, secret: SECRET },
+      { publicKey: pem, algorithm: "HS512" },
+      { publicKey: pem, secret: SECRET, algorithm: "HS512" },
+    ];
+    for (const env of configurations) {
       const mw = await load(env);
-      expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+      expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
       for (const [name, key] of Object.entries(guesses)) {
-        const forged = await new SignJWT({ role: "ADMIN" })
-          .setProtectedHeader({ alg: "HS256" })
-          .setSubject("user-1")
-          .setExpirationTime("1h")
-          .sign(key);
-        expect(rejected(await run("/admin/dashboard", forged, mw)), name).toBe(true);
+        for (const alg of ["HS256", "HS384", "HS512"]) {
+          const forged = await tokenFor("ADMIN", { alg, key });
+          expect(rejected(await run("/admin/dashboard", forged, mw)), `${alg} keyed with ${name}`).toBe(true);
+        }
       }
     }
+    // A forged HMAC token never reaches the public key, so it is not a key problem to report.
+    expect(logged).not.toHaveBeenCalled();
   });
 
   it("rejects alg none, with or without a signature attached", async () => {
-    const unsecured = new UnsecuredJWT({ role: "ADMIN" }).setSubject("user-1").setExpirationTime("1h").encode();
     // A genuine token relabelled: same claims, header swapped to "none".
-    const [, body, sig] = (await rsTokenFor("ADMIN")).split(".");
-    const relabelled = ["none", "None", "NONE"].flatMap((alg) => {
-      const head = base64url.encode(JSON.stringify({ alg, typ: "JWT" }));
-      return [`${head}.${body}.`, `${head}.${body}.${sig}`];
-    });
+    const real = await tokenFor("ADMIN", rs);
+    const relabelled = ["none", "None", "NONE"].flatMap((alg) => [relabel(real, alg, false), relabel(real, alg)]);
     for (const env of [{ publicKey: pem }, { secret: SECRET }, { publicKey: pem, secret: SECRET }]) {
       const mw = await load(env);
-      const genuine = env.publicKey ? await rsTokenFor("ADMIN") : await tokenFor("ADMIN");
+      const genuine = env.publicKey ? real : await tokenFor("ADMIN");
       expect(pass(await run("/admin/dashboard", genuine, mw))).toBe(true);
-      for (const t of [unsecured, ...relabelled]) {
+      verifications.count = 0;
+      for (const t of [unsecured(), ...relabelled]) {
         expect(rejected(await run("/admin/dashboard", t, mw)), t).toBe(true);
       }
+      expect(verifications.count).toBe(0);
     }
+    expect(logged).not.toHaveBeenCalled();
   });
 
   it("rejects a tampered RS256 token", async () => {
     const mw = await load({ publicKey: pem });
-    const cashier = await rsTokenFor("CASHIER");
+    const cashier = await tokenFor("CASHIER", rs);
     expect(pass(await run("/pos", cashier, mw))).toBe(true);
 
     // Promote the role in the payload and keep the original signature.
@@ -259,47 +356,110 @@ describe("RS256 verification (NEX-54)", () => {
     expect(rejected(await run("/pos", `${head}.${body}.${damaged}`, mw))).toBe(true);
   });
 
-  it("rejects an expired token of either kind", async () => {
+  it("rejects an expired token of either kind, without logging: sessions expire all day", async () => {
     const mw = await load({ publicKey: pem, secret: SECRET });
     const aMinuteAgo = Math.floor(Date.now() / 1000) - 60;
-    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN", privateKey, aMinuteAgo), mw))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", SECRET, aMinuteAgo), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { ...rs, exp: aMinuteAgo }), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { exp: aMinuteAgo }), mw))).toBe(true);
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it("rejects a correctly signed token that carries no exp", async () => {
+    const mw = await load({ publicKey: pem, secret: SECRET });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { ...rs, exp: null }), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", { exp: null }), mw))).toBe(true);
+    expect(logged).not.toHaveBeenCalled();
   });
 
   it("fails closed when neither key is configured", async () => {
     const mw = await load({});
-    for (const t of [await rsTokenFor("ADMIN"), await tokenFor("ADMIN")]) {
+    for (const t of [await tokenFor("ADMIN", rs), await tokenFor("ADMIN")]) {
       expect(rejected(await run("/admin/dashboard", t, mw))).toBe(true);
     }
   });
 
-  it("treats a public key that does not parse as no public key, and says so without printing it", async () => {
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("warns once at start-up while both keys are configured, and not otherwise", async () => {
+    const both = await load({ publicKey: pem, secret: SECRET });
+    for (const t of [await tokenFor("ADMIN", rs), await tokenFor("ADMIN"), await tokenFor("ADMIN", rs)]) {
+      expect(pass(await run("/admin/dashboard", t, both))).toBe(true);
+    }
+    expect(warned).toHaveBeenCalledTimes(1);
+    const line = String(warned.mock.calls[0][0]);
+    expect(line).toContain("HS256 session tokens are still accepted");
+    expect(line).toMatch(/remove JWT_SECRET once the RS256 cutover is complete/);
+    expect(line).not.toContain(SECRET);
+
+    warned.mockClear();
+    for (const env of [{ publicKey: pem }, { secret: SECRET }, {}]) {
+      await run("/admin/dashboard", await tokenFor("ADMIN"), await load(env));
+    }
+    expect(warned).not.toHaveBeenCalled();
+  });
+
+  it("says so, once, when RS256 signatures fail: the public key may not be the backend's", async () => {
+    const stranger = await generateKeyPair("RS256");
+    const mw = await load({ publicKey: await exportSPKI(stranger.publicKey), secret: SECRET });
+
+    // A bad HS256 signature says nothing about the public key.
+    expect(rejected(await run("/pos", await tokenFor("ADMIN", { key: "some-other-secret-that-is-long-enough" }), mw))).toBe(true);
+    expect(logged).not.toHaveBeenCalled();
+
+    const tokens = [await tokenFor("ADMIN", rs), await tokenFor("CASHIER", rs)];
+    for (const t of [...tokens, ...tokens]) expect(rejected(await run("/pos", t, mw))).toBe(true);
+    expect(logged).toHaveBeenCalledTimes(1);
+    const line = String(logged.mock.calls[0][0]);
+    expect(line).toBe("[auth] RS256 verification failed (ERR_JWS_SIGNATURE_VERIFICATION_FAILED): JWT_PUBLIC_KEY may not match the backend's signing key");
+  });
+
+  it("says so, once, when the public key cannot verify at all, such as an RSA modulus under 2048 bits", async () => {
+    const weak = generateKeyPairSync("rsa", { modulusLength: 1024 });
+    const weakPem = weak.publicKey.export({ type: "spki", format: "pem" }).toString();
+    // jose refuses to sign with a key this short, so this one is signed by hand.
+    const claims = { role: "ADMIN", sub: "user-1", exp: Math.floor(Date.now() / 1000) + 3600 };
+    const input = `${base64url.encode(JSON.stringify({ alg: "RS256" }))}.${base64url.encode(JSON.stringify(claims))}`;
+    const token = `${input}.${base64url.encode(signWithNode("sha256", Buffer.from(input), weak.privateKey))}`;
+
+    const mw = await load({ publicKey: weakPem });
+    for (let i = 0; i < 3; i++) expect(rejected(await run("/admin/dashboard", token, mw))).toBe(true);
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    const line = String(logged.mock.calls[0][0]);
+    expect(line).toMatch(/^\[auth\] RS256 verification failed \(TypeError: .*2048.*\): JWT_PUBLIC_KEY may not match the backend's signing key$/);
+    for (const secret of [token, token.split(".")[2], weakPem.split("\n")[1]]) expect(line).not.toContain(secret);
+  });
+
+  it("treats a public key that does not import as no public key, and logs why without the key", async () => {
     const broken = "-----BEGIN PUBLIC KEY-----\nbm90IGEga2V5\n-----END PUBLIC KEY-----";
 
     // Mid-migration the HS256 sessions keep working; RS256 has nothing to verify against.
     const midMigration = await load({ publicKey: broken, secret: SECRET });
     expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), midMigration))).toBe(true);
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), midMigration))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", rs), midMigration))).toBe(true);
 
     // With the secret gone there is no key at all: everything fails closed.
     const afterCutover = await load({ publicKey: broken });
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), afterCutover))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", rs), afterCutover))).toBe(true);
     expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), afterCutover))).toBe(true);
 
     expect(logged).toHaveBeenCalledTimes(2);
-    for (const [message] of logged.mock.calls) {
-      expect(String(message)).toContain("JWT_PUBLIC_KEY");
-      expect(String(message)).not.toContain("bm90IGEga2V5");
+    for (const [line] of logged.mock.calls) {
+      expect(String(line)).toMatch(/^\[auth\] JWT_PUBLIC_KEY could not be imported \(\w+: .+\); RS256 tokens will be rejected$/);
+      expect(String(line)).not.toContain("bm90IGEga2V5");
     }
   });
 
   it("refuses a private key pasted into JWT_PUBLIC_KEY: this side must never hold a signing key", async () => {
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-    const mw = await load({ publicKey: await exportPKCS8(privateKey) });
-    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    const privatePem = await exportPKCS8(rs.key);
+    const mw = await load({ publicKey: privatePem });
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", rs), mw))).toBe(true);
+
     expect(logged).toHaveBeenCalledTimes(1);
+    const line = String(logged.mock.calls[0][0]);
+    expect(line).toMatch(/^\[auth\] JWT_PUBLIC_KEY could not be imported \(TypeError: .+\); RS256 tokens will be rejected$/);
+    expect(line).not.toContain(privatePem.split("\n")[1]);
   });
 });
 

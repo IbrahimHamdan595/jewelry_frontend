@@ -1,25 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { importSPKI, jwtVerify, type KeyLike } from "jose";
+import { decodeProtectedHeader, errors, importSPKI, jwtVerify, type KeyLike } from "jose";
 import { canAccess, homeFor, isRole, type Role } from "@/lib/access";
 import { buildCsp, newNonce } from "@/lib/csp";
 
-// Vercel-style env vars often carry PEM newlines as the two characters "\n".
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, "\n");
+const HMAC_ALGORITHMS = ["HS256", "HS384", "HS512"] as const;
+
+// Dashboards and .env files hand a PEM over with stray whitespace, wrapped in
+// quotes, or with its newlines as the characters "\n" (or "\r\n").
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.trim()
+  .replace(/^(["'])([\s\S]*)\1$/, "$2")
+  .replace(/\\r\\n|\\n/g, "\n")
+  .trim();
 const JWT_SECRET = process.env.JWT_SECRET;
+// Only ever the secret's algorithm, as before, and only an HMAC one: anything
+// else (RS256 included) leaves the secret on HS256.
+const JWT_ALGORITHM = HMAC_ALGORITHMS.find((alg) => alg === process.env.JWT_ALGORITHM) ?? "HS256";
+
+if (JWT_PUBLIC_KEY && JWT_SECRET) {
+  console.warn(`[auth] ${JWT_ALGORITHM} session tokens are still accepted alongside RS256: remove JWT_SECRET once the RS256 cutover is complete`);
+}
 
 /** A key and the one algorithm it is trusted to verify. */
-type Verifier = { key: KeyLike; algorithms: ["RS256"] } | { key: Uint8Array; algorithms: ["HS256"] };
+type Verifier = { key: KeyLike; algorithm: "RS256" } | { key: Uint8Array; algorithm: (typeof HMAC_ALGORITHMS)[number] };
+
+/** An error's name and message for the logs. Neither jose nor the runtime's crypto puts the key or the token in them. */
+const reason = (e: unknown) => (e instanceof Error ? `${e.name}: ${e.message}` : String(e));
 
 /**
  * The keys a session token may verify against, each pinned to its one
  * algorithm (NEX-54). JWT_PUBLIC_KEY is the backend's RS256 public key: with
  * only that set, this side can check a token but never mint one. JWT_SECRET is
- * the shared HS256 secret, kept while tokens of both kinds are live and
- * deleted after cutover, which is what stops HS256 being accepted.
+ * the shared HMAC secret (HS256 unless JWT_ALGORITHM says HS384 or HS512),
+ * kept while tokens of both kinds are live and deleted after cutover, which is
+ * what stops HMAC tokens being accepted.
  *
- * The algorithm is never taken from the token header or from configuration:
- * a key only ever verifies its own algorithm, so an HS256 token keyed with the
- * public key text (algorithm confusion) and `alg: none` have nothing to match.
  * Both paths are Edge-safe (jose). Resolved once per isolate; no key at all
  * means every token fails closed.
  */
@@ -27,16 +41,33 @@ const verifiers: Promise<Verifier[]> = (async () => {
   const configured: Verifier[] = [];
   if (JWT_PUBLIC_KEY) {
     try {
-      configured.push({ key: await importSPKI(JWT_PUBLIC_KEY, "RS256"), algorithms: ["RS256"] });
-    } catch {
-      // Never the value: only that it did not parse, so the logs show why
-      // RS256 sessions bounce to /login.
-      console.error("[auth] JWT_PUBLIC_KEY is not an SPKI PEM public key; RS256 tokens will be rejected");
+      configured.push({ key: await importSPKI(JWT_PUBLIC_KEY, "RS256"), algorithm: "RS256" });
+    } catch (e) {
+      // Why, never the value, so the logs show what bounces RS256 sessions to /login.
+      console.error(`[auth] JWT_PUBLIC_KEY could not be imported (${reason(e)}); RS256 tokens will be rejected`);
     }
   }
-  if (JWT_SECRET) configured.push({ key: new TextEncoder().encode(JWT_SECRET), algorithms: ["HS256"] });
+  if (JWT_SECRET) configured.push({ key: new TextEncoder().encode(JWT_SECRET), algorithm: JWT_ALGORITHM });
   return configured;
 })();
+
+const reported = new Set<string>();
+
+/**
+ * A public key that imports but is not the backend's fails every RS256 token
+ * exactly as a forged one does, and one this side cannot use at all (an RSA
+ * modulus under 2048 bits) throws before the signature is looked at. One line
+ * per cold start per kind of failure makes either visible. Expired and
+ * malformed tokens are routine and stay quiet. Never the token or the key.
+ */
+function reportRs256Failure(e: unknown) {
+  const tokenFault = e instanceof errors.JOSEError;
+  if (tokenFault && e.code !== "ERR_JWS_SIGNATURE_VERIFICATION_FAILED") return;
+  const code = tokenFault ? e.code : e instanceof Error ? e.name : "Error";
+  if (reported.has(code)) return;
+  reported.add(code);
+  console.error(`[auth] RS256 verification failed (${tokenFault ? code : reason(e)}): JWT_PUBLIC_KEY may not match the backend's signing key`);
+}
 
 /**
  * The role claim from a verified token, or null. The claim is a snapshot: a
@@ -44,15 +75,24 @@ const verifiers: Promise<Verifier[]> = (async () => {
  * is not exactly one of the backend's roles is treated as no role at all.
  */
 async function verifiedRole(token: string): Promise<Role | null> {
-  for (const { key, algorithms } of await verifiers) {
-    try {
-      const { payload } = await jwtVerify(token, key, { algorithms });
-      return isRole(payload.role) ? payload.role : null;
-    } catch {
-      // Not this key's token, or not valid under it: the other key gets a turn.
-    }
+  let alg: unknown;
+  try {
+    alg = decodeProtectedHeader(token).alg;
+  } catch {
+    return null;
   }
-  return null;
+  // The header only picks which configured key gets the one verification. The
+  // algorithm that key accepts is its own, so an HS256 token keyed with the
+  // public key text (algorithm confusion) and `alg: none` have nothing to match.
+  const verifier = (await verifiers).find((v) => v.algorithm === alg);
+  if (!verifier) return null;
+  try {
+    const { payload } = await jwtVerify(token, verifier.key, { algorithms: [verifier.algorithm], requiredClaims: ["exp"] });
+    return isRole(payload.role) ? payload.role : null;
+  } catch (e) {
+    if (verifier.algorithm === "RS256") reportRs256Failure(e);
+    return null;
+  }
 }
 
 function inSection(pathname: string, section: string): boolean {
