@@ -213,6 +213,24 @@ export interface Translations {
     manage: string;
   };
 
+  // Admin › Categories
+  categories: {
+    title: string;
+    addCategory: string;
+    editCategory: string;
+    newCategory: string;
+    slug: string;
+    slugPlaceholder: string;
+    saving: string;
+    empty: string;
+    active: string;
+    inactive: string;
+    activate: string;
+    deactivate: string;
+    deletePermanently: string;
+    deleteFailed: string;
+  };
+
   zakat: {
     title: string;
     subtitle: string;
@@ -792,6 +810,23 @@ const en: Translations = {
     minimum: "Minimum",
     kinds: { COIN: "COIN", OUNCE: "OUNCE", PRODUCT: "PRODUCT" },
     manage: "Manage →",
+  },
+
+  categories: {
+    title: "Categories",
+    addCategory: "Add Category",
+    editCategory: "Edit Category",
+    newCategory: "New Category",
+    slug: "Slug",
+    slugPlaceholder: "auto-generated from name",
+    saving: "Saving…",
+    empty: "No categories yet",
+    active: "Active",
+    inactive: "Inactive",
+    activate: "Activate",
+    deactivate: "Deactivate",
+    deletePermanently: "Delete permanently",
+    deleteFailed: "Delete failed",
   },
 
   zakat: {

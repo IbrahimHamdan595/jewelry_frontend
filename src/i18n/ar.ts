@@ -213,6 +213,24 @@ const ar: Translations = {
     manage: "إدارة ←",
   },
 
+  // الإدارة › الفئات
+  categories: {
+    title: "الفئات",
+    addCategory: "إضافة فئة",
+    editCategory: "تعديل الفئة",
+    newCategory: "فئة جديدة",
+    slug: "المعرّف",
+    slugPlaceholder: "يُنشأ تلقائياً من الاسم",
+    saving: "جارٍ الحفظ…",
+    empty: "لا توجد فئات بعد",
+    active: "نشطة",
+    inactive: "غير نشطة",
+    activate: "تفعيل",
+    deactivate: "تعطيل",
+    deletePermanently: "حذف نهائي",
+    deleteFailed: "فشل الحذف",
+  },
+
   // TODO(ar): user to supply zakat terminology — see plan §6.2. Strings below
   // are mechanical translations; have a native speaker review before merge.
   zakat: {
