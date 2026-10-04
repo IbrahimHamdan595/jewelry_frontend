@@ -761,7 +761,8 @@ const en: Translations = {
     colComputed: "Computed",
     colDrift: "Drift",
     unitCash: "CASH",
-    unitGold: (karat) => `GOLD K${karat}`,
+    // The API sends the karat already prefixed ("K21").
+    unitGold: (karat) => (karat ? `GOLD ${karat}` : "GOLD"),
     title: "Audit ledger",
     resetFilters: "Reset filters",
     eventType: "Event type",

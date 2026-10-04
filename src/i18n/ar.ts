@@ -181,7 +181,8 @@ const ar: Translations = {
     colComputed: "المحسوب",
     colDrift: "الفرق",
     unitCash: "نقد",
-    unitGold: (karat) => `ذهب K${karat}`,
+    // يرسل الخادم العيار مع بادئته («K21»).
+    unitGold: (karat) => (karat ? `ذهب ${karat}` : "ذهب"),
     title: "سجل المراجعة",
     resetFilters: "إعادة ضبط التصفية",
     eventType: "نوع الحدث",

@@ -22,12 +22,16 @@ const entry = {
   ref_type: "supplier_payment", ref_id: REF_ID, payload: { amount: "100.00", unit: "CASH" }, created_at: "2026-09-05T10:00:00Z",
 };
 const ledger = { items: [entry], total: 120, page: 1, page_size: 50 };
+// The shapes below are what GET /inventory/reconcile returns: the karat is
+// already prefixed ("K21"), and discord_alerted is only ever true when drift
+// was found AND the request asked for an alert.
+const clean = { drift_count: 0, discord_alerted: false, supplier_balance_drifts: [] };
 const drifted = {
   drift_count: 2,
   discord_alerted: true,
   supplier_balance_drifts: [
     { supplier_id: "s1", supplier_name: "Abu Ali Gold", unit: "CASH", karat: null, stored: "100.00", computed: "90.00", drift: "10.00" },
-    { supplier_id: "s1", supplier_name: "Abu Ali Gold", unit: "GOLD", karat: "21", stored: "5.000", computed: "4.000", drift: "1.000" },
+    { supplier_id: "s1", supplier_name: "Abu Ali Gold", unit: "GOLD", karat: "K21", stored: "5.000", computed: "4.000", drift: "1.000" },
   ],
 };
 
@@ -45,6 +49,13 @@ function uiStrings(root: HTMLElement): string[] {
 /** The strings that still carry Latin words once the known data values are taken out. */
 function englishLeft(root: HTMLElement, data: (string | RegExp)[]): string[] {
   return uiStrings(root).filter((s) => /[A-Za-z]{2,}/.test(data.reduce<string>((rest, d) => rest.split(d).join(""), s)));
+}
+
+/** Elements whose classes pin a side (text-left, ml-2, pr-4 …) instead of following the reading direction. */
+function physicalClasses(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll("[class]"))
+    .map((el) => el.getAttribute("class") ?? "")
+    .filter((classes) => /(^|\s)(text-(left|right)|-?m[lr]-\S+|p[lr]-\S+)(\s|$)/.test(classes));
 }
 
 /** Every leaf of a dictionary namespace, with function-valued keys called on sample arguments. */
@@ -162,30 +173,72 @@ describe("inventory ledger labels and i18n (NEX-64)", () => {
     api.get.mockResolvedValue(drifted);
     const { container } = renderPage("ar");
     const l = ar.inventoryLedger;
+    fireEvent.click(screen.getByRole("button", { name: l.alertOff })); // switch the alert option on
     fireEvent.click(screen.getByRole("button", { name: l.runReconcile }));
     expect(await screen.findByText(l.driftsDetected(2))).toBeInTheDocument();
+    expect(api.get).toHaveBeenLastCalledWith("/inventory/reconcile?alert=true");
     expect(screen.getByText(l.discordAlerted)).toBeInTheDocument();
     const drifts = screen.getAllByRole("table")[0];
     for (const header of [l.colSupplier, l.colUnit, l.colStored, l.colComputed, l.colDrift]) {
       expect(within(drifts).getByRole("columnheader", { name: header }), header).toBeInTheDocument();
     }
     expect(within(drifts).getByText(l.unitCash)).toBeInTheDocument();
-    expect(within(drifts).getByText(l.unitGold("21"))).toBeInTheDocument();
+    // The karat arrives as "K21": one K, in both languages.
+    expect(within(drifts).getByText("ذهب K21")).toBeInTheDocument();
+    expect(drifts.textContent).not.toContain("KK");
     expect(within(drifts).queryByText("CASH")).toBeNull();
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
   });
 
-  it("reports a clean reconcile and a failed one in Arabic", async () => {
-    api.get.mockResolvedValueOnce({ drift_count: 0, discord_alerted: true, supplier_balance_drifts: [] });
-    renderPage("ar");
+  it("names a gold drift row with a single K in English too", async () => {
+    api.get.mockResolvedValue({ ...drifted, discord_alerted: false }); // the alert option is off for this run
+    renderPage("en");
+    fireEvent.click(screen.getByRole("button", { name: en.inventoryLedger.runReconcile }));
+    expect(await screen.findByText("GOLD K21")).toBeInTheDocument();
+    expect(screen.getByText("CASH")).toBeInTheDocument();
+    expect(screen.queryByText(/KK21/)).toBeNull();
+  });
+
+  it("says 'no alert needed' only when the clean run was asked to alert", async () => {
+    api.get.mockResolvedValue(clean);
+    const { container } = renderPage("ar");
     const l = ar.inventoryLedger;
+
+    // Alert option off: the run is clean and there is nothing to say about alerts.
     fireEvent.click(screen.getByRole("button", { name: l.runReconcile }));
     expect(await screen.findByText(l.allReconciled)).toBeInTheDocument();
-    expect(screen.getByText(l.noAlertNeeded)).toBeInTheDocument();
+    expect(api.get).toHaveBeenLastCalledWith("/inventory/reconcile?alert=false");
+    expect(screen.queryByText(l.noAlertNeeded)).toBeNull();
 
-    api.get.mockRejectedValueOnce("offline");
+    // Alert option on: the server answers the same (it never alerts without drift).
+    fireEvent.click(screen.getByRole("button", { name: l.alertOff }));
     fireEvent.click(screen.getByRole("button", { name: l.runReconcile }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(l.reconcileFailed);
+    expect(await screen.findByText(l.noAlertNeeded)).toBeInTheDocument();
+    expect(api.get).toHaveBeenLastCalledWith("/inventory/reconcile?alert=true");
+    expect(screen.getByText(l.noAlertNeeded)).toHaveClass("ms-2");
+    expect(physicalClasses(container)).toEqual([]);
+
+    // The note describes the run on screen, not where the switch is now.
+    fireEvent.click(screen.getByRole("button", { name: l.alertOn }));
+    expect(screen.getByText(l.noAlertNeeded)).toBeInTheDocument();
+  });
+
+  it("reports a failed reconcile in Arabic", async () => {
+    api.get.mockRejectedValueOnce("offline");
+    renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.inventoryLedger.runReconcile }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(ar.inventoryLedger.reconcileFailed);
+  });
+
+  it("follows the reading direction: logical utilities only, and the row chevron flips", () => {
+    const { container } = renderPage("ar");
+    expect(physicalClasses(container)).toEqual([]);
+    expect(screen.getByRole("columnheader", { name: ar.inventoryLedger.colEvent })).toHaveClass("text-start");
+    expect(container.querySelector("svg.lucide-chevron-right")).toHaveClass("rtl:rotate-180");
+    // Expanded, the chevron points down in either direction.
+    fireEvent.click(screen.getByText("SUPPLIER_PAYMENT_CASH"));
+    expect(container.querySelector("svg.lucide-chevron-down")).not.toHaveClass("rtl:rotate-180");
   });
 
   it("translates the empty state", () => {
@@ -202,6 +255,13 @@ describe("the inventoryLedger namespace is translated, not English placeholders"
       .filter(([path, value]) => value === english.get(path) || !/[؀-ۿ]/.test(value))
       .map(([path]) => path);
     expect(untranslated).toEqual([]);
+  });
+
+  it("unitGold takes the karat as the API sends it and never doubles the K", () => {
+    expect(en.inventoryLedger.unitGold("K21")).toBe("GOLD K21");
+    expect(ar.inventoryLedger.unitGold("K21")).toBe("ذهب K21");
+    expect(en.inventoryLedger.unitGold(null)).toBe("GOLD");
+    expect(ar.inventoryLedger.unitGold(null)).toBe("ذهب");
   });
 
   it("both languages keep the {table} token the page splits on", () => {

@@ -55,15 +55,19 @@ function ReconcilePanel() {
   const [result, setResult] = useState<ReconcileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [withAlert, setWithAlert] = useState(false);
+  // Whether the alert option was on for the run whose result is on screen.
+  const [alertRequested, setAlertRequested] = useState(false);
 
   async function runReconcile() {
     setRunning(true);
     setError(null);
+    const requested = withAlert;
     try {
       const data = await api.get<ReconcileResponse>(
-        `/inventory/reconcile?alert=${withAlert}`,
+        `/inventory/reconcile?alert=${requested}`,
       );
       setResult(data);
+      setAlertRequested(requested);
     } catch (err) {
       setError(err instanceof Error ? err.message : l.reconcileFailed);
     } finally {
@@ -115,7 +119,9 @@ function ReconcilePanel() {
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">
               <CheckCircle className="w-4 h-4" aria-hidden />
               {l.allReconciled}
-              {result.discord_alerted && <span className="text-xs text-green-600 ml-2">{l.noAlertNeeded}</span>}
+              {/* The server only alerts when it finds drift, so "no alert
+                  needed" is about what this run asked for, not what it sent. */}
+              {alertRequested && <span className="text-xs text-green-600 ms-2">{l.noAlertNeeded}</span>}
             </div>
           ) : (
             <div className="space-y-2">
@@ -123,18 +129,18 @@ function ReconcilePanel() {
                 <AlertTriangle className="w-4 h-4" aria-hidden />
                 {l.driftsDetected(result.drift_count)}
                 {result.discord_alerted && (
-                  <span className="text-xs ml-2">{l.discordAlerted}</span>
+                  <span className="text-xs ms-2">{l.discordAlerted}</span>
                 )}
               </div>
               <div className="bg-white rounded border border-gray-100 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="text-left px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colSupplier}</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colUnit}</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colStored}</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colComputed}</th>
-                      <th className="text-left px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colDrift}</th>
+                      <th className="text-start px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colSupplier}</th>
+                      <th className="text-start px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colUnit}</th>
+                      <th className="text-start px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colStored}</th>
+                      <th className="text-start px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colComputed}</th>
+                      <th className="text-start px-4 py-2 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colDrift}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -249,10 +255,10 @@ function LedgerBrowser() {
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="w-6"><span className="sr-only">{l.colDetails}</span></th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colEvent}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colRef}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colActor}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colOccurred}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colEvent}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colRef}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colActor}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{l.colOccurred}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -308,7 +314,7 @@ function LedgerRow({ entry }: { entry: LedgerEntry }) {
           {expanded ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-gray-400 rtl:rotate-180" />
           )}
         </td>
         <td className="px-4 py-3">
