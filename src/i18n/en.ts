@@ -31,6 +31,46 @@ export interface Translations {
     admin: string;
   };
 
+  // Inventory › Pure Gold Lots (NEX-64, slice 3). Enum maps (sources, reasons)
+  // are keyed by the API value; English keeps the raw code it always showed.
+  lots: {
+    poolTitle: (karat: string) => string;
+    lotCount: (n: number) => string;
+    filterByKarat: string;
+    allKarats: string;
+    includeDepleted: string;
+    newLot: string;
+    karat: string;
+    remainingOriginal: string;
+    source: string;
+    costBasis: string;
+    acquired: string;
+    empty: (karat: string) => string;
+    sources: { BUYBACK: string; MELT: string; SUPPLIER: string; SEED: string; ADJUSTMENT: string };
+    active: string;
+    depleted: string;
+    manualAdjustment: string;
+    newLotTitle: string;
+    weightG: string;
+    costBasisUsd: string;
+    notesOptional: string;
+    saving: string;
+    createLot: string;
+    createFailed: string;
+    autoLotsHint: string;
+    adjustTitle: string;
+    remaining: string;
+    deltaG: string;
+    deltaPlaceholder: string;
+    deltaHint: string;
+    reason: string;
+    reasons: { LOSS: string; THEFT: string; GIFT: string; SAMPLE: string; CORRECTION: string };
+    notesRequired: string;
+    notesPlaceholder: string;
+    apply: string;
+    adjustFailed: string;
+  };
+
   zakat: {
     title: string;
     subtitle: string;
@@ -437,6 +477,44 @@ const en: Translations = {
     settings: "Settings",
     signOut: "Sign out",
     admin: "Admin",
+  },
+
+  lots: {
+    poolTitle: (karat) => `${karat} pool`,
+    lotCount: (n) => `${n} lot${n !== 1 ? "s" : ""}`,
+    filterByKarat: "Filter by karat",
+    allKarats: "All karats",
+    includeDepleted: "Include depleted",
+    newLot: "New Lot",
+    karat: "Karat",
+    remainingOriginal: "Remaining / Original",
+    source: "Source",
+    costBasis: "Cost basis",
+    acquired: "Acquired",
+    empty: (karat) => (karat ? `No lots in ${karat}` : "No lots yet"),
+    sources: { BUYBACK: "BUYBACK", MELT: "MELT", SUPPLIER: "SUPPLIER", SEED: "SEED", ADJUSTMENT: "ADJUSTMENT" },
+    active: "Active",
+    depleted: "Depleted",
+    manualAdjustment: "Manual adjustment",
+    newLotTitle: "New Pure-Gold Lot",
+    weightG: "Weight (g)",
+    costBasisUsd: "Cost basis (USD)",
+    notesOptional: "Notes (optional)",
+    saving: "Saving…",
+    createLot: "Create Lot",
+    createFailed: "Failed to create lot",
+    autoLotsHint: "Lots from buybacks, supplier purchases, and melts are created automatically by those flows — only SEED or ADJUSTMENT origin allowed here.",
+    adjustTitle: "Adjust lot",
+    remaining: "remaining",
+    deltaG: "Delta (g)",
+    deltaPlaceholder: "e.g. -2.500",
+    deltaHint: "Negative reduces, positive adds.",
+    reason: "Reason",
+    reasons: { LOSS: "LOSS", THEFT: "THEFT", GIFT: "GIFT", SAMPLE: "SAMPLE", CORRECTION: "CORRECTION" },
+    notesRequired: "Notes (required)",
+    notesPlaceholder: "What happened?",
+    apply: "Apply",
+    adjustFailed: "Adjustment failed",
   },
 
   zakat: {

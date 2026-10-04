@@ -34,6 +34,46 @@ const ar: Translations = {
     admin: "المشرف",
   },
 
+  // المخزون › دفعات الذهب الخالص. \u2066…\u2069 (LRI/PDI) keeps a signed number
+  // like "-2.500" left-to-right inside an Arabic placeholder, where markup can't go.
+  lots: {
+    poolTitle: (karat) => `مخزون ${karat}`,
+    lotCount: (n) => `${n} ${n === 1 ? "دفعة" : "دفعات"}`,
+    filterByKarat: "تصفية حسب العيار",
+    allKarats: "كل العيارات",
+    includeDepleted: "تضمين المستنفدة",
+    newLot: "دفعة جديدة",
+    karat: "العيار",
+    remainingOriginal: "المتبقي من الأصلي",
+    source: "المصدر",
+    costBasis: "أساس التكلفة",
+    acquired: "تاريخ الاقتناء",
+    empty: (karat) => (karat ? `لا توجد دفعات بعيار ${karat}` : "لا توجد دفعات بعد"),
+    sources: { BUYBACK: "إعادة شراء", MELT: "صهر", SUPPLIER: "مورّد", SEED: "رصيد افتتاحي", ADJUSTMENT: "تعديل" },
+    active: "نشطة",
+    depleted: "مستنفدة",
+    manualAdjustment: "تعديل يدوي",
+    newLotTitle: "دفعة ذهب خالص جديدة",
+    weightG: "الوزن (غ)",
+    costBasisUsd: "أساس التكلفة (دولار)",
+    notesOptional: "ملاحظات (اختياري)",
+    saving: "جارٍ الحفظ…",
+    createLot: "إنشاء الدفعة",
+    createFailed: "فشل إنشاء الدفعة",
+    autoLotsHint: "دفعات إعادة الشراء ومشتريات الموردين والصهر تُنشأ تلقائياً ضمن تلك العمليات — المتاح هنا فقط «رصيد افتتاحي» أو «تعديل».",
+    adjustTitle: "تعديل الدفعة",
+    remaining: "المتبقي",
+    deltaG: "مقدار التغيير (غ)",
+    deltaPlaceholder: "مثال: \u2066-2.500\u2069",
+    deltaHint: "السالب يُنقص والموجب يُضيف.",
+    reason: "السبب",
+    reasons: { LOSS: "فقدان", THEFT: "سرقة", GIFT: "هدية", SAMPLE: "عيّنة", CORRECTION: "تصحيح" },
+    notesRequired: "ملاحظات (مطلوبة)",
+    notesPlaceholder: "ماذا حدث؟",
+    apply: "تطبيق",
+    adjustFailed: "فشل التعديل",
+  },
+
   // TODO(ar): user to supply zakat terminology — see plan §6.2. Strings below
   // are mechanical translations; have a native speaker review before merge.
   zakat: {
