@@ -112,6 +112,7 @@ const ar: Translations = {
     lot: "الدفعة",
     pickLot: "— اختر دفعة —",
     grams: "غرام",
+    goldLineN: (n) => `سطر السداد بالذهب ${n}`,
     removeGoldLine: "إزالة سطر السداد بالذهب",
     addGoldLine: "+ إضافة سطر سداد بالذهب",
     pickedVsDue: "المختار مقابل المستحق:",

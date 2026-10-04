@@ -184,7 +184,7 @@ export default function NewPurchasePage() {
         href={`/admin/suppliers/${id}`}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" aria-hidden />
+        <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
         {supplier ? sp.backTo(supplier.supplier.name) : sp.backToSupplier}
       </Link>
 
@@ -200,7 +200,7 @@ export default function NewPurchasePage() {
               type="button"
               onClick={() => setMode(m)}
               aria-pressed={mode === m}
-              className={`p-4 rounded border text-left transition-colors ${
+              className={`p-4 rounded border text-start transition-colors ${
                 mode === m
                   ? "border-gold bg-gold/5 text-gold"
                   : "border-gray-200 text-gray-700 hover:border-gray-300"
@@ -299,7 +299,7 @@ export default function NewPurchasePage() {
                 {goldPaymentsNow.map((gp, idx) => {
                   const lot = lotData?.items.find((l) => l.id === gp.lot_id);
                   return (
-                    <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded p-2">
+                    <div key={idx} role="group" aria-label={sp.goldLineN(idx + 1)} className="flex items-center gap-2 bg-gray-50 rounded p-2">
                       <select
                         aria-label={sp.karat}
                         value={gp.karat}
@@ -378,7 +378,7 @@ export default function NewPurchasePage() {
                     const picked = totalPickedByKarat[k] ?? 0;
                     const over = picked > due;
                     return (
-                      <span key={k} className="mr-3">
+                      <span key={k} className="me-3">
                         {k}: <span className={`font-mono ${over ? "text-red-600" : ""}`}>{picked.toFixed(3)}</span>
                         <span className="text-gray-400"> / {due.toFixed(3)}g</span>
                       </span>
@@ -599,7 +599,7 @@ function ItemEditor({
             aria-label={t.common.nameAr}
             value={item.product.name_ar}
             onChange={(e) => onChange({ product: { ...item.product, name_ar: e.target.value } })}
-            className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2 text-right"
+            className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2 text-start"
           />
           <input
             placeholder={sp.category}

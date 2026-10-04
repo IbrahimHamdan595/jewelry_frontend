@@ -105,6 +105,7 @@ export interface Translations {
     lot: string;
     pickLot: string;
     grams: string;
+    goldLineN: (n: number) => string;
     removeGoldLine: string;
     addGoldLine: string;
     pickedVsDue: string;
@@ -691,6 +692,7 @@ const en: Translations = {
     lot: "Lot",
     pickLot: "— pick lot —",
     grams: "grams",
+    goldLineN: (n) => `Gold payment line ${n}`,
     removeGoldLine: "Remove gold payment line",
     addGoldLine: "+ Add gold payment line",
     pickedVsDue: "Picked vs due:",

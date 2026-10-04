@@ -32,6 +32,13 @@ function englishLeft(root: HTMLElement, data: (string | RegExp)[]): string[] {
   return uiStrings(root).filter((s) => /[A-Za-z]{2,}/.test(data.reduce<string>((rest, d) => rest.split(d).join(""), s)));
 }
 
+/** Elements whose classes pin a side (text-left, ml-2, pr-4 …) instead of following the reading direction. */
+function physicalClasses(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll("[class]"))
+    .map((el) => el.getAttribute("class") ?? "")
+    .filter((classes) => /(^|\s)(text-(left|right)|-?m[lr]-\S+|p[lr]-\S+)(\s|$)/.test(classes));
+}
+
 /** Every leaf of a dictionary namespace, with function-valued keys called on sample arguments. */
 function leaves(node: unknown, path: string): [string, string][] {
   if (typeof node === "string") return [[path, node]];
@@ -113,18 +120,43 @@ describe("new supplier purchase labels and i18n (NEX-64)", () => {
     expect(screen.getByRole("button", { name: /^CASH/ })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("a gold payment line names its three controls and its remove button", () => {
+  it("each gold payment line is a numbered group that names its three controls and its remove button", () => {
     renderPage("en");
     const sp = en.supplierPurchase;
     fireEvent.click(screen.getByRole("button", { name: /^GOLD/ }));
     fireEvent.click(screen.getByRole("button", { name: sp.addGoldLine }));
-    const line = screen.getByRole("group", { name: sp.goldPaidNow });
-    expect(within(line).getByLabelText(sp.karat).tagName).toBe("SELECT");
-    const lot = within(line).getByLabelText(sp.lot);
+    fireEvent.click(screen.getByRole("button", { name: sp.addGoldLine }));
+
+    // Two lines repeat the same three controls: the numbered group tells them apart.
+    const section = screen.getByRole("group", { name: sp.goldPaidNow });
+    const first = within(section).getByRole("group", { name: sp.goldLineN(1) });
+    const second = within(section).getByRole("group", { name: sp.goldLineN(2) });
+    for (const line of [first, second]) {
+      expect(within(line).getByLabelText(sp.karat).tagName).toBe("SELECT");
+      expect(within(line).getByLabelText(sp.grams)).toHaveAttribute("type", "number");
+      expect(within(line).getByRole("button", { name: sp.removeGoldLine })).toBeInTheDocument();
+    }
+    const lot = within(first).getByLabelText(sp.lot);
     expect(within(lot).getByRole("option", { name: `${LOT_ID.slice(0, 8)}… · 30.250g` })).toBeInTheDocument();
-    expect(within(line).getByLabelText(sp.grams)).toHaveAttribute("type", "number");
-    fireEvent.click(within(line).getByRole("button", { name: sp.removeGoldLine }));
-    expect(within(line).queryByLabelText(sp.lot)).toBeNull();
+    expect(within(second).getByLabelText(sp.lot)).not.toBe(lot);
+
+    fireEvent.click(within(first).getByRole("button", { name: sp.removeGoldLine }));
+    expect(within(section).getByRole("group", { name: sp.goldLineN(1) })).toBeInTheDocument();
+    expect(within(section).queryByRole("group", { name: sp.goldLineN(2) })).toBeNull();
+  });
+
+  it("follows the reading direction: logical utilities only, and the back arrow flips", () => {
+    const { container } = renderPage("ar");
+    fillEveryBranch(ar);
+    fireEvent.change(within(screen.getByRole("group", { name: ar.supplierPurchase.totalGoldDue })).getByLabelText("K21"), { target: { value: "5" } });
+    expect(screen.getByText(ar.supplierPurchase.pickedVsDue, { exact: false })).toBeInTheDocument();
+    expect(physicalClasses(container)).toEqual([]);
+    expect(container.querySelector("svg.lucide-arrow-left")).toHaveClass("rtl:rotate-180");
+    expect(screen.getByRole("button", { name: new RegExp(`^${ar.supplierPurchase.mode.CASH}`) })).toHaveClass("text-start");
+    // The Arabic-name field is right-to-left in both languages; "start" is its right edge.
+    const nameAr = screen.getByLabelText(ar.common.nameAr);
+    expect(nameAr).toHaveAttribute("dir", "rtl");
+    expect(nameAr).toHaveClass("text-start");
   });
 
   it("every item control has a name, whatever the item kind", () => {
@@ -160,6 +192,7 @@ describe("new supplier purchase labels and i18n (NEX-64)", () => {
     }
     expect(screen.getByRole("group", { name: sp.totalGoldDue })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: sp.goldPaidNow })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: sp.goldLineN(1) })).toBeInTheDocument();
     // The amount sits where the Arabic sentence wants it, isolated left-to-right.
     expect(differenceHint()).toHaveTextContent(sp.cashDifference.replace("{amount}", "$0.00"));
     expect(screen.getByText("$0.00").closest("bdi")).toHaveAttribute("dir", "ltr");
