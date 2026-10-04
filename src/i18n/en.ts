@@ -86,6 +86,55 @@ export interface Translations {
     payGold: (grams: string, karat: string) => string;
   };
 
+  supplierPurchase: {
+    backTo: (name: string) => string;
+    backToSupplier: string;
+    title: string;
+    paymentMode: string;
+    mode: { CASH: string; GOLD: string; MIXED: string };
+    modeHint: { CASH: string; GOLD: string; MIXED: string };
+    dealSplit: string;
+    totalCashDue: string;
+    cashPaidNow: string;
+    // "{amount}" marks where the page renders the formatted amount.
+    cashDifference: string;
+    totalGoldDue: string;
+    tradeMarkup: string;
+    goldPaidNow: string;
+    karat: string;
+    lot: string;
+    pickLot: string;
+    grams: string;
+    removeGoldLine: string;
+    addGoldLine: string;
+    pickedVsDue: string;
+    itemsReceived: string;
+    addItem: string;
+    noItems: string;
+    itemN: (n: number) => string;
+    itemKind: string;
+    kind: { PURE_GOLD: string; COIN: string; OUNCE: string; PRODUCT: string };
+    unitCost: string;
+    removeItem: string;
+    weight: string;
+    itemNotes: string;
+    coinType: string;
+    pickCoinType: string;
+    ounceType: string;
+    pickOunceType: string;
+    qty: string;
+    // The Arabic-name field keeps an Arabic placeholder in both languages.
+    nameArPlaceholder: string;
+    category: string;
+    margin: string;
+    makingCharge: string;
+    notes: string;
+    saveFailed: string;
+    recording: string;
+    recordPurchase: string;
+    loadingReceipt: string;
+  };
+
   nav: {
     dashboard: string;
     products: string;
@@ -565,6 +614,64 @@ const en: Translations = {
     gramsPlaceholder: "grams",
     gramsFromLot: "Grams from this lot",
     payGold: (grams, karat) => `Pay ${grams}g ${karat}`,
+  },
+
+  supplierPurchase: {
+    backTo: (name) => `Back to ${name}`,
+    backToSupplier: "Back to supplier",
+    title: "New supplier purchase",
+    paymentMode: "Payment mode",
+    mode: { CASH: "CASH", GOLD: "GOLD", MIXED: "MIXED" },
+    modeHint: {
+      CASH: "Pay supplier in USD only",
+      GOLD: "Pay supplier in gold (from your lots)",
+      MIXED: "Cash + gold combined",
+    },
+    dealSplit: "Deal split",
+    totalCashDue: "Total cash due (USD)",
+    cashPaidNow: "Cash paid now",
+    // "{amount}" marks where the page renders the formatted amount.
+    cashDifference: "Difference ({amount}) becomes cash debt.",
+    totalGoldDue: "Total gold due (grams per karat)",
+    tradeMarkup: "Trade markup per gram (USD, audit info only — optional)",
+    goldPaidNow: "Gold paid now (pick lots)",
+    karat: "Karat",
+    lot: "Lot",
+    pickLot: "— pick lot —",
+    grams: "grams",
+    removeGoldLine: "Remove gold payment line",
+    addGoldLine: "+ Add gold payment line",
+    pickedVsDue: "Picked vs due:",
+    itemsReceived: "Items received",
+    addItem: "Add item",
+    noItems: "No items yet. Add at least one item the supplier delivered.",
+    itemN: (n) => `Item ${n}`,
+    itemKind: "Item type",
+    kind: {
+      PURE_GOLD: "PURE_GOLD (creates a new lot)",
+      COIN: "COIN (increments coin stock)",
+      OUNCE: "OUNCE (increments ounce stock)",
+      PRODUCT: "PRODUCT (creates a new product)",
+    },
+    unitCost: "Unit cost USD",
+    removeItem: "Remove item",
+    weight: "weight g",
+    itemNotes: "notes",
+    coinType: "Coin type",
+    pickCoinType: "— pick coin type —",
+    ounceType: "Ounce type",
+    pickOunceType: "— pick ounce type —",
+    qty: "qty",
+    // The Arabic-name field keeps an Arabic placeholder in both languages.
+    nameArPlaceholder: "الاسم",
+    category: "Category",
+    margin: "margin %",
+    makingCharge: "making charge",
+    notes: "Notes",
+    saveFailed: "Save failed",
+    recording: "Recording…",
+    recordPurchase: "Record Purchase",
+    loadingReceipt: "Loading receipt…",
   },
 
   nav: {

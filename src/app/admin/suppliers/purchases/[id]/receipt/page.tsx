@@ -4,10 +4,12 @@ import useSWR from "swr";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { ReceiptScreen } from "@/components/shared/Receipt";
+import { useLang } from "@/context/LanguageContext";
 import type { Receipt } from "@/types/api";
 
 export default function SupplierPurchaseReceiptPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLang();
   const { data: receipt, error, isValidating, mutate } = useSWR<Receipt>(`/suppliers/purchases/${id}/receipt`, apiFetcher);
 
   if (error && !receipt)
@@ -19,7 +21,7 @@ export default function SupplierPurchaseReceiptPage() {
   if (!receipt)
     return (
       <div className="min-h-screen bg-pos-bg flex items-center justify-center">
-        <div className="animate-pulse text-pos-gray">Loading receipt…</div>
+        <div className="animate-pulse text-pos-gray">{t.supplierPurchase.loadingReceipt}</div>
       </div>
     );
 
