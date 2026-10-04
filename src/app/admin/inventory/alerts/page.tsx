@@ -9,6 +9,8 @@ import type { InventoryAlertsResponse } from "@/types/api";
 
 /** The setting this page watches: a machine identifier shown as-is, not copy. */
 const MIN_STOCK_FIELD = "min_stock_qty";
+/** Stands in for a styled element while a sentence is built, so it can be split back out. */
+const SLOT = "\u0000";
 
 export default function InventoryAlertsPage() {
   const { t } = useLang();
@@ -33,8 +35,9 @@ export default function InventoryAlertsPage() {
   }
 
   if (data.total === 0) {
-    // A whole sentence with one slot, so each language places it where it reads best.
-    const [hintBefore, hintAfter] = a.healthyHint.split("{field}");
+    // The sentence decides where its styled element goes; split it there, so the
+    // element can be styled without fixing its position for every language.
+    const [hintBefore, hintAfter = ""] = a.healthyHint(SLOT).split(SLOT);
     return (
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-10 text-center">
         <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" aria-hidden />

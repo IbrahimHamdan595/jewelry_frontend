@@ -174,11 +174,11 @@ export interface Translations {
     stale: string;
   };
 
-  // Inventory › Reconcile. `intro` and `idleHint` are whole sentences with one
-  // slot each — {field} and {button} — which the page fills with an element.
+  // Inventory › Reconcile. `intro` and `idleHint` are whole sentences built
+  // around one styled element; each takes that element's text and places it.
   reconcile: {
     title: string;
-    intro: string;
+    intro: (field: string) => string;
     readOnlyNote: string;
     run: string;
     running: string;
@@ -196,13 +196,13 @@ export interface Translations {
     computed: string;
     drift: string;
     kinds: { COIN: string; OUNCE: string };
-    idleHint: string;
+    idleHint: (button: string) => string;
   };
 
-  // Inventory › Alerts. `healthyHint` has one slot, {field}.
+  // Inventory › Alerts. `healthyHint` is built around one styled element too.
   stockAlerts: {
     allHealthy: string;
-    healthyHint: string;
+    healthyHint: (field: string) => string;
     belowMinimum: (n: number) => string;
     adjustHint: string;
     kind: string;
@@ -778,7 +778,7 @@ const en: Translations = {
 
   reconcile: {
     title: "Coin & Ounce Stock Reconciliation",
-    intro: "Replays every event that mutates {field} (supplier purchases, walk-in buybacks, manual adjustments, completed & refunded sales) and compares the result against the stored quantity. Drift means the stored value disagrees with what the audit history implies.",
+    intro: (field) => `Replays every event that mutates ${field} (supplier purchases, walk-in buybacks, manual adjustments, completed & refunded sales) and compares the result against the stored quantity. Drift means the stored value disagrees with what the audit history implies.`,
     readOnlyNote: "Read-only. Resolving drift is a separate step — find the missing event in code, or run a physical stock-take and post a manual adjustment for the variance.",
     run: "Run Reconcile",
     running: "Running…",
@@ -796,12 +796,12 @@ const en: Translations = {
     computed: "Computed",
     drift: "Drift",
     kinds: { COIN: "COIN", OUNCE: "OUNCE" },
-    idleHint: "Click {button} to compute the current state.",
+    idleHint: (button) => `Click ${button} to compute the current state.`,
   },
 
   stockAlerts: {
     allHealthy: "All stock above thresholds",
-    healthyHint: "Coin and ounce types you've set {field} on are healthy.",
+    healthyHint: (field) => `Coin and ounce types you've set ${field} on are healthy.`,
     belowMinimum: (n) => `${n} item${n !== 1 ? "s" : ""} at or below minimum stock`,
     adjustHint: "Adjust stock through buybacks, supplier purchases, or manual adjustments.",
     kind: "Kind",

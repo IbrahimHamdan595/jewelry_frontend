@@ -65,10 +65,10 @@ describe("stock reconcile in Arabic (NEX-64)", () => {
     renderPage("ar");
     const field = screen.getByText("on_hand_qty");
     expect(field).toHaveClass("font-mono");
-    expect(field.parentElement).toHaveTextContent(ar.reconcile.intro.replace("{field}", "on_hand_qty"));
+    expect(field.parentElement).toHaveTextContent(ar.reconcile.intro("on_hand_qty"));
     const button = screen.getByText(ar.reconcile.run, { selector: "span" });
     expect(button).toHaveClass("font-medium");
-    expect(button.parentElement).toHaveTextContent(ar.reconcile.idleHint.replace("{button}", ar.reconcile.run));
+    expect(button.parentElement).toHaveTextContent(ar.reconcile.idleHint(ar.reconcile.run));
   });
 
   it("leaves no English behind in a drift report", async () => {
@@ -141,6 +141,7 @@ describe("stock reconcile in English is unchanged", () => {
 describe("reconcile dictionary is translated, not English placeholders", () => {
   const strings = (dict: typeof en.reconcile) => ({
     ...dict, ...dict.kinds, driftCount: dict.driftCount(2), driftCountOne: dict.driftCount(1), kinds: "",
+    intro: dict.intro("on_hand_qty"), idleHint: dict.idleHint(dict.run),
   });
   const english = strings(en.reconcile) as Record<string, string>;
   const arabic = strings(ar.reconcile) as Record<string, string>;
@@ -154,8 +155,8 @@ describe("reconcile dictionary is translated, not English placeholders", () => {
     }
   });
 
-  it.each([["intro", "{field}"], ["idleHint", "{button}"]] as const)("%s keeps exactly one %s slot in both languages", (key, slot) => {
-    expect(en.reconcile[key].split(slot)).toHaveLength(2);
-    expect(ar.reconcile[key].split(slot)).toHaveLength(2);
+  it.each(["intro", "idleHint"] as const)("%s places its element exactly once in both languages", (key) => {
+    expect(en.reconcile[key]("§").split("§")).toHaveLength(2);
+    expect(ar.reconcile[key]("§").split("§")).toHaveLength(2);
   });
 });

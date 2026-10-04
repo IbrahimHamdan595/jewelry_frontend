@@ -6,6 +6,8 @@ import { useLang } from "@/context/LanguageContext";
 
 /** The column this page audits: a machine identifier shown as-is, not copy. */
 const STOCK_FIELD = "on_hand_qty";
+/** Stands in for a styled element while a sentence is built, so it can be split back out. */
+const SLOT = "\u0000";
 
 interface UnitDrift {
   kind: "COIN" | "OUNCE";
@@ -26,9 +28,10 @@ interface ReconcileResponse {
 export default function InventoryReconcilePage() {
   const { t } = useLang();
   const r = t.reconcile;
-  // Whole sentences with one slot each, so each language places it where it reads best.
-  const [introBefore, introAfter] = r.intro.split("{field}");
-  const [idleBefore, idleAfter] = r.idleHint.split("{button}");
+  // Each sentence decides where its styled element goes; split it there, so the
+  // element can be styled without fixing its position for every language.
+  const [introBefore, introAfter = ""] = r.intro(SLOT).split(SLOT);
+  const [idleBefore, idleAfter = ""] = r.idleHint(SLOT).split(SLOT);
   const [data, setData] = useState<ReconcileResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

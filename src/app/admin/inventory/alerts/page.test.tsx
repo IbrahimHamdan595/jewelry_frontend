@@ -79,7 +79,7 @@ describe("stock alerts in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.stockAlerts.allHealthy)).toBeInTheDocument();
     const field = screen.getByText("min_stock_qty");
     expect(field).toHaveClass("font-mono");
-    expect(field.parentElement).toHaveTextContent(ar.stockAlerts.healthyHint.replace("{field}", "min_stock_qty"));
+    expect(field.parentElement).toHaveTextContent(ar.stockAlerts.healthyHint("min_stock_qty"));
     expect(uiStrings().filter(hasEnglishWord)).toEqual([]);
   });
 });
@@ -111,6 +111,7 @@ describe("stock alerts in English is unchanged", () => {
 describe("stockAlerts dictionary is translated, not English placeholders", () => {
   const strings = (dict: typeof en.stockAlerts) => ({
     ...dict, ...dict.kinds, belowMinimum: dict.belowMinimum(3), belowMinimumOne: dict.belowMinimum(1), kinds: "",
+    healthyHint: dict.healthyHint("min_stock_qty"),
   });
   const english = strings(en.stockAlerts) as Record<string, string>;
   const arabic = strings(ar.stockAlerts) as Record<string, string>;
@@ -124,8 +125,8 @@ describe("stockAlerts dictionary is translated, not English placeholders", () =>
     }
   });
 
-  it("healthyHint keeps exactly one {field} slot in both languages", () => {
-    expect(en.stockAlerts.healthyHint.split("{field}")).toHaveLength(2);
-    expect(ar.stockAlerts.healthyHint.split("{field}")).toHaveLength(2);
+  it("healthyHint places its element exactly once in both languages", () => {
+    expect(en.stockAlerts.healthyHint("§").split("§")).toHaveLength(2);
+    expect(ar.stockAlerts.healthyHint("§").split("§")).toHaveLength(2);
   });
 });
