@@ -14,17 +14,18 @@ import { calculatePrice, cn } from "@/lib/utils";
 import type { ProductListResponse, Category, Product } from "@/types/api";
 import { UnitCatalog } from "@/components/admin/UnitCatalog";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
+import { useLang } from "@/context/LanguageContext";
 
 type Tab = "products" | "coins" | "ounces";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "products", label: "Products" },
-  { key: "coins", label: "Coins" },
-  { key: "ounces", label: "Ounces" },
-];
-
 // Inner component that reads search params (must be inside Suspense)
 function ProductsPageInner() {
+  const { t } = useLang();
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "products", label: t.nav.products },
+    { key: "coins", label: t.dashboard.coins },
+    { key: "ounces", label: t.dashboard.ounces },
+  ];
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -39,13 +40,13 @@ function ProductsPageInner() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">Products</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{t.nav.products}</h2>
         {activeTab === "products" && (
           <Link
             href="/admin/products/new"
             className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-white px-4 py-2 rounded text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" /> Add Product
+            <Plus className="w-4 h-4" /> {t.products.addProduct}
           </Link>
         )}
       </div>
@@ -94,6 +95,8 @@ function ProductsPageInner() {
 
 // Products tab extracted so its own state is self-contained
 function ProductsTab() {
+  const { t } = useLang();
+  const pr = t.products;
   const [search, setSearch] = useState("");
   const [karat, setKarat] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -124,7 +127,7 @@ function ProductsTab() {
       setDeleting(null);
       mutate();
     } catch (err) {
-      setDelErr(err instanceof Error ? err.message : "Delete failed");
+      setDelErr(err instanceof Error ? err.message : pr.deleteFailed);
     } finally {
       setDelBusy(false);
     }
@@ -137,15 +140,17 @@ function ProductsTab() {
         <input
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search by name or code…"
+          placeholder={pr.searchPlaceholder}
+          aria-label={pr.searchPlaceholder}
           className="w-full sm:w-auto sm:flex-1 sm:max-w-xs border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
         />
         <select
           value={categoryId}
           onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}
+          aria-label={pr.category}
           className="border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
         >
-          <option value="">All categories</option>
+          <option value="">{pr.allCategories}</option>
           {categories?.map((c) => (
             <option key={c.id} value={c.id}>{c.name_en}</option>
           ))}
@@ -157,7 +162,7 @@ function ProductsTab() {
               onClick={() => { setKarat(k); setPage(1); }}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${karat === k ? "bg-gold text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
             >
-              {k || "All"}
+              {k || t.orders.filterAll}
             </button>
           ))}
         </div>
@@ -169,7 +174,7 @@ function ProductsTab() {
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                {["Image", "Code", "Name", "Category", "Karat", "Weight", "Stock", "Live Price", "Status", "Actions"].map((h) => (
+                {[pr.colImage, t.accounting.common.code, t.common.name, pr.category, pr.karat, pr.colWeight, pr.colStock, pr.colLivePrice, t.common.status, t.common.actions].map((h) => (
                   <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
@@ -201,10 +206,10 @@ function ProductsTab() {
                       <div className="flex items-center gap-2">
                         <span>{p.name_en}</span>
                         {p.is_used && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">USED</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">{pr.usedBadge}</span>
                         )}
                         {p.stone_value_usd != null && p.stone_value_usd > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">💎 Stones</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">💎 {pr.stones}</span>
                         )}
                         {p.status !== "AVAILABLE" && (
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
@@ -212,13 +217,13 @@ function ProductsTab() {
                             p.status === "MELTED" ? "bg-amber-50 text-amber-800" :
                             p.status === "RESERVED" ? "bg-indigo-50 text-indigo-700" :
                             "bg-gray-100 text-gray-500"
-                          }`}>{p.status}</span>
+                          }`}>{pr.status[p.status] ?? p.status}</span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{p.category}</td>
                     <td className="px-4 py-3"><KaratBadge karat={p.karat} /></td>
-                    <td className="px-4 py-3 text-gray-600">{p.weight_grams}g</td>
+                    <td className="px-4 py-3 text-gray-600">{p.weight_grams}{t.dashboard.grams}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold ${
                         p.on_hand_qty === 0 ? "text-red-600" :
@@ -228,24 +233,29 @@ function ProductsTab() {
                         {p.on_hand_qty}
                       </span>
                       {p.min_stock_qty != null && p.on_hand_qty <= p.min_stock_qty && p.on_hand_qty > 0 && (
-                        <span className="ml-1 text-[10px] text-amber-600">low</span>
+                        <span className="ml-1 text-[10px] text-amber-600">{pr.lowStock}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-800">{priced ? formatUSD(priced.finalPrice) : "—"}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => toggleStatus(p.id)} className="text-gray-400 hover:text-gold transition-colors">
-                        {p.is_active ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5" />}
+                      <button
+                        onClick={() => toggleStatus(p.id)}
+                        aria-label={p.is_active ? pr.deactivate : pr.activate}
+                        className="text-gray-400 hover:text-gold transition-colors"
+                      >
+                        {p.is_active ? <ToggleRight className="w-5 h-5 text-green-500" aria-hidden /> : <ToggleLeft className="w-5 h-5" aria-hidden />}
                       </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Link href={`/admin/products/${p.id}`} className="text-gray-400 hover:text-gold transition-colors"><Edit2 className="w-4 h-4" /></Link>
+                        <Link href={`/admin/products/${p.id}`} aria-label={t.common.edit} className="text-gray-400 hover:text-gold transition-colors"><Edit2 className="w-4 h-4" aria-hidden /></Link>
                         <button
                           onClick={() => { setDelErr(null); setDeleting(p); }}
                           className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete permanently"
+                          title={t.deleteDialog.confirm}
+                          aria-label={t.deleteDialog.confirm}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden />
                         </button>
                       </div>
                     </td>
@@ -257,10 +267,10 @@ function ProductsTab() {
         </div>
         {data && data.total > data.page_size && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-            <span className="text-xs text-gray-400">Showing {(page - 1) * data.page_size + 1}–{Math.min(page * data.page_size, data.total)} of {data.total}</span>
+            <span className="text-xs text-gray-400">{t.orders.showing((page - 1) * data.page_size + 1, Math.min(page * data.page_size, data.total), data.total)}</span>
             <div className="flex gap-2">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 text-xs border rounded disabled:opacity-40">Prev</button>
-              <button disabled={page * data.page_size >= data.total} onClick={() => setPage(p => p + 1)} className="px-3 py-1 text-xs border rounded disabled:opacity-40">Next</button>
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 text-xs border rounded disabled:opacity-40">{t.orders.prev}</button>
+              <button disabled={page * data.page_size >= data.total} onClick={() => setPage(p => p + 1)} className="px-3 py-1 text-xs border rounded disabled:opacity-40">{t.common.next}</button>
             </div>
           </div>
         )}
