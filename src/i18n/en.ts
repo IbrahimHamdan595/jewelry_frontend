@@ -71,6 +71,50 @@ export interface Translations {
     adjustFailed: string;
   };
 
+  // Inventory › Buybacks. `kinds` labels the filter; `kindPills` labels the
+  // table pill and the empty state, where English shows the raw code.
+  buybacks: {
+    filterByKind: string;
+    allKinds: string;
+    kinds: { PURE_GOLD: string; COIN: string; OUNCE: string; USED_PRODUCT: string };
+    kindPills: { PURE_GOLD: string; COIN: string; OUNCE: string; USED_PRODUCT: string };
+    pendingOnly: string;
+    when: string;
+    kind: string;
+    seller: string;
+    detail: string;
+    pricePaid: string;
+    outcome: string;
+    empty: (kind: string, pendingOnly: boolean) => string;
+    toLot: string;
+    stock: string;
+    polishedToProduct: string;
+    meltedToLot: string;
+    pending: string;
+    polish: string;
+    melt: string;
+    receipt: string;
+    polishTitle: string;
+    original: string;
+    paid: string;
+    costBasisCarries: string;
+    category: string;
+    marginPct: string;
+    makingCharge: string;
+    overrideWeightOptional: string;
+    overrideKaratOptional: string;
+    overrideWeight: string;
+    overrideKarat: string;
+    keep: (value: string) => string;
+    notesOptional: string;
+    polishing: string;
+    polishAndList: string;
+    polishFailed: string;
+    meltTitle: string;
+    melting: string;
+    meltFailed: string;
+  };
+
   zakat: {
     title: string;
     subtitle: string;
@@ -515,6 +559,48 @@ const en: Translations = {
     notesPlaceholder: "What happened?",
     apply: "Apply",
     adjustFailed: "Adjustment failed",
+  },
+
+  buybacks: {
+    filterByKind: "Filter by kind",
+    allKinds: "All kinds",
+    kinds: { PURE_GOLD: "Pure gold", COIN: "Coin", OUNCE: "Ounce", USED_PRODUCT: "Used product" },
+    kindPills: { PURE_GOLD: "PURE_GOLD", COIN: "COIN", OUNCE: "OUNCE", USED_PRODUCT: "USED_PRODUCT" },
+    pendingOnly: "Pending polish/melt only",
+    when: "When",
+    kind: "Kind",
+    seller: "Seller",
+    detail: "Detail",
+    pricePaid: "Price paid",
+    outcome: "Outcome",
+    empty: (kind, pendingOnly) => `No buybacks${kind ? ` of kind ${kind}` : ""}${pendingOnly ? " pending action" : ""}.`,
+    toLot: "→ lot",
+    stock: "stock",
+    polishedToProduct: "polished → product",
+    meltedToLot: "melted → lot",
+    pending: "pending",
+    polish: "Polish",
+    melt: "Melt",
+    receipt: "Receipt →",
+    polishTitle: "Polish used buyback into a product",
+    original: "Original:",
+    paid: "paid",
+    costBasisCarries: "(cost basis carries to product)",
+    category: "Category",
+    marginPct: "Margin %",
+    makingCharge: "Making charge ($)",
+    overrideWeightOptional: "Override weight (g) — optional",
+    overrideKaratOptional: "Override karat — optional",
+    overrideWeight: "Override weight (g)",
+    overrideKarat: "Override karat",
+    keep: (value) => `(keep ${value})`,
+    notesOptional: "Notes (optional)",
+    polishing: "Polishing…",
+    polishAndList: "Polish & list",
+    polishFailed: "Polish failed",
+    meltTitle: "Melt used buyback into a pure-gold lot",
+    melting: "Melting…",
+    meltFailed: "Melt failed",
   },
 
   zakat: {
