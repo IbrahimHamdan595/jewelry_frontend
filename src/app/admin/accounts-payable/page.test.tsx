@@ -33,6 +33,13 @@ function englishLeft(root: HTMLElement, data: (string | RegExp)[]): string[] {
   return uiStrings(root).filter((s) => /[A-Za-z]{2,}/.test(data.reduce<string>((rest, d) => rest.split(d).join(""), s)));
 }
 
+/** Elements whose classes pin a side (text-left, ml-2, pr-4 …) instead of following the reading direction. */
+function physicalClasses(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll("[class]"))
+    .map((el) => el.getAttribute("class") ?? "")
+    .filter((classes) => /(^|\s)(text-(left|right)|-?m[lr]-\S+|p[lr]-\S+)(\s|$)/.test(classes));
+}
+
 /** Every leaf of a dictionary namespace, with function-valued keys called on sample arguments. */
 function leaves(node: unknown, path: string): [string, string][] {
   if (typeof node === "string") return [[path, node]];
@@ -79,6 +86,18 @@ describe("accounts payable i18n (NEX-64)", () => {
     const row = screen.getByRole("row", { name: /Abu Ali Gold/ });
     expect(within(row).getByText("12.500g")).toBeInTheDocument();
     expect(within(row).getByText("$1,250.50")).toBeInTheDocument();
+  });
+
+  it("follows the reading direction: logical utilities only", () => {
+    const { container } = renderPage("ar");
+    expect(physicalClasses(container)).toEqual([]);
+    expect(screen.getByRole("columnheader", { name: ar.payables.colSupplier })).toHaveClass("text-start");
+    expect(screen.getByRole("link", { name: ar.payables.settle }).closest("td")).toHaveClass("text-end");
+    // A weight and its unit are one left-to-right run, so the gap stays between them.
+    const unit = screen.getByText("g", { selector: "span" });
+    expect(unit).toHaveClass("ms-1");
+    expect(unit.closest("bdi")).toHaveAttribute("dir", "ltr");
+    expect(unit.closest("bdi")).toHaveTextContent("12.500g");
   });
 
   it("gives the unlabelled link column a name for screen readers", () => {

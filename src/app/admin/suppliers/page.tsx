@@ -86,11 +86,11 @@ export default function SuppliersPage() {
             <table className="w-full min-w-[560px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
                   <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
                 </tr>
               </thead>
@@ -106,11 +106,11 @@ export default function SuppliersPage() {
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
                 <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
               </tr>
             </thead>
@@ -145,7 +145,7 @@ export default function SuppliersPage() {
                         aria-label={su.openSupplier(s.name)}
                         className="text-gray-400 hover:text-gold transition-colors"
                       >
-                        <ChevronRight className="w-4 h-4" aria-hidden />
+                        <ChevronRight className="w-4 h-4 rtl:rotate-180" aria-hidden />
                       </Link>
                     </div>
                   </td>

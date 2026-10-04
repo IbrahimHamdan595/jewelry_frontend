@@ -33,6 +33,13 @@ function englishLeft(root: HTMLElement, data: (string | RegExp)[]): string[] {
   return uiStrings(root).filter((s) => /[A-Za-z]{2,}/.test(data.reduce<string>((rest, d) => rest.split(d).join(""), s)));
 }
 
+/** Elements whose classes pin a side (text-left, ml-2, pr-4 …) instead of following the reading direction. */
+function physicalClasses(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll("[class]"))
+    .map((el) => el.getAttribute("class") ?? "")
+    .filter((classes) => /(^|\s)(text-(left|right)|-?m[lr]-\S+|p[lr]-\S+)(\s|$)/.test(classes));
+}
+
 /** Every leaf of a dictionary namespace, with function-valued keys called on sample arguments. */
 function leaves(node: unknown, path: string): [string, string][] {
   if (typeof node === "string") return [[path, node]];
@@ -83,6 +90,14 @@ describe("suppliers list labels and i18n (NEX-64)", () => {
     expect(screen.getByRole("link", { name: ar.suppliers.openSupplier("Abu Ali") })).toHaveAttribute("href", "/admin/suppliers/s1");
     expect(screen.getByRole("columnheader", { name: ar.common.actions })).toBeInTheDocument();
     expect(screen.getByLabelText(ar.suppliers.includeInactive)).toHaveAttribute("type", "checkbox");
+  });
+
+  it("follows the reading direction: logical utilities only, and the chevron flips", () => {
+    const { container } = renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.suppliers.newSupplier }));
+    expect(physicalClasses(container)).toEqual([]);
+    expect(screen.getByRole("columnheader", { name: ar.suppliers.phone })).toHaveClass("text-start");
+    expect(container.querySelector("svg.lucide-chevron-right")).toHaveClass("rtl:rotate-180");
   });
 
   it("every new-supplier field is reachable by its label, and the label's control is the input", () => {

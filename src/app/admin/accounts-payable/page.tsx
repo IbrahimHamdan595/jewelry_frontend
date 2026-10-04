@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
+import { Ltr } from "@/components/shared/Ltr";
 import type { AccountsPayable } from "@/types/api";
 
 export default function AccountsPayablePage() {
@@ -66,8 +67,12 @@ export default function AccountsPayablePage() {
                 <div key={k} className="flex items-baseline gap-2">
                   <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium">{k}</span>
                   <span className="text-xl font-semibold text-gray-800">
-                    {Number(g).toFixed(3)}
-                    <span className="text-xs text-gray-400 ml-1">g</span>
+                    {/* A number and its unit read left-to-right in both
+                        languages: isolated, so the gap stays between them. */}
+                    <Ltr>
+                      {Number(g).toFixed(3)}
+                      <span className="text-xs text-gray-400 ms-1">g</span>
+                    </Ltr>
                   </span>
                 </div>
               ))}
@@ -92,13 +97,13 @@ export default function AccountsPayablePage() {
           <table className="w-full min-w-[440px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                   {ap.colSupplier}
                 </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                   {ap.colCash}
                 </th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                   {ap.colGold}
                 </th>
                 <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
@@ -131,13 +136,13 @@ export default function AccountsPayablePage() {
                       ) : (
                         gold.map((b) => (
                           <div key={b.karat ?? "k"}>
-                            <span className="text-gray-500 mr-2">{b.karat}</span>
+                            <span className="text-gray-500 me-2">{b.karat}</span>
                             <span className="text-gray-800 font-semibold">{Number(b.balance).toFixed(3)}g</span>
                           </div>
                         ))
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                       <Link
                         href={`/admin/suppliers/${s.supplier_id}`}
                         className="text-xs text-gold hover:text-gold-dark"
