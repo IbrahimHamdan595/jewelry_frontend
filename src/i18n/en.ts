@@ -148,6 +148,45 @@ export interface Translations {
     settle: string;
   };
 
+  inventoryLedger: {
+    reconcileTitle: string;
+    // "{table}" marks where the page renders the table name in monospace.
+    reconcileHelp: string;
+    alertToggleTitle: string;
+    alertOn: string;
+    alertOff: string;
+    running: string;
+    runReconcile: string;
+    reconcileFailed: string;
+    allReconciled: string;
+    noAlertNeeded: string;
+    driftsDetected: (n: number) => string;
+    discordAlerted: string;
+    colSupplier: string;
+    colUnit: string;
+    colStored: string;
+    colComputed: string;
+    colDrift: string;
+    unitCash: string;
+    unitGold: (karat: string | null) => string;
+    title: string;
+    resetFilters: string;
+    eventType: string;
+    refType: string;
+    refId: string;
+    any: string;
+    refIdPlaceholder: string;
+    colDetails: string;
+    colEvent: string;
+    colRef: string;
+    colActor: string;
+    colOccurred: string;
+    noEvents: string;
+    pageSummary: (page: number, pages: number, total: number) => string;
+    prev: string;
+    next: string;
+  };
+
   nav: {
     dashboard: string;
     products: string;
@@ -698,6 +737,45 @@ const en: Translations = {
     colCash: "Cash",
     colGold: "Gold",
     settle: "Settle →",
+  },
+
+  inventoryLedger: {
+    reconcileTitle: "Supplier balance reconciliation",
+    // "{table}" marks where the page renders the table name in monospace.
+    reconcileHelp: "Replays purchases and payments to verify the running {table} projection. Mismatch indicates either a bug or out-of-band data edits.",
+    alertToggleTitle: "Toggle Discord alert on drift",
+    alertOn: "Alert on drift",
+    alertOff: "Silent",
+    running: "Running…",
+    runReconcile: "Run reconcile",
+    reconcileFailed: "Reconcile failed",
+    allReconciled: "All supplier balances reconcile against purchase + payment history.",
+    noAlertNeeded: "(no alert needed)",
+    driftsDetected: (n) => `${n} drift${n !== 1 ? "s" : ""} detected.`,
+    discordAlerted: "Discord alerted.",
+    colSupplier: "Supplier",
+    colUnit: "Unit",
+    colStored: "Stored",
+    colComputed: "Computed",
+    colDrift: "Drift",
+    unitCash: "CASH",
+    unitGold: (karat) => `GOLD K${karat}`,
+    title: "Audit ledger",
+    resetFilters: "Reset filters",
+    eventType: "Event type",
+    refType: "Ref type",
+    refId: "Ref id",
+    any: "any",
+    refIdPlaceholder: "exact UUID",
+    colDetails: "Details",
+    colEvent: "Event",
+    colRef: "Ref",
+    colActor: "Actor",
+    colOccurred: "Occurred",
+    noEvents: "No events match these filters.",
+    pageSummary: (page, pages, total) => `Page ${page} of ${pages} · ${total} events`,
+    prev: "← Prev",
+    next: "Next →",
   },
 
   nav: {
