@@ -3,20 +3,40 @@ import { importSPKI, jwtVerify, type KeyLike } from "jose";
 import { canAccess, homeFor, isRole, type Role } from "@/lib/access";
 import { buildCsp, newNonce } from "@/lib/csp";
 
-const JWT_ALGORITHM = process.env.JWT_ALGORITHM ?? "HS256";
 // Vercel-style env vars often carry PEM newlines as the two characters "\n".
 const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, "\n");
 const JWT_SECRET = process.env.JWT_SECRET;
 
+/** A key and the one algorithm it is trusted to verify. */
+type Verifier = { key: KeyLike; algorithms: ["RS256"] } | { key: Uint8Array; algorithms: ["HS256"] };
+
 /**
- * The verification key. With JWT_PUBLIC_KEY set (the backend's RS256 move,
- * NEX-54) this side holds a public key only and can never mint a token.
- * Until then it is the shared HS256 secret. Both paths are Edge-safe (jose).
- * Resolved once per isolate; no key at all means every token fails closed.
+ * The keys a session token may verify against, each pinned to its one
+ * algorithm (NEX-54). JWT_PUBLIC_KEY is the backend's RS256 public key: with
+ * only that set, this side can check a token but never mint one. JWT_SECRET is
+ * the shared HS256 secret, kept while tokens of both kinds are live and
+ * deleted after cutover, which is what stops HS256 being accepted.
+ *
+ * The algorithm is never taken from the token header or from configuration:
+ * a key only ever verifies its own algorithm, so an HS256 token keyed with the
+ * public key text (algorithm confusion) and `alg: none` have nothing to match.
+ * Both paths are Edge-safe (jose). Resolved once per isolate; no key at all
+ * means every token fails closed.
  */
-const verificationKey: Promise<KeyLike | Uint8Array | null> = JWT_PUBLIC_KEY
-  ? importSPKI(JWT_PUBLIC_KEY, JWT_ALGORITHM).catch(() => null)
-  : Promise.resolve(JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null);
+const verifiers: Promise<Verifier[]> = (async () => {
+  const configured: Verifier[] = [];
+  if (JWT_PUBLIC_KEY) {
+    try {
+      configured.push({ key: await importSPKI(JWT_PUBLIC_KEY, "RS256"), algorithms: ["RS256"] });
+    } catch {
+      // Never the value: only that it did not parse, so the logs show why
+      // RS256 sessions bounce to /login.
+      console.error("[auth] JWT_PUBLIC_KEY is not an SPKI PEM public key; RS256 tokens will be rejected");
+    }
+  }
+  if (JWT_SECRET) configured.push({ key: new TextEncoder().encode(JWT_SECRET), algorithms: ["HS256"] });
+  return configured;
+})();
 
 /**
  * The role claim from a verified token, or null. The claim is a snapshot: a
@@ -24,14 +44,15 @@ const verificationKey: Promise<KeyLike | Uint8Array | null> = JWT_PUBLIC_KEY
  * is not exactly one of the backend's roles is treated as no role at all.
  */
 async function verifiedRole(token: string): Promise<Role | null> {
-  const key = await verificationKey;
-  if (!key) return null;
-  try {
-    const { payload } = await jwtVerify(token, key, { algorithms: [JWT_ALGORITHM] });
-    return isRole(payload.role) ? payload.role : null;
-  } catch {
-    return null;
+  for (const { key, algorithms } of await verifiers) {
+    try {
+      const { payload } = await jwtVerify(token, key, { algorithms });
+      return isRole(payload.role) ? payload.role : null;
+    } catch {
+      // Not this key's token, or not valid under it: the other key gets a turn.
+    }
   }
+  return null;
 }
 
 function inSection(pathname: string, section: string): boolean {

@@ -1,12 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
-import { SignJWT } from "jose";
+import { SignJWT, UnsecuredJWT, base64url, exportPKCS8, exportSPKI, generateKeyPair, type KeyLike } from "jose";
 import { NextRequest } from "next/server";
 
 const SECRET = "nex-60-test-secret-with-enough-length";
 vi.stubEnv("JWT_SECRET", SECRET);
-vi.stubEnv("JWT_ALGORITHM", "HS256");
-// The middleware derives its key at module load, so import after stubbing
+// The middleware derives its keys at module load, so import after stubbing
 // (a dynamic import in beforeAll rather than top-level await: tsconfig has no
 // ES2017+ target, and next build type-checks test files too).
 let middleware: typeof import("@/middleware").middleware;
@@ -14,18 +13,18 @@ beforeAll(async () => {
   ({ middleware } = await import("@/middleware"));
 });
 
-async function tokenFor(role: unknown, secret = SECRET) {
+async function tokenFor(role: unknown, secret = SECRET, exp: string | number = "1h") {
   return new SignJWT({ role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject("user-1")
-    .setExpirationTime("1h")
+    .setExpirationTime(exp)
     .sign(new TextEncoder().encode(secret));
 }
 
-async function run(path: string, token?: string) {
+async function run(path: string, token?: string, mw = middleware) {
   const req = new NextRequest(new URL(path, "http://till.test"));
   if (token) req.cookies.set("mz_token", token);
-  const res = await middleware(req);
+  const res = await mw(req);
   const loc = res.headers.get("location");
   return { to: loc ? new URL(loc) : null, setCookie: res.headers.get("set-cookie") ?? "" };
 }
@@ -89,28 +88,218 @@ describe("route middleware", () => {
   });
 });
 
-describe("RS256 readiness (NEX-54)", () => {
-  it("verifies with the public key only when JWT_PUBLIC_KEY is set, and rejects HS256 tokens", async () => {
-    const { generateKeyPair, exportSPKI } = await import("jose");
-    const { publicKey, privateKey } = await generateKeyPair("RS256");
-    vi.stubEnv("JWT_PUBLIC_KEY", await exportSPKI(publicKey));
-    vi.stubEnv("JWT_ALGORITHM", "RS256");
-    vi.resetModules();
-    const { middleware: mw } = await import("@/middleware");
+describe("RS256 verification (NEX-54)", () => {
+  let pem: string;
+  let privateKey: KeyLike;
+  beforeAll(async () => {
+    const pair = await generateKeyPair("RS256", { extractable: true });
+    pem = await exportSPKI(pair.publicKey);
+    privateKey = pair.privateKey;
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
 
-    const rs = await new SignJWT({ role: "ADMIN" })
+  /** A fresh middleware for one key configuration: it resolves its keys at module load. */
+  async function load(env: { publicKey?: string; secret?: string }) {
+    vi.stubEnv("JWT_PUBLIC_KEY", env.publicKey);
+    vi.stubEnv("JWT_SECRET", env.secret);
+    vi.resetModules();
+    return (await import("@/middleware")).middleware;
+  }
+
+  async function rsTokenFor(role: unknown, key: KeyLike = privateKey, exp: string | number = "1h") {
+    return new SignJWT({ role })
+      .setProtectedHeader({ alg: "RS256" })
+      .setSubject("user-1")
+      .setExpirationTime(exp)
+      .sign(key);
+  }
+
+  /** Turned away like any bad token: to /login, cookie cleared. */
+  const rejected = (r: Awaited<ReturnType<typeof run>>) => r.to?.pathname === "/login" && /mz_token=;/.test(r.setCookie);
+
+  it("accepts an RS256 token with only the public key configured", async () => {
+    const mw = await load({ publicKey: pem });
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+  });
+
+  it("accepts the public key with literal \\n for newlines, as hosting dashboards store it", async () => {
+    const mw = await load({ publicKey: pem.replace(/\n/g, "\\n") });
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+  });
+
+  it("gates ADMIN, ACCOUNTANT and CASHIER under RS256 exactly as under HS256", async () => {
+    const mw = await load({ publicKey: pem });
+
+    const admin = await rsTokenFor("ADMIN");
+    for (const p of ["/admin/dashboard", "/admin/products", "/admin/ledger", "/admin/accounting/journal", "/pos"]) {
+      expect(pass(await run(p, admin, mw)), p).toBe(true);
+    }
+
+    const accountant = await rsTokenFor("ACCOUNTANT");
+    for (const p of ["/admin/accounting", "/admin/accounting/journal", "/admin/accounting/trial-balance", "/admin/accounting/periods", "/admin/accounting/kpis"]) {
+      expect(pass(await run(p, accountant, mw)), p).toBe(true);
+    }
+    for (const p of ["/admin/products", "/admin/suppliers", "/admin/settings", "/admin/ledger", "/admin/dashboard"]) {
+      expect((await run(p, accountant, mw)).to?.pathname, p).toBe("/admin/accounting");
+    }
+
+    const cashier = await rsTokenFor("CASHIER");
+    for (const p of ["/admin/dashboard", "/admin/accounting/journal", "/admin/settings"]) {
+      expect((await run(p, cashier, mw)).to?.pathname, p).toBe("/pos");
+    }
+    expect(pass(await run("/pos", cashier, mw))).toBe(true);
+  });
+
+  it("fails closed on an unknown role under RS256 too", async () => {
+    const mw = await load({ publicKey: pem });
+    expect(pass(await run("/pos", await rsTokenFor("CASHIER"), mw))).toBe(true);
+    for (const role of ["OWNER", "admin", "", 7, undefined]) {
+      expect(rejected(await run("/pos", await rsTokenFor(role), mw)), String(role)).toBe(true);
+    }
+    expect((await run("/admin/accounting", await rsTokenFor("MANAGER"), mw)).to?.pathname).toBe("/login");
+  });
+
+  it("ignores claims it does not read, such as a token version from the backend", async () => {
+    const mw = await load({ publicKey: pem });
+    const versioned = await new SignJWT({ role: "CASHIER", token_version: 3 })
       .setProtectedHeader({ alg: "RS256" })
       .setSubject("user-1")
       .setExpirationTime("1h")
       .sign(privateKey);
-    const ok = new NextRequest(new URL("/admin/dashboard", "http://till.test"));
-    ok.cookies.set("mz_token", rs);
-    expect((await mw(ok)).headers.get("location")).toBeNull();
+    expect(pass(await run("/pos", versioned, mw))).toBe(true);
+    expect((await run("/admin/dashboard", versioned, mw)).to?.pathname).toBe("/pos");
+  });
 
-    // The old shared-secret token must not get in once the public key is configured.
-    const hs = new NextRequest(new URL("/admin/dashboard", "http://till.test"));
-    hs.cookies.set("mz_token", await tokenFor("ADMIN"));
-    expect(new URL((await mw(hs)).headers.get("location")!).pathname).toBe("/login");
+  it("rejects HS256 once only the public key is configured", async () => {
+    const mw = await load({ publicKey: pem });
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), mw))).toBe(true);
+  });
+
+  it("accepts both kinds during the migration window, each only with its own key", async () => {
+    const mw = await load({ publicKey: pem, secret: SECRET });
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), mw))).toBe(true);
+
+    const stranger = await generateKeyPair("RS256");
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN", stranger.privateKey), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", "some-other-secret-that-is-long-enough"), mw))).toBe(true);
+  });
+
+  it("ignores a leftover JWT_ALGORITHM: the algorithm is pinned to the key, not configured", async () => {
+    vi.stubEnv("JWT_ALGORITHM", "HS256");
+    const rsOnly = await load({ publicKey: pem });
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), rsOnly))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), rsOnly))).toBe(true);
+
+    vi.stubEnv("JWT_ALGORITHM", "RS256");
+    const hsOnly = await load({ secret: SECRET });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), hsOnly))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), hsOnly))).toBe(true);
+  });
+
+  it("rejects the algorithm-confusion token: HS256 keyed with the public key itself", async () => {
+    // The public key is public. If the verifier let the header choose HS256
+    // and used the key text as the HMAC secret, anyone could mint an ADMIN.
+    const der = Buffer.from(pem.replace(/-----[^-]+-----|\s/g, ""), "base64");
+    const guesses: Record<string, Uint8Array> = {
+      "the PEM": new TextEncoder().encode(pem),
+      "the PEM, trimmed": new TextEncoder().encode(pem.trim()),
+      "the PEM with literal \\n": new TextEncoder().encode(pem.replace(/\n/g, "\\n")),
+      "the DER bytes": new Uint8Array(der),
+    };
+    for (const env of [{ publicKey: pem }, { publicKey: pem.replace(/\n/g, "\\n") }, { publicKey: pem, secret: SECRET }]) {
+      const mw = await load(env);
+      expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+      for (const [name, key] of Object.entries(guesses)) {
+        const forged = await new SignJWT({ role: "ADMIN" })
+          .setProtectedHeader({ alg: "HS256" })
+          .setSubject("user-1")
+          .setExpirationTime("1h")
+          .sign(key);
+        expect(rejected(await run("/admin/dashboard", forged, mw)), name).toBe(true);
+      }
+    }
+  });
+
+  it("rejects alg none, with or without a signature attached", async () => {
+    const unsecured = new UnsecuredJWT({ role: "ADMIN" }).setSubject("user-1").setExpirationTime("1h").encode();
+    // A genuine token relabelled: same claims, header swapped to "none".
+    const [, body, sig] = (await rsTokenFor("ADMIN")).split(".");
+    const relabelled = ["none", "None", "NONE"].flatMap((alg) => {
+      const head = base64url.encode(JSON.stringify({ alg, typ: "JWT" }));
+      return [`${head}.${body}.`, `${head}.${body}.${sig}`];
+    });
+    for (const env of [{ publicKey: pem }, { secret: SECRET }, { publicKey: pem, secret: SECRET }]) {
+      const mw = await load(env);
+      const genuine = env.publicKey ? await rsTokenFor("ADMIN") : await tokenFor("ADMIN");
+      expect(pass(await run("/admin/dashboard", genuine, mw))).toBe(true);
+      for (const t of [unsecured, ...relabelled]) {
+        expect(rejected(await run("/admin/dashboard", t, mw)), t).toBe(true);
+      }
+    }
+  });
+
+  it("rejects a tampered RS256 token", async () => {
+    const mw = await load({ publicKey: pem });
+    const cashier = await rsTokenFor("CASHIER");
+    expect(pass(await run("/pos", cashier, mw))).toBe(true);
+
+    // Promote the role in the payload and keep the original signature.
+    const [head, body, sig] = cashier.split(".");
+    const claims = JSON.parse(new TextDecoder().decode(base64url.decode(body)));
+    const promoted = base64url.encode(JSON.stringify({ ...claims, role: "ADMIN" }));
+    expect(rejected(await run("/admin/dashboard", `${head}.${promoted}.${sig}`, mw))).toBe(true);
+
+    // And the untouched payload under a damaged signature.
+    const damaged = (sig[0] === "A" ? "B" : "A") + sig.slice(1);
+    expect(rejected(await run("/pos", `${head}.${body}.${damaged}`, mw))).toBe(true);
+  });
+
+  it("rejects an expired token of either kind", async () => {
+    const mw = await load({ publicKey: pem, secret: SECRET });
+    const aMinuteAgo = Math.floor(Date.now() / 1000) - 60;
+    expect(pass(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN", privateKey, aMinuteAgo), mw))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN", SECRET, aMinuteAgo), mw))).toBe(true);
+  });
+
+  it("fails closed when neither key is configured", async () => {
+    const mw = await load({});
+    for (const t of [await rsTokenFor("ADMIN"), await tokenFor("ADMIN")]) {
+      expect(rejected(await run("/admin/dashboard", t, mw))).toBe(true);
+    }
+  });
+
+  it("treats a public key that does not parse as no public key, and says so without printing it", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken = "-----BEGIN PUBLIC KEY-----\nbm90IGEga2V5\n-----END PUBLIC KEY-----";
+
+    // Mid-migration the HS256 sessions keep working; RS256 has nothing to verify against.
+    const midMigration = await load({ publicKey: broken, secret: SECRET });
+    expect(pass(await run("/admin/dashboard", await tokenFor("ADMIN"), midMigration))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), midMigration))).toBe(true);
+
+    // With the secret gone there is no key at all: everything fails closed.
+    const afterCutover = await load({ publicKey: broken });
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), afterCutover))).toBe(true);
+    expect(rejected(await run("/admin/dashboard", await tokenFor("ADMIN"), afterCutover))).toBe(true);
+
+    expect(logged).toHaveBeenCalledTimes(2);
+    for (const [message] of logged.mock.calls) {
+      expect(String(message)).toContain("JWT_PUBLIC_KEY");
+      expect(String(message)).not.toContain("bm90IGEga2V5");
+    }
+  });
+
+  it("refuses a private key pasted into JWT_PUBLIC_KEY: this side must never hold a signing key", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mw = await load({ publicKey: await exportPKCS8(privateKey) });
+    expect(rejected(await run("/admin/dashboard", await rsTokenFor("ADMIN"), mw))).toBe(true);
+    expect(logged).toHaveBeenCalledTimes(1);
   });
 });
 
