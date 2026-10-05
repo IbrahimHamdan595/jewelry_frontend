@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
@@ -40,6 +40,26 @@ export default function ZakatPage() {
   const [snapNotes, setSnapNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const snapDateRef = useRef<HTMLInputElement>(null);
+
+  // The snapshot dialog is modal: focus moves to its first field when it
+  // opens and goes back to whatever opened it when it closes.
+  useEffect(() => {
+    if (!snapModalOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    snapDateRef.current?.focus();
+    return () => opener?.focus();
+  }, [snapModalOpen]);
+
+  // Escape closes it, like the backdrop and Cancel: not while a save is in flight.
+  useEffect(() => {
+    if (!snapModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !saving) setSnapModalOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [snapModalOpen, saving]);
 
   const filteredSnapshots: ZakatSnapshot[] = useMemo(() => {
     const items = snapshotsData?.items ?? [];
@@ -334,17 +354,20 @@ export default function ZakatPage() {
 
       {/* Save snapshot modal */}
       {snapModalOpen && (
-        // The backdrop only catches stray clicks; the dialog's own buttons are
-        // the keyboard path, so neither wrapper is a control.
+        // The backdrop is not a control: it only catches clicks that land
+        // outside the dialog. Escape and the Cancel button are the keyboard path.
         <div
           role="presentation"
           className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => !saving && setSnapModalOpen(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !saving) setSnapModalOpen(false);
+          }}
         >
           <div
-            role="presentation"
+            role="dialog"
+            aria-modal="true"
+            aria-label={z.saveSnapshotModalTitle}
             className="bg-white rounded-lg w-full max-w-sm p-5 space-y-4 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="text-sm font-semibold text-gray-800">{z.saveSnapshotModalTitle}</div>
 
@@ -353,6 +376,7 @@ export default function ZakatPage() {
                 {z.assessmentDate}
               </span>
               <input
+                ref={snapDateRef}
                 type="date"
                 value={snapDate}
                 onChange={(e) => setSnapDate(e.target.value)}

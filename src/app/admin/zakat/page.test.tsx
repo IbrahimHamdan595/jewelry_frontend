@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import ZakatPage from "@/app/admin/zakat/page";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ar from "@/i18n/ar";
@@ -22,7 +22,8 @@ vi.mock("swr", () => ({
     error: undefined, isLoading: swr.loading, isValidating: false, mutate: vi.fn(),
   }),
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn(() => Promise.resolve({})) } }));
+const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
+vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
 
 // The rate feed's name comes from the server.
 const DATA = ["goldapi"];
@@ -38,6 +39,11 @@ function englishLeft(root: HTMLElement): string[] {
   return found
     .map((text) => DATA.reduce((rest, value) => rest.split(value).join(""), text).trim())
     .filter((text) => /[A-Za-z]{2,}/.test(text));
+}
+
+/** Every <label> on screen must reach a control: a click focuses it and it names the field. */
+function labelsWithoutControl(): string[] {
+  return Array.from(document.querySelectorAll("label")).filter((label) => label.control === null).map((label) => label.textContent ?? "");
 }
 
 function renderPage(lang: "en" | "ar") {
@@ -86,17 +92,51 @@ describe("zakat page labels and i18n (NEX-64)", () => {
     const notes = screen.getByLabelText(ar.zakat.notesOptional);
     expect(notes.tagName).toBe("TEXTAREA");
     expect((screen.getByText(ar.zakat.notesOptional).closest("label") as HTMLLabelElement).control).toBe(notes);
+    expect(document.querySelectorAll("label")).toHaveLength(2);
+    expect(labelsWithoutControl()).toEqual([]);
     expect(englishLeft(container)).toEqual([]);
   });
 
   it("snapshot dialog still closes from the backdrop and not from inside the panel", () => {
     renderPage("ar");
     fireEvent.click(screen.getByRole("button", { name: ar.zakat.saveSnapshot }));
-    const panel = screen.getByLabelText(ar.zakat.assessmentDate).closest("[role=presentation]") as HTMLElement;
-    fireEvent.click(panel);
-    expect(screen.getByLabelText(ar.zakat.assessmentDate)).toBeInTheDocument();
-    fireEvent.click(panel.parentElement as HTMLElement);
-    expect(screen.queryByLabelText(ar.zakat.assessmentDate)).toBeNull();
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(dialog);
+    fireEvent.click(screen.getByLabelText(ar.zakat.notesOptional));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(dialog.parentElement as HTMLElement);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("snapshot dialog is a real modal dialog: named, focus moves in, Escape closes, focus goes back", () => {
+    renderPage("ar");
+    const opener = screen.getByRole("button", { name: ar.zakat.saveSnapshot });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole("dialog", { name: ar.zakat.saveSnapshotModalTitle });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.getByLabelText(ar.zakat.assessmentDate)).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it("snapshot dialog cannot be dismissed while the save is in flight, and still saves what was entered", async () => {
+    let finish: (value: unknown) => void = () => {};
+    api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.zakat.saveSnapshot }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(screen.getByLabelText(ar.zakat.assessmentDate), { target: { value: "2026-09-05" } });
+    fireEvent.change(screen.getByLabelText(ar.zakat.notesOptional), { target: { value: "annual" } });
+    fireEvent.click(screen.getByRole("button", { name: ar.zakat.save }));
+    expect(screen.getByRole("button", { name: ar.zakat.saving })).toBeDisabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(dialog.parentElement as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledWith("/zakat/snapshots", { assessment_date: "2026-09-05", notes: "annual" });
+    await act(async () => finish({}));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("reads exactly as before in English", () => {

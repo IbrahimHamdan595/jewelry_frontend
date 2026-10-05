@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import StockTakeDetailPage from "@/app/admin/stock-take/[id]/page";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ar from "@/i18n/ar";
 
 const swr = vi.hoisted(() => ({ byKey: {} as Record<string, unknown> }));
 vi.mock("swr", () => ({ default: (key: string) => ({ data: swr.byKey[key], error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
-const api = vi.hoisted(() => ({ post: vi.fn(() => Promise.resolve({})), patch: vi.fn(() => Promise.resolve({})), delete: vi.fn(() => Promise.resolve({})) }));
+const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})), patch: vi.fn(() => Promise.resolve({})), delete: vi.fn(() => Promise.resolve({})) }));
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
 
 const TAKE_ID = "3f2a9c1b-0000-4000-8000-000000000001";
@@ -53,6 +53,11 @@ function englishLeft(root: HTMLElement, data: string[] = DATA): string[] {
 /** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
 function arabicInMono(root: HTMLElement): string[] {
   return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
+}
+
+/** Every <label> on screen must reach a control: a click focuses it and it names the field. */
+function labelsWithoutControl(): string[] {
+  return Array.from(document.querySelectorAll("label")).filter((label) => label.control === null).map((label) => label.textContent ?? "");
 }
 
 function renderPage(lang: "en" | "ar", data: unknown) {
@@ -141,6 +146,8 @@ describe("stock-take detail: review screen in Arabic (NEX-64)", () => {
     expect(label.control).toBe(field);
     expect(field).toHaveAttribute("placeholder", ar.stockTake.reasonPlaceholder);
     expect(screen.getByText(ar.stockTake.rejectEffect(10, 8))).toBeInTheDocument();
+    expect(document.querySelectorAll("label")).toHaveLength(1);
+    expect(labelsWithoutControl()).toEqual([]);
     expect(englishLeft(container)).toEqual([]);
   });
 
@@ -148,15 +155,46 @@ describe("stock-take detail: review screen in Arabic (NEX-64)", () => {
     renderPage("ar", submitted);
     fireEvent.click(screen.getAllByRole("button", { name: ar.stockTake.reject })[0]);
     const field = screen.getByLabelText(ar.stockTake.reasonLabel);
-    const dialog = field.closest("[role=presentation]") as HTMLElement;
+    const dialog = screen.getByRole("dialog");
     const confirm = within(dialog).getByRole("button", { name: ar.stockTake.rejectVariance });
     expect(confirm).toBeDisabled();
     fireEvent.change(field, { target: { value: "counted twice, still short" } });
     expect(confirm).toBeEnabled();
     fireEvent.click(dialog); // inside the panel: stays open
+    fireEvent.click(field);
     expect(screen.getByLabelText(ar.stockTake.reasonLabel)).toBeInTheDocument();
     fireEvent.click(dialog.parentElement as HTMLElement); // backdrop: closes
-    expect(screen.queryByLabelText(ar.stockTake.reasonLabel)).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the reject dialog is a real modal dialog: named, focus moves in, Escape closes, focus goes back", () => {
+    renderPage("ar", submitted);
+    const opener = screen.getAllByRole("button", { name: ar.stockTake.reject })[0];
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole("dialog", { name: ar.stockTake.rejectVariance });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.getByLabelText(ar.stockTake.reasonLabel)).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it("the reject dialog cannot be dismissed while the rejection is being submitted", async () => {
+    let finish: (value: unknown) => void = () => {};
+    api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    renderPage("ar", submitted);
+    fireEvent.click(screen.getAllByRole("button", { name: ar.stockTake.reject })[0]);
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(screen.getByLabelText(ar.stockTake.reasonLabel), { target: { value: "counted twice, still short" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: ar.stockTake.rejectVariance }));
+    expect(within(dialog).getByRole("button", { name: ar.stockTake.rejecting })).toBeDisabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(dialog.parentElement as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledWith(`/stock-takes/${TAKE_ID}/lines/l1/reject`, { reason: "counted twice, still short" });
+    await act(async () => finish({}));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 

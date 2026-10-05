@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import {
@@ -811,18 +811,41 @@ function RejectModal({
   const { t } = useLang();
   const s = t.stockTake;
   const expected = line.expected_qty_at_submit ?? 0;
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+
+  // A modal dialog: focus moves to its one field when it opens and goes back
+  // to whatever opened it when it closes.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    reasonRef.current?.focus();
+    return () => opener?.focus();
+  }, []);
+
+  // Escape closes it, like the backdrop and Cancel: not while a rejection is
+  // being submitted.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !submitting) onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [submitting, onCancel]);
+
   return (
-    // The backdrop only catches stray clicks; the dialog's own buttons are
-    // the keyboard path, so neither wrapper is a control.
+    // The backdrop is not a control: it only catches clicks that land outside
+    // the dialog. Escape and the Cancel button are the keyboard path.
     <div
       role="presentation"
       className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={() => !submitting && onCancel()}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) onCancel();
+      }}
     >
       <div
-        role="presentation"
+        role="dialog"
+        aria-modal="true"
+        aria-label={s.rejectVariance}
         className="bg-white rounded-lg w-full max-w-md p-5 space-y-4 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="text-sm font-semibold text-gray-800">
           {s.rejectVariance}
@@ -838,6 +861,7 @@ function RejectModal({
             {s.reasonLabel}
           </span>
           <textarea
+            ref={reasonRef}
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
