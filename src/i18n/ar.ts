@@ -296,7 +296,7 @@ const ar: Translations = {
   goldRate: {
     live: "مباشر",
     stale: "قديم",
-    sources: { live: "مباشر", override: "تجاوز يدوي" },
+    sources: { live: "المصدر المباشر", override: "تجاوز" },
     refresh: "تحديث",
     olderThan15: "سعر الذهب أقدم من 15 دقيقة",
     karatUsdPerGram: (karat) => `${karat} · دولار/غ`,

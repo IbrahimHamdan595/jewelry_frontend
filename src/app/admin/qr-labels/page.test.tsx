@@ -11,8 +11,19 @@ vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/l
 // jsdom has no canvas; the barcode image is not what these tests are about.
 vi.mock("jsbarcode", () => ({ default: vi.fn() }));
 
-const ring = { id: "p1", code: "R-1", name_en: "Gold Ring", karat: "K21", weight_grams: "5.250", stone_carats: null, stone_cert: null };
-const chain = { id: "p2", code: "C-7", name_en: "Rope Chain", karat: "K18", weight_grams: "12.000", stone_carats: 0.5, stone_cert: "GIA-1" };
+// ProductOut as GET /products sends it (app/schemas/product.py): FN-{karat label}-NNNN codes,
+// karat as the enum value ("K21"), decimals — weight and stone carats included — as strings.
+const base = {
+  name_ar: "", category: "Rings", category_id: "cat1", margin_percent: "15.00", making_charge: "25.00", photos: [], is_active: true,
+  on_hand_qty: 1, min_stock_qty: null, is_used: false, cost_basis_usd: null, status: "AVAILABLE", source_ref_type: null, source_ref_id: null,
+  stone_value_usd: null, stone_cost_usd: null, stone_carats: null, stone_count: null, stone_cert: null, stone_note: null,
+  created_at: "2026-08-01T09:00:00Z", updated_at: "2026-08-01T09:00:00Z",
+};
+const ring = { ...base, id: "p1", code: "FN-21K-0001", name_en: "Gold Ring", karat: "K21", weight_grams: "5.250" };
+const chain = {
+  ...base, id: "p2", code: "FN-18K-0007", name_en: "Rope Chain", karat: "K18", weight_grams: "12.000",
+  stone_value_usd: "450.00", stone_cost_usd: "300.00", stone_carats: "0.500", stone_count: 1, stone_cert: "GIA-2141438167",
+};
 
 function renderPage(lang: "en" | "ar") {
   return render(
@@ -33,9 +44,12 @@ function uiStrings(root: HTMLElement): string[] {
 /** Latin words still on screen once data and the codes that stay Latin by design are set aside. */
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
-// Karat codes, the barcode symbology name, the stone certificate and carat unit printed on the
-// tag, and the product names and codes the fixtures supply as data.
-const DATA = /\b(K?\d\dK?|CODE128|1D|GIA-1|0\.5ct|R-1|C-7|Gold Ring|Rope Chain)\b/g;
+// The barcode symbology name, the stone certificate and carat unit printed on the tag, the
+// product codes and English names the fixtures supply as data, and karat codes.
+const DATA = /\b(FN-\d\dK-\d{4}|CODE128|1D|GIA-2141438167|0\.500ct|Gold Ring|Rope Chain|K?\d\dK?)\b/g;
+/** Physical-direction utilities that would not flip in RTL. */
+const physicalClasses = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
 
 /** The list row for a product: the label that wraps its checkbox. */
 const rowOf = (name: string) => screen.getAllByText(name)[0].closest("label") as HTMLLabelElement;
@@ -64,9 +78,15 @@ describe("QR labels (NEX-64)", () => {
     expect(screen.getByText(en.qrLabels.labelsSelected(0))).toBeInTheDocument();
   });
 
-  it("the copies stepper has named buttons and does not toggle the row", () => {
+  it("each row's copies stepper names its own product, and does not toggle the row", () => {
     renderPage("en");
     fireEvent.click(rowOf("Gold Ring"));
+    fireEvent.click(rowOf("Rope Chain"));
+    // Two steppers on screen: each button says which product it changes.
+    expect(screen.getByRole("button", { name: "More copies of Gold Ring" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "More copies of Rope Chain" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fewer copies of Rope Chain" })).toBeInTheDocument();
+    fireEvent.click(rowOf("Rope Chain"));
     const box = within(rowOf("Gold Ring")).getByRole("checkbox") as HTMLInputElement;
     fireEvent.click(screen.getByRole("button", { name: en.qrLabels.moreCopies("Gold Ring") }));
     fireEvent.click(screen.getByRole("button", { name: en.qrLabels.moreCopies("Gold Ring") }));
@@ -99,6 +119,7 @@ describe("QR labels (NEX-64)", () => {
     expect(screen.getByRole("button", { name: q.moreCopies("Rope Chain") })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: q.printLabels })).toBeEnabled();
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
   });
 
   it("the printed tag keeps its fixed Latin units whatever the UI language", () => {
@@ -107,8 +128,20 @@ describe("QR labels (NEX-64)", () => {
     const sheet = container.querySelector("#print-sheet") as HTMLElement;
     const tags = sheet.querySelectorAll(".print-label");
     expect(tags).toHaveLength(1);
-    expect(tags[0]).toHaveTextContent("C-7");
     expect(tags[0]).toHaveTextContent("Rope Chain");
-    expect(tags[0]).toHaveTextContent("12.000g · K18 · 💎 0.5ct · GIA-1");
+    // Code and spec line are machine runs: isolated left-to-right on the tag.
+    expect(Array.from(tags[0].querySelectorAll('bdi[dir="ltr"]')).map((el) => el.textContent)).toEqual([
+      "FN-18K-0007",
+      "12.000g · K18 · 💎 0.500ct · GIA-2141438167",
+    ]);
+  });
+
+  it("a product without stones prints weight and karat only, and one tag per copy", () => {
+    const { container } = renderPage("en");
+    fireEvent.click(rowOf("Gold Ring"));
+    fireEvent.click(screen.getByRole("button", { name: en.qrLabels.moreCopies("Gold Ring") }));
+    const tags = container.querySelectorAll("#print-sheet .print-label");
+    expect(tags).toHaveLength(2);
+    expect(tags[1].querySelectorAll("bdi")[1]).toHaveTextContent(/^5\.250g · K21$/);
   });
 });

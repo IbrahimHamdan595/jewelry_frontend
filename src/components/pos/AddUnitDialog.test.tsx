@@ -15,8 +15,18 @@ vi.mock("swr", () => ({
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn() }));
 
 const TYPES = "/coins?is_active=true&page_size=200";
-const lira = { id: "c1", code: "LIRA-8", name_en: "Ottoman Lira", karat: "K22", weight_grams: "7.2", on_hand_qty: 4, min_stock_qty: 5, photo_url: null };
-const price = { gold_rate_24k: 141.66, final_price: "1000" };
+// UnitTypeOut and UnitPriceOut as GET /coins and GET /coins/{id}/price send them
+// (app/schemas/unit_stock.py): decimals as strings, karat as the enum value.
+const lira = {
+  id: "c1", code: "FN-COIN-22K-0001", name_en: "Ottoman Lira", name_ar: "ليرة عثمانية", karat: "K22", weight_grams: "7.200",
+  markup_per_gram: "0.0000", margin_mode: "USD", margin_value: "64.70", on_hand_qty: 4, min_stock_qty: 5, photo_url: null,
+  is_active: true, created_at: "2026-08-01T09:00:00Z", updated_at: "2026-08-01T09:00:00Z",
+};
+// 141.66 × 0.917 = 129.90/g; × 7.2 g = 935.30 metal; + 64.70 margin = 1000.00
+const price = {
+  type_id: "c1", code: "FN-COIN-22K-0001", gold_rate_24k: 141.66, effective_rate: "129.90", metal_value: "935.30",
+  margin_amount: "64.70", final_price: "1000.00", on_hand_qty: 4, rate_source: "live", rate_is_stale: false,
+};
 
 function renderDialog(lang: "en" | "ar") {
   const onAdded = vi.fn();
@@ -42,8 +52,11 @@ function uiStrings(root: HTMLElement): string[] {
 /** Latin words still on screen once data and the codes that stay Latin by design are set aside. */
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
-// Karat codes, plus the coin's code and name, which the fixture supplies as data.
-const DATA = /\b(K?\d\dK?|LIRA-8|Ottoman Lira)\b/g;
+// Karat codes, plus the coin's code and English name, which the fixture supplies as data.
+const DATA = /\b(FN-COIN-22K-0001|FN-21K-\d{4}|K?\d\dK?|Ottoman Lira)\b/g;
+/** Physical-direction utilities that would not flip in RTL. */
+const physicalClasses = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
 
 describe("AddUnitDialog — labels and i18n (NEX-64)", () => {
   beforeEach(() => {
@@ -75,7 +88,10 @@ describe("AddUnitDialog — labels and i18n (NEX-64)", () => {
     expect(screen.getByLabelText(ar.pos.qty)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: ar.common.cancel })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: ar.pos.addToCart })).toBeEnabled();
+    // The row reads: karat, English name (data), code · weight, then the Arabic stock note.
+    expect(screen.getByRole("button", { name: /Ottoman Lira/ })).toHaveTextContent(`K22Ottoman LiraFN-COIN-22K-0001 · 7.200g${ar.pos.onHand} 4`);
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
 
     fireEvent.change(screen.getByLabelText(ar.pos.searchCoinTypes), { target: { value: "zzz" } });
     expect(screen.getByText(ar.pos.noCoinTypes)).toBeInTheDocument();
@@ -101,7 +117,7 @@ describe("AddUnitDialog — labels and i18n (NEX-64)", () => {
     fireEvent.click(screen.getByRole("button", { name: ar.pos.addToCart }));
     expect(onAdded).toHaveBeenCalledTimes(1);
     const [line] = JSON.parse(sessionStorage.getItem(CART_STORAGE_KEY) ?? "{}").items;
-    expect(line).toMatchObject({ kind: "COIN", coinTypeId: "c1", code: "LIRA-8", karat: "K22", weightGrams: 7.2, quantity: 3, unitPrice: 1000, finalPrice: 3000, goldRate24k: 141.66 });
+    expect(line).toMatchObject({ kind: "COIN", coinTypeId: "c1", code: "FN-COIN-22K-0001", karat: "K22", weightGrams: 7.2, quantity: 3, unitPrice: 1000, finalPrice: 3000, goldRate24k: 141.66 });
   });
 
   it("refuses more than is on hand — the button stays disabled", () => {
@@ -123,17 +139,19 @@ describe("ScanPanel — i18n (NEX-64)", () => {
     const code = screen.getByLabelText(ar.pos.manualEntry);
     expect(code).toHaveAttribute("placeholder", ar.pos.productCodePlaceholder);
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
 
-    fireEvent.change(code, { target: { value: " R-1 " } });
+    fireEvent.change(code, { target: { value: " FN-21K-0001 " } });
     fireEvent.click(screen.getByRole("button", { name: ar.pos.find }));
-    expect(onScan).toHaveBeenCalledWith("R-1");
+    expect(onScan).toHaveBeenCalledWith("FN-21K-0001");
   });
 
   it("Arabic: a failed scan says so and shows the scanned code as data", () => {
-    const { container } = render(<LanguageProvider initialLang="ar"><ScanPanel onScan={vi.fn()} scanError="ZZ-404" /></LanguageProvider>);
+    const { container } = render(<LanguageProvider initialLang="ar"><ScanPanel onScan={vi.fn()} scanError="FN-21K-9999" /></LanguageProvider>);
     expect(screen.getByText(ar.pos.itemNotFound)).toBeInTheDocument();
-    expect(screen.getByText("ZZ-404")).toBeInTheDocument();
-    expect(englishLeft(container, /ZZ-404/g)).toEqual([]);
+    // The code is set in font-mono, which the RTL stylesheet isolates left-to-right.
+    expect(screen.getByText("FN-21K-9999")).toHaveClass("font-mono");
+    expect(englishLeft(container, DATA)).toEqual([]);
   });
 
   it("keeps the English wording it had", () => {

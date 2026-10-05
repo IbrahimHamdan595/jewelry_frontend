@@ -20,16 +20,20 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api-client", () => ({ api, apiFetcher: vi.fn() }));
 
+// SettingsOut and StaffOut as GET /settings and GET /staff send them (app/schemas/settings.py):
+// decimals are strings at their column scale, and — until the backend exposes it — there is
+// no accounting_auto_post_enabled field, which is why the switch is disabled today.
 const SETTINGS = {
-  id: "singleton", store_name: "Fawaz", store_name_ar: "فواز", address: "Hamra", phone: "+961 1 555 555", vat_number: "601-1",
-  default_margin_pct: 10, default_making_charge: 5, vat_percent: 11, lbp_exchange_rate: 89500, max_discount_percent: 10,
-  default_buyback_margin_mode: "USD_PER_GRAM", default_buyback_margin_value: 2, buyback_rate_drift_pct_max: 1,
-  markup_k18: 1, markup_k21: 2, markup_k24: 3, nisab_grams: 85, receipt_footer: "Thank you",
-  accounting_auto_post_enabled: false,
+  id: "singleton", store_name: "Fawaz El Namel", store_name_ar: "فواز النمل", logo_url: null, address: "Hamra Street, Beirut",
+  phone: "+961 1 555 555", vat_number: "601-123456",
+  default_margin_pct: "15.00", default_making_charge: "25.00", markup_k18: "1.00", markup_k21: "2.00", markup_k24: "3.00",
+  vat_percent: "11.00", lbp_exchange_rate: "89500.00", receipt_footer: "Thank you", gold_refresh_minutes: 15,
+  default_buyback_margin_mode: "USD_PER_GRAM", default_buyback_margin_value: "2.0000", buyback_rate_drift_pct_max: "2.00",
+  nisab_grams: "85.000", max_discount_percent: "10.00", updated_at: "2026-09-01T08:00:00Z",
 };
 const STAFF = [
-  { id: "s1", name: "Maya", email: "maya@shop.test", role: "CASHIER", is_active: true, created_at: "" },
-  { id: "s2", name: "Omar", email: "omar@shop.test", role: "CASHIER", is_active: false, created_at: "" },
+  { id: "s1", name: "Maya", email: "maya@fawazelnamel.com", role: "CASHIER", is_active: true, created_at: "2026-08-01T09:00:00Z" },
+  { id: "s2", name: "Omar", email: "omar@fawazelnamel.com", role: "CASHIER", is_active: false, created_at: "2026-08-02T09:00:00Z" },
 ];
 
 function renderPage(lang: "en" | "ar") {
@@ -62,7 +66,10 @@ const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // Karat codes, the ticket id the existing auto-post copy cites, and what the fixtures supply
 // as data: staff names and emails, and the stored receipt footer (a textarea's text).
-const DATA = /\b(K?\d\dK?|NEX-\d+|Maya|Omar|[a-z]+@shop\.test|Thank you)\b/g;
+const DATA = /\b(K?\d\dK?|NEX-\d+|Maya|Omar|[a-z]+@fawazelnamel\.com|Thank you)\b/g;
+/** Physical-direction utilities that would not flip in RTL. */
+const physicalClasses = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
 
 describe("settings — every field is labelled (NEX-64)", () => {
   beforeEach(() => {
@@ -75,11 +82,15 @@ describe("settings — every field is labelled (NEX-64)", () => {
   it("store tab", () => {
     renderPage("en");
     const s = en.settings;
-    expect(fieldOf(s.storeName).value).toBe("Fawaz");
+    expect(fieldOf(s.storeName).value).toBe("Fawaz El Namel");
     expect(fieldOf(s.storeNameAr)).toHaveAttribute("dir", "rtl");
-    expect(fieldOf(s.fields.address).value).toBe("Hamra");
+    expect(fieldOf(s.fields.address).value).toBe("Hamra Street, Beirut");
+    expect(fieldOf(s.fields.address)).not.toHaveAttribute("dir");
+    // A phone and a VAT number are typed left-to-right in either language.
     expect(fieldOf(s.fields.phone).value).toBe("+961 1 555 555");
-    expect(fieldOf(s.fields.vat_number).value).toBe("601-1");
+    expect(fieldOf(s.fields.phone)).toHaveAttribute("dir", "ltr");
+    expect(fieldOf(s.fields.vat_number).value).toBe("601-123456");
+    expect(fieldOf(s.fields.vat_number)).toHaveAttribute("dir", "ltr");
   });
 
   it("pricing tab, including the select and the $-prefixed markups", () => {
@@ -90,12 +101,13 @@ describe("settings — every field is labelled (NEX-64)", () => {
       expect(fieldOf(s.fields[f]).value, f).toBe(String(SETTINGS[f]));
     }
     expect(fieldOf(s.marginMode).tagName).toBe("SELECT");
-    expect(fieldOf(s.marginValue).value).toBe("2");
-    expect(fieldOf(s.maxDriftPct).value).toBe("1");
-    expect(fieldOf(new RegExp(s.markupLabel("18K"))).value).toBe("1");
-    expect(fieldOf(new RegExp(s.markupLabel("21K"))).value).toBe("2");
-    expect(fieldOf(new RegExp(s.markupLabel("24K"))).value).toBe("3");
-    expect(fieldOf(s.nisabGrams).value).toBe("85");
+    expect((fieldOf(s.marginMode) as unknown as HTMLSelectElement).value).toBe("USD_PER_GRAM");
+    expect(fieldOf(s.marginValue).value).toBe("2.0000");
+    expect(fieldOf(s.maxDriftPct).value).toBe("2.00");
+    expect(fieldOf(new RegExp(s.markupLabel("18K"))).value).toBe("1.00");
+    expect(fieldOf(new RegExp(s.markupLabel("21K"))).value).toBe("2.00");
+    expect(fieldOf(new RegExp(s.markupLabel("24K"))).value).toBe("3.00");
+    expect(fieldOf(s.nisabGrams).value).toBe("85.000");
   });
 
   it("receipt, security and staff tabs", () => {
@@ -108,24 +120,39 @@ describe("settings — every field is labelled (NEX-64)", () => {
     for (const text of [s.currentPassword, s.newPassword, s.confirmNewPassword]) expect(fieldOf(text)).toHaveAttribute("type", "password");
 
     openTab(s.tabStaff);
+    // Each cashier's email is an identifier: isolated left-to-right.
+    expect(Array.from(document.querySelectorAll('bdi[dir="ltr"]')).map((el) => el.textContent)).toEqual(["maya@fawazelnamel.com", "omar@fawazelnamel.com"]);
     openTab(s.addCashier);
     for (const text of [s.staffFields.name, s.staffFields.email, s.staffFields.password]) expect(screen.getByLabelText(text), text).toBeInTheDocument();
+    expect(screen.getByLabelText(s.staffFields.email)).toHaveAttribute("dir", "ltr");
+    expect(screen.getByLabelText(s.staffFields.name)).not.toHaveAttribute("dir");
   });
 
-  it("editing through a label still saves that field, and never the auto-post flag", async () => {
+  it("editing through a label still saves that field with the rest of the form", async () => {
     renderPage("en");
-    fireEvent.change(fieldOf(en.settings.storeName), { target: { value: "Fawaz El Namel" } });
+    fireEvent.change(fieldOf(en.settings.storeName), { target: { value: "Fawaz El Namel & Sons" } });
     openTab(en.settings.saveChanges);
     await waitFor(() => expect(api.patch).toHaveBeenCalled());
-    const body = api.patch.mock.calls[0][1] as Record<string, unknown>;
-    expect(body.store_name).toBe("Fawaz El Namel");
-    expect(body).not.toHaveProperty("accounting_auto_post_enabled");
+    expect(api.patch.mock.calls[0][0]).toBe("/settings");
+    expect(api.patch.mock.calls[0][1]).toEqual({ ...SETTINGS, store_name: "Fawaz El Namel & Sons" });
+  });
+
+  it("adding a cashier posts what was typed", async () => {
+    renderPage("en");
+    const s = en.settings;
+    openTab(s.tabStaff);
+    openTab(s.addCashier);
+    fireEvent.change(screen.getByLabelText(s.staffFields.name), { target: { value: "Lina" } });
+    fireEvent.change(screen.getByLabelText(s.staffFields.email), { target: { value: "lina@fawazelnamel.com" } });
+    fireEvent.change(screen.getByLabelText(s.staffFields.password), { target: { value: "s3cret-pass" } });
+    fireEvent.click(screen.getByRole("button", { name: en.common.save }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/staff", { name: "Lina", email: "lina@fawazelnamel.com", password: "s3cret-pass" }));
   });
 });
 
 describe("settings — Arabic has no English left (NEX-64)", () => {
   beforeEach(() => {
-    swr.byKey = { "/settings": { data: SETTINGS }, "/staff": { data: STAFF }, "/accounting/ledger/verify": { data: { status: "empty", head_matches: true, head_row_count: 0 } } };
+    swr.byKey = { "/settings": { data: SETTINGS }, "/staff": { data: STAFF } };
     swr.mutates = {};
     api.patch.mockClear();
     api.post.mockClear();
@@ -154,9 +181,11 @@ describe("settings — Arabic has no English left (NEX-64)", () => {
     expect(fieldOf(s.footerMessage).value).toBe("Thank you");
     expect(englishLeft(container, DATA)).toEqual([]);
 
-    // Accounting (strings from the earlier ticket, checked here so the whole page is covered)
+    // Accounting (strings from the earlier ticket, checked here so the whole page is covered).
+    // The API does not report the flag yet, so the switch is disabled and says why.
     openTab(s.accountingTab);
-    expect(screen.getByRole("switch", { name: s.autoPostTitle })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: s.autoPostTitle })).toBeDisabled();
+    expect(screen.getByText(s.autoPostUnavailable)).toBeInTheDocument();
     expect(englishLeft(container, DATA)).toEqual([]);
 
     // Staff
@@ -174,6 +203,7 @@ describe("settings — Arabic has no English left (NEX-64)", () => {
     for (const text of [s.currentPassword, s.newPassword, s.confirmNewPassword]) fieldOf(text);
     expect(screen.getByRole("button", { name: s.updatePassword })).toBeDisabled();
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
   });
 
   it("the same scan does find English on the English page", () => {
@@ -203,16 +233,5 @@ describe("settings — Arabic has no English left (NEX-64)", () => {
     openTab(s.updatePassword);
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/auth/change-password", { current_password: "old", new_password: "new-1" }));
     expect(await screen.findByText(s.passwordChanged)).toBeInTheDocument();
-  });
-
-  it("the auto-post confirm flow is the same flow in Arabic", async () => {
-    renderPage("ar");
-    const s = ar.settings;
-    openTab(s.accountingTab);
-    fireEvent.click(screen.getByRole("switch"));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent(s.autoPostEnableWarning);
-    expect(api.patch).not.toHaveBeenCalled();
-    openTab(s.autoPostEnableConfirm);
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/settings", { accounting_auto_post_enabled: true }));
   });
 });
