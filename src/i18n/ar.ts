@@ -214,9 +214,12 @@ const ar: Translations = {
     goldPrice: "سعر الذهب",
     zakat: "الزكاة",
     auditLedger: "سجل المراجعة",
+    accounting: "المحاسبة",
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
     admin: "المشرف",
+    openMenu: "فتح القائمة",
+    closeMenu: "إغلاق القائمة",
   },
 
   // المخزون › دفعات الذهب الخالص. \u2066…\u2069 (LRI/PDI) keeps a signed number

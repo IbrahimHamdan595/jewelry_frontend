@@ -201,9 +201,13 @@ export interface Translations {
     goldPrice: string;
     zakat: string;
     auditLedger: string;
+    accounting: string;
     settings: string;
     signOut: string;
     admin: string;
+    /** The mobile drawer's two icon buttons. */
+    openMenu: string;
+    closeMenu: string;
   };
 
   // Inventory › Pure Gold Lots (NEX-64, slice 3). Enum maps (sources, reasons)
@@ -1466,9 +1470,12 @@ const en: Translations = {
     goldPrice: "Gold Price",
     zakat: "Zakat",
     auditLedger: "Audit Ledger",
+    accounting: "Accounting",
     settings: "Settings",
     signOut: "Sign out",
     admin: "Admin",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
 
   lots: {
