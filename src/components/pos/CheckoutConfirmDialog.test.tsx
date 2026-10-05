@@ -128,3 +128,50 @@ describe("CheckoutConfirmDialog — the stale-rate gate still gates", () => {
     expect(screen.getByRole("button", { name: en.checkout.backToEdit })).toBeDisabled();
   });
 });
+
+// The dialog declares aria-modal="true": the till behind it is inert to a
+// screen reader, so Tab must not walk out to it either.
+describe("CheckoutConfirmDialog — Tab stays inside the dialog", () => {
+  const press = (shiftKey = false) => !fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey });
+
+  it("cycles between Back to edit and Confirm, and pulls focus in from the till behind", () => {
+    hook.rate = RATE;
+    render(
+      <LanguageProvider initialLang="en">
+        <button>scan field behind</button>
+        <CheckoutConfirmDialog open items={items} subtotal={1400} vat={154} vatPercent={11} discountPercent={0} discountAmount={0}
+          total={1554} paymentMethod="CASH" customerName="" submitting={false} onConfirm={vi.fn()} onCancel={vi.fn()} />
+      </LanguageProvider>,
+    );
+    const back = screen.getByRole("button", { name: en.checkout.backToEdit });
+    const confirm = screen.getByRole("button", { name: en.checkout.confirmComplete });
+
+    confirm.focus();
+    expect(press()).toBe(true);
+    expect(back).toHaveFocus();
+    expect(press(true)).toBe(true);
+    expect(confirm).toHaveFocus();
+
+    screen.getByRole("button", { name: "scan field behind" }).focus();
+    expect(press()).toBe(true);
+    expect(back).toHaveFocus();
+  });
+
+  it("market closed: the acknowledgement checkbox is the first stop, and a blocked Confirm is not one", () => {
+    hook.rate = { ...RATE, is_stale: true, market_closed: true };
+    renderDialog("en");
+    const box = screen.getByRole("checkbox");
+    const back = screen.getByRole("button", { name: en.checkout.backToEdit });
+    back.focus(); // Confirm is disabled until the box is ticked, so this is the last stop
+    expect(press()).toBe(true);
+    expect(box).toHaveFocus();
+    expect(press(true)).toBe(true);
+    expect(back).toHaveFocus();
+  });
+
+  it("does not hold Tab while closed", () => {
+    hook.rate = RATE;
+    renderDialog("en", { open: false });
+    expect(fireEvent.keyDown(document.body, { key: "Tab" })).toBe(true);
+  });
+});

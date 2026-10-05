@@ -180,6 +180,33 @@ describe("stock-take detail: review screen in Arabic (NEX-64)", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("the reject dialog keeps Tab inside it: the page behind is not reachable while it is open", () => {
+    renderPage("ar", submitted);
+    fireEvent.click(screen.getAllByRole("button", { name: ar.stockTake.reject })[0]);
+    const dialog = screen.getByRole("dialog");
+    const reason = screen.getByLabelText(ar.stockTake.reasonLabel);
+    const cancel = within(dialog).getByRole("button", { name: ar.common.cancel });
+    const confirm = within(dialog).getByRole("button", { name: ar.stockTake.rejectVariance });
+    const press = (shiftKey = false) => !fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey });
+
+    // No reason yet, so Reject is disabled and Cancel is the last stop.
+    cancel.focus();
+    expect(press()).toBe(true);
+    expect(reason).toHaveFocus();
+    expect(press(true)).toBe(true);
+    expect(cancel).toHaveFocus();
+
+    // With a reason typed, Reject is the last stop.
+    fireEvent.change(reason, { target: { value: "counted twice, still short" } });
+    confirm.focus();
+    expect(press()).toBe(true);
+    expect(reason).toHaveFocus();
+    expect(press(true)).toBe(true);
+    expect(confirm).toHaveFocus();
+    cancel.focus(); // in the middle: the browser's own order
+    expect(press()).toBe(false);
+  });
+
   it("the reject dialog cannot be dismissed while the rejection is being submitted", async () => {
     let finish: (value: unknown) => void = () => {};
     api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));

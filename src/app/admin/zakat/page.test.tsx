@@ -125,6 +125,26 @@ describe("zakat page labels and i18n (NEX-64)", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("snapshot dialog keeps Tab inside it: the page behind is not reachable while it is open", () => {
+    renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.zakat.saveSnapshot }));
+    const date = screen.getByLabelText(ar.zakat.assessmentDate);
+    const save = screen.getByRole("button", { name: ar.zakat.save });
+    const press = (shiftKey = false) => !fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey });
+
+    save.focus(); // the last control
+    expect(press()).toBe(true);
+    expect(date).toHaveFocus(); // the first
+    expect(press(true)).toBe(true);
+    expect(save).toHaveFocus();
+    screen.getByLabelText(ar.zakat.notesOptional).focus(); // in the middle: the browser's own order
+    expect(press()).toBe(false);
+
+    // Closed, it lets go of Tab.
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(fireEvent.keyDown(document.body, { key: "Tab" })).toBe(true);
+  });
+
   it("snapshot dialog cannot be dismissed while the save is in flight, and still saves what was entered", async () => {
     let finish: (value: unknown) => void = () => {};
     api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));

@@ -6,6 +6,7 @@ import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { formatUSD } from "@/lib/utils";
 import type { ZakatSnapshot, ZakatSnapshotList, ZakatSummary } from "@/types/zakat";
 
@@ -44,15 +45,18 @@ export default function ZakatPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const snapDateRef = useRef<HTMLInputElement>(null);
+  const snapPanelRef = useRef<HTMLDivElement>(null);
 
   // The snapshot dialog is modal: focus moves to its first field when it
-  // opens and goes back to whatever opened it when it closes.
+  // opens, Tab stays inside it, and focus goes back to whatever opened it
+  // when it closes.
   useEffect(() => {
     if (!snapModalOpen) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     snapDateRef.current?.focus();
     return () => opener?.focus();
   }, [snapModalOpen]);
+  useFocusTrap(snapPanelRef, snapModalOpen);
 
   // Escape closes it, like the backdrop and Cancel: not while a save is in flight.
   useEffect(() => {
@@ -368,6 +372,7 @@ export default function ZakatPage() {
           }}
         >
           <div
+            ref={snapPanelRef}
             role="dialog"
             aria-modal="true"
             aria-label={z.saveSnapshotModalTitle}

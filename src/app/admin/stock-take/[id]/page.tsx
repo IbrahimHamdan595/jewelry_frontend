@@ -10,6 +10,7 @@ import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { Translations } from "@/i18n/en";
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -812,14 +813,16 @@ function RejectModal({
   const s = t.stockTake;
   const expected = line.expected_qty_at_submit ?? 0;
   const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // A modal dialog: focus moves to its one field when it opens and goes back
-  // to whatever opened it when it closes.
+  // A modal dialog: focus moves to its one field when it opens, Tab stays
+  // inside it, and focus goes back to whatever opened it when it closes.
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     reasonRef.current?.focus();
     return () => opener?.focus();
   }, []);
+  useFocusTrap(panelRef);
 
   // Escape closes it, like the backdrop and Cancel: not while a rejection is
   // being submitted.
@@ -842,6 +845,7 @@ function RejectModal({
       }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={s.rejectVariance}

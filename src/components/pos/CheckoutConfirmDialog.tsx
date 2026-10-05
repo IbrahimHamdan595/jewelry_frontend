@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Gem } from "lucide-react";
 import { formatUSD } from "@/lib/utils";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
 import { useLang } from "@/context/LanguageContext";
 import type { CartItem } from "@/hooks/useCart";
@@ -63,6 +64,10 @@ export function CheckoutConfirmDialog(props: Props) {
     if (!open) setAccepted(false);
   }, [open, setAccepted]);
 
+  // aria-modal says the till behind is inert; keep Tab from walking out to it.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
+
   if (!open) return null;
 
   // Mirrors StaleRateAckNotice's own "render nothing" condition. The notice
@@ -71,7 +76,7 @@ export function CheckoutConfirmDialog(props: Props) {
   const showAck = guard.required && Boolean(guard.fetchedAt);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-xl bg-pos-bg border border-white/10 shadow-2xl">
         <div className="px-6 pt-5 pb-3 border-b border-white/10 shrink-0">
           <p className="font-serif text-gold text-lg">{t.checkout.confirmTitle}</p>

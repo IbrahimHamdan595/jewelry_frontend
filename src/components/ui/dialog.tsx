@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface DialogProps {
   open: boolean;
@@ -14,13 +15,27 @@ interface DialogProps {
 
 /**
  * A modal dialog: role="dialog" + aria-modal, named by its title. Focus moves
- * into it when it opens and goes back to whatever opened it when it closes.
- * It closes three ways — the X button, Escape, and a click on the backdrop.
+ * into it when it opens, Tab stays inside it while it is open, and focus goes
+ * back to whatever opened it when it closes. It closes three ways — the X
+ * button, Escape, and a click on the backdrop.
  */
 export function Dialog({ open, onClose, title, children, className }: DialogProps) {
   const { t } = useLang();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // What had the focus when the dialog was asked to open. Noted during the
+  // render in which `open` flips, not in an effect: by the time this
+  // component's effects run, a child has already focused itself (its own
+  // effect runs first, and autoFocus is applied at commit), and the "opener"
+  // would be a field inside the dialog. `wasOpen` starts false so a dialog
+  // that is open from its first render counts as opening too.
+  const [wasOpen, setWasOpen] = useState(false);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setOpener(typeof document !== "undefined" && document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -30,12 +45,13 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
 
   useEffect(() => {
     if (!open) return;
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
     // A child that focused itself (an autofocused field) keeps the focus.
     if (panel && !panel.contains(document.activeElement)) panel.focus();
     return () => opener?.focus();
-  }, [open]);
+  }, [open, opener]);
+
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Dialog } from "@/components/ui/dialog";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -80,6 +80,84 @@ describe("Dialog (NEX-64)", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.contains(document.activeElement)).toBe(true);
     fireEvent.keyDown(document, { key: "Escape" });
+    expect(opener).toHaveFocus();
+  });
+
+  // React runs a child's effects before its parent's, and applies autoFocus at
+  // commit: by the time the dialog's own effect runs, focus is already inside
+  // it. What opened the dialog has to be noted before the content mounts.
+  it.each([
+    ["an effect", false],
+    ["autoFocus", true],
+  ])("remembers what opened it even when a field inside focuses itself through %s", (_how, auto) => {
+    function SelfFocusing() {
+      const ref = useRef<HTMLInputElement>(null);
+      useEffect(() => { if (!auto) ref.current?.focus(); }, []);
+      // eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test
+      return <input ref={ref} aria-label="reason" autoFocus={auto} />;
+    }
+    function Page() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>refund</button>
+          <button>something else</button>
+          <Dialog open={open} onClose={() => setOpen(false)} title="Refund item"><SelfFocusing /></Dialog>
+        </>
+      );
+    }
+    render(<Page />);
+    const opener = screen.getByRole("button", { name: "refund" });
+    opener.focus();
+    fireEvent.click(opener);
+    expect(screen.getByLabelText("reason")).toHaveFocus(); // the field kept the focus it took
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it("a dialog that is open from its first render still gives focus back when it closes", () => {
+    function Page() {
+      const [show, setShow] = useState(false);
+      return (
+        <>
+          <button onClick={() => setShow(true)}>refund</button>
+          {show && <Dialog open onClose={() => setShow(false)} title="Refund item"><button>Confirm</button></Dialog>}
+        </>
+      );
+    }
+    render(<Page />);
+    const opener = screen.getByRole("button", { name: "refund" });
+    opener.focus();
+    fireEvent.click(opener);
+    expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: en.common.close }));
+    expect(opener).toHaveFocus();
+  });
+
+  // aria-modal="true" tells a screen reader the page behind is inert; Tab has to agree.
+  it("Tab and Shift+Tab cycle inside the dialog and never reach the page behind", () => {
+    renderOpen();
+    const close = screen.getByRole("button", { name: en.common.close });
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+    const press = (shiftKey = false) => !fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey });
+
+    confirm.focus(); // the last control
+    expect(press()).toBe(true);
+    expect(close).toHaveFocus(); // the first one
+    expect(press(true)).toBe(true);
+    expect(confirm).toHaveFocus();
+
+    screen.getByLabelText("quantity").focus(); // in the middle: the browser's own order
+    expect(press()).toBe(false);
+  });
+
+  it("stops trapping Tab once it is closed", () => {
+    const { opener } = renderOpen();
+    fireEvent.keyDown(document, { key: "Escape" });
+    opener.focus();
+    expect(fireEvent.keyDown(opener, { key: "Tab" })).toBe(true); // not prevented
     expect(opener).toHaveFocus();
   });
 
