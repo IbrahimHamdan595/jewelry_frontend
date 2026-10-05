@@ -8,8 +8,6 @@ import ar from "@/i18n/ar";
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }), usePathname: () => "/pos/buyback" }));
-// The Sell / Buy Back tabs are not part of this slice and are still hardcoded English.
-vi.mock("@/components/pos/PosModeTabs", () => ({ PosModeTabs: () => null }));
 vi.mock("@/lib/auth", () => ({ logout: vi.fn(), getStoredUser: () => null }));
 
 const swr = vi.hoisted(() => ({ byKey: {} as Record<string, unknown> }));
@@ -56,7 +54,8 @@ function uiStrings(root: HTMLElement): string[] {
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // Karat codes, plus what the fixtures above supply as data: the coin's code and its English name.
-const DATA = /\b(K?\d\dK?|FN-COIN-22K-0001|Ottoman Lira)\b/g;
+// "English" is the language switcher's label in Arabic mode: it names the other language in that language.
+const DATA = /\b(K?\d\dK?|FN-COIN-22K-0001|Ottoman Lira|English)\b/g;
 /** Physical-direction utilities that would not flip in RTL. */
 const physicalClasses = (root: HTMLElement) =>
   Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
@@ -108,6 +107,10 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     const b = ar.posBuyback;
     expect(screen.getByText(ar.appName)).toBeInTheDocument();
     expect(screen.getByText(b.title)).toBeInTheDocument();
+    // The header's shared pieces: the Sell / Buy Back tabs and the language switcher.
+    expect(screen.getByRole("link", { name: ar.orders.tabSell })).toHaveAttribute("href", "/pos");
+    expect(screen.getByRole("link", { name: b.eyebrow })).toHaveAttribute("href", "/pos/buyback");
+    expect(screen.getByRole("button", { name: "English" })).toBeInTheDocument();
 
     // Pure gold, with a live quote on screen
     fireEvent.change(screen.getByLabelText(ar.products.weightGrams), { target: { value: "5" } });
@@ -156,6 +159,28 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     fireEvent.click(screen.getByRole("button", { name: ar.posBuyback.record }));
     expect(screen.getByText(ar.posBuyback.sellerRequired)).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("POS buyback — language switcher (NEX-64)", () => {
+  beforeEach(() => {
+    swr.byKey = { "/gold-price": RATE };
+    document.cookie = "mz_lang=; path=/; max-age=0";
+    localStorage.clear();
+  });
+
+  it("sits in the header where the sell page has it — before Sign out — and switches the page", () => {
+    renderPage("en");
+    const header = screen.getByRole("banner");
+    const switcher = screen.getByRole("button", { name: "العربية" });
+    const signOut = screen.getByRole("button", { name: en.pos.signOut });
+    expect(header).toContainElement(switcher);
+    expect(switcher.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(switcher.parentElement).toBe(signOut.parentElement);
+
+    fireEvent.click(switcher);
+    expect(screen.getByText(ar.posBuyback.title)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "English" })).toBeInTheDocument();
   });
 });
 

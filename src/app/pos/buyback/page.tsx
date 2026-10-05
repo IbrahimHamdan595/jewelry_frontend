@@ -6,6 +6,7 @@ import { LogOut, Coins, Layers, Recycle, Sparkles, Scale } from "lucide-react";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { api, apiFetcher, staleRateError } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
@@ -77,6 +78,7 @@ export default function BuybackPage() {
               <span className="text-pos-cream text-xs mt-0.5">{user.name}</span>
             )}
           </div>
+          <LanguageSwitcher variant="dark" />
           <button
             onClick={async () => {
               await logout();
