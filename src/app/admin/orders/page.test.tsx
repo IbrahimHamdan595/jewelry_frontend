@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import OrdersPage from "@/app/admin/orders/page";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -8,7 +8,7 @@ const order = { id: "o1", order_number: "ORD-20260905-002", created_at: "2026-09
 const purchase = { id: "p1", supplier_id: "s1", supplier_name: "Abu Ali", occurred_at: "2026-09-05T10:00:00Z", payment_mode: "MIXED", item_count: 3, total_cash_due: "1200.00", total_grams_due_by_karat: { K21: "12.5" } };
 const buyback = { id: "b1", occurred_at: "2026-09-05T10:00:00Z", seller_name: "Rana Haddad", seller_phone: "+961-03-123456", kind: "USED_PRODUCT", karat: "K18", weight_grams: "4.2", quantity: 1, buy_price_usd: "310.00" };
 const sales = { items: [order], total: 45, page: 1, page_size: 20, total_revenue: "614.68", avg_order_value: "614.68" };
-const pages: [string, unknown][] = [
+const pages: [string, Record<string, unknown>][] = [
   ["/orders", sales],
   ["/suppliers/purchases/list", { items: [purchase], total: 1 }],
   ["/buybacks", { items: [buyback], total: 1 }],
@@ -146,5 +146,22 @@ describe("orders list in English is unchanged", () => {
     fireEvent.click(screen.getByRole("button", { name: "Buybacks" }));
     expect(screen.getByText("USED PRODUCT")).toBeInTheDocument();
     expect(screen.getByText("4.200g")).toBeInTheDocument();
+  });
+});
+
+// GET /orders sends total_revenue and avg_order_value as decimal strings. Today
+// they carry whatever scale the SQL average produced; after NEX-54 they are
+// always two decimals. The two tiles read the same either way.
+describe("orders list — revenue stats as the API sends them (NEX-54)", () => {
+  afterEach(() => { pages[0][1] = sales; });
+
+  it.each([
+    ["today: unrounded scale", "27661.5000", "614.7000000000000000"],
+    ["exact money: two decimals", "27661.50", "614.70"],
+  ])("%s", (_name, total_revenue, avg_order_value) => {
+    pages[0][1] = { ...sales, total_revenue, avg_order_value };
+    renderPage("en");
+    expect(screen.getByText("Revenue").nextElementSibling).toHaveTextContent("$27,661.50");
+    expect(screen.getByText("Avg Order Value").nextElementSibling).toHaveTextContent("$614.70");
   });
 });

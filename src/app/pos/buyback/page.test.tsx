@@ -224,6 +224,65 @@ describe("POS buyback — what is sent is unchanged", () => {
   });
 });
 
+// NEX-54. The backend is moving the rates on GET /gold-price, and rate_24k in a
+// stale-rate 409, from JSON numbers to exact decimal strings. A buyback is money
+// leaving the till on that rate, so the acknowledgement must go through with
+// either backend.
+describe("POS buyback — the stale-rate acknowledgement with rates as strings or numbers (NEX-54)", () => {
+  const FETCHED_AT = "2026-09-08T10:00:00.123456Z";
+  const CLOSED = {
+    numbers: { ...RATE, fetched_at: FETCHED_AT, is_stale: true, market_closed: true },
+    strings: { ...RATE, rate_24k: "141.66", rate_22k: "129.90", rate_21k: "123.95", rate_18k: "106.25", fetched_at: FETCHED_AT, is_stale: true, market_closed: true },
+  };
+  const SHAPES = [["numbers", 141.66], ["strings", "141.66"]] as const;
+
+  beforeEach(() => {
+    nav.push.mockClear();
+    api.post.mockReset();
+    swr.byKey = { [QUOTE_KEY]: QUOTE, "/coins?is_active=true&page_size=200": COINS };
+  });
+
+  function fillPureGold() {
+    const b = en.posBuyback;
+    fireEvent.change(screen.getByLabelText(b.sellerName), { target: { value: "Rima" } });
+    fireEvent.change(screen.getByLabelText(b.phone), { target: { value: "+96170000000" } });
+    fireEvent.change(screen.getByLabelText(en.products.weightGrams), { target: { value: "5" } });
+  }
+
+  it.each(SHAPES)("market closed, rates as %s: blocked until ticked, then posts the rate's own timestamp", async (shape) => {
+    swr.byKey["/gold-price"] = CLOSED[shape];
+    api.post.mockResolvedValue({ id: "bb-1" });
+    renderPage("en");
+    fillPureGold();
+    const record = screen.getByRole("button", { name: en.posBuyback.record });
+    expect(record).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(record).toBeEnabled();
+    fireEvent.click(record);
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/pos/buyback-receipt/bb-1"));
+    expect(api.post).toHaveBeenCalledWith("/buybacks", {
+      seller_name: "Rima", seller_phone: "+96170000000", kind: "PURE_GOLD", karat: "K21", weight_grams: "5", notes: null,
+      // The quote's rate goes back exactly as quoted, and the acknowledgement
+      // names GET /gold-price's fetched_at exactly as received.
+      expected_rate: "141.66",
+      stale_rate_ack: { rate_fetched_at: FETCHED_AT },
+    });
+  });
+
+  it.each(SHAPES)("a 409 whose rate_24k is one of the %s: the server's message is shown and nothing is recorded", async (shape, rate) => {
+    swr.byKey["/gold-price"] = { ...CLOSED[shape], is_stale: false, market_closed: false }; // a tab that has not caught up
+    const message = "Gold rate has not refreshed since 2026-09-08T10:00:00.123456+00:00 (95 minutes ago).";
+    api.post.mockRejectedValueOnce(new ApiError(409, { code: "STALE_RATE_ACK_REQUIRED", message, rate_24k: rate, rate_fetched_at: "2026-09-08T10:00:00.123456+00:00", age_minutes: 95 }));
+    renderPage("en");
+    fillPureGold();
+    fireEvent.click(screen.getByRole("button", { name: en.posBuyback.record }));
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(api.post.mock.calls[0][1]).not.toHaveProperty("stale_rate_ack");
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+});
+
 // Dictionary-level check for everything this slice added: a key that exists in
 // both files but still reads as English in ar.ts would pass tsc and fail here.
 describe("slice 5 namespaces are translated, not English placeholders", () => {

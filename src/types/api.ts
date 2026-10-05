@@ -21,7 +21,12 @@ export interface Category {
   created_at: string;
 }
 export type OrderStatus = "COMPLETED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "VOIDED";
-export type PaymentMethod = "CASH" | "CARD" | "MIXED";
+/**
+ * Mirrors the backend PaymentMethod enum (app/models/__init__.py). CREDIT is a
+ * sale on account (accounts receivable): the till never offers it, but an order
+ * recorded that way comes back from the API like any other.
+ */
+export type PaymentMethod = "CASH" | "CARD" | "MIXED" | "CREDIT";
 /**
  * Mirrors the backend Role enum (jewelry_backend/app/models/__init__.py).
  * MANAGER is reserved there for a future approvals role and has no screens;
@@ -147,8 +152,9 @@ export interface OrderSummary {
 export interface OrderListResponse {
   items: OrderSummary[];
   total: number;
-  total_revenue: number;
-  avg_order_value: number;
+  /** Decimal strings ("20572.48"): never JSON numbers, on either backend. */
+  total_revenue: string;
+  avg_order_value: string;
 }
 
 export interface GoldRate {
@@ -592,7 +598,8 @@ export interface ReceiptLine {
   quantity: number | string | null;
   unit_price: number | string | null;
   line_total: number | string;
-  stone_value?: number | null;
+  /** A Decimal: a string on the wire, like the other amounts on a line. */
+  stone_value?: Money | null;
 }
 
 export interface ReceiptTotals {
@@ -631,7 +638,11 @@ export type StaleRateErrorCode = "STALE_RATE_ACK_REQUIRED" | "STALE_RATE_ACK_MIS
 export interface StaleRateErrorDetail {
   code: StaleRateErrorCode;
   message: string;
-  rate_24k: number;
+  /**
+   * Display only. The acknowledgement a client sends back is `StaleRateAck`:
+   * the rate's timestamp, never the rate.
+   */
+  rate_24k: Money;
   rate_fetched_at: string;
   age_minutes: number;
 }

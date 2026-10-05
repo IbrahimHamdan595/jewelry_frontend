@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { api } from "@/lib/api-client";
+import { api, ApiError, staleRateError } from "@/lib/api-client";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -33,5 +33,41 @@ describe("api client", () => {
     fetchMock.mockResolvedValue(json({ detail: "Not authenticated" }, 401));
     await expect(api.get("/auth/me")).rejects.toThrow(/Unauthorized/);
     expect(sessionStorage.getItem("mz_user")).toBeNull();
+  });
+});
+
+// The stale-rate guard (backend app/core/gold_guard.py) answers a sale or a
+// buyback with 409 and a structured `detail`. NEX-54 changes one field of it:
+// rate_24k was a JSON number and becomes an exact decimal string.
+describe("stale-rate refusals — rate_24k as a number or a decimal string (NEX-54)", () => {
+  beforeEach(() => fetchMock.mockReset());
+
+  const detail = (code: string, rate_24k: number | string) => ({
+    code,
+    message: "Gold rate has not refreshed since 2026-09-08T10:00:00.123456+00:00 (95 minutes ago).",
+    rate_24k,
+    rate_fetched_at: "2026-09-08T10:00:00.123456+00:00",
+    age_minutes: 95,
+  });
+
+  it.each([
+    ["STALE_RATE_ACK_REQUIRED", 141.66],
+    ["STALE_RATE_ACK_REQUIRED", "141.66"],
+    ["STALE_RATE_ACK_MISMATCH", 141.66],
+    ["STALE_RATE_ACK_MISMATCH", "141.66"],
+  ])("%s with rate_24k=%j is recognised, message and timestamp intact", async (code, rate) => {
+    fetchMock.mockResolvedValue(json({ detail: detail(code, rate) }, 409));
+    const err = await api.post("/orders", {}).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    const stale = staleRateError(err);
+    expect(stale).toEqual(detail(code, rate));
+    // The cashier is shown the server's sentence, not "[object Object]".
+    expect((err as ApiError).message).toBe(detail(code, rate).message);
+  });
+
+  it("any other 409 is not a stale-rate refusal", async () => {
+    fetchMock.mockResolvedValue(json({ detail: "Insufficient stock for FN-21K-0001: requested 2, on hand 1" }, 409));
+    const err = await api.post("/orders", {}).catch((e: unknown) => e);
+    expect(staleRateError(err)).toBeNull();
   });
 });
