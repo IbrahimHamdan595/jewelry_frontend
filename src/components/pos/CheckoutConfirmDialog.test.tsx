@@ -86,9 +86,11 @@ describe("CheckoutConfirmDialog — i18n (NEX-64)", () => {
     expect(englishLeft(container, DATA)).not.toEqual([]);
   });
 
-  it("a server error is shown as sent", () => {
-    renderDialog("ar", { error: "Insufficient stock for FN-21K-0001" });
-    expect(screen.getByText("Insufficient stock for FN-21K-0001")).toBeInTheDocument();
+  it("a server refusal is shown as the server worded it", () => {
+    // POST /orders, 409: the stock check's own message.
+    const detail = "Insufficient stock for FN-21K-0001: requested 2, on hand 1";
+    renderDialog("ar", { error: detail });
+    expect(screen.getByText(detail)).toBeInTheDocument();
   });
 });
 
