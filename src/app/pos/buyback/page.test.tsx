@@ -19,10 +19,22 @@ vi.mock("swr", () => ({
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>() }));
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api, apiFetcher: vi.fn() }));
 
-const RATE = { rate_24k: 141.66, rate_22k: 130.1, rate_21k: 123.95, rate_18k: 106.25, source: "goldapi", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false };
+// Fixtures mirror the backend schemas (app/schemas): GoldRateOut, BuybackQuoteOut,
+// UnitTypeListOut. Decimals arrive as strings; `source` is "live" or "override";
+// karat is the enum value ("K21"), already prefixed.
+const RATE = { rate_24k: 141.66, rate_22k: 129.9, rate_21k: 123.95, rate_18k: 106.25, source: "live", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false };
 const QUOTE_KEY = "/buybacks/quote?karat=K21&weight_grams=5";
-const QUOTE = { rate_24k: "141.66", rate_source: "goldapi", rate_is_stale: true, karat: "K21", purity_rate: "123.95", weight_grams: "5", margin_mode: "USD_PER_GRAM", margin_value: "2", effective_rate_per_gram: "121.95", buy_price: "609.75" };
-const COINS = { items: [{ id: "c1", code: "LIRA-8", name_en: "Ottoman Lira", karat: "K22", weight_grams: "7.2", on_hand_qty: 4, min_stock_qty: null, photo_url: null }], total: 1, page: 1, page_size: 200 };
+// 141.66 × 0.875 = 123.95; − 2.0000/g = 121.95; × 5 g = 609.76
+const QUOTE = { rate_24k: "141.66", rate_source: "live", rate_is_stale: true, karat: "K21", purity_rate: "123.95", weight_grams: "5", margin_mode: "USD_PER_GRAM", margin_value: "2.0000", effective_rate_per_gram: "121.95", buy_price: "609.76" };
+const LIRA = {
+  id: "c1", code: "FN-COIN-22K-0001", name_en: "Ottoman Lira", name_ar: "ليرة عثمانية", karat: "K22", weight_grams: "7.200",
+  markup_per_gram: "0.0000", margin_mode: "USD", margin_value: "0.00", on_hand_qty: 4, min_stock_qty: null, photo_url: null,
+  is_active: true, created_at: "2026-08-01T09:00:00Z", updated_at: "2026-08-01T09:00:00Z",
+};
+const COINS = { items: [LIRA], total: 1, page: 1, page_size: 200 };
+const COIN_QUOTE_KEY = "/buybacks/quote?karat=K22&weight_grams=7.200";
+// 141.66 × 0.917 = 129.90; − 2 = 127.90; × 7.2 g = 920.90
+const COIN_QUOTE = { ...QUOTE, rate_is_stale: false, karat: "K22", purity_rate: "129.90", weight_grams: "7.200", effective_rate_per_gram: "127.90", buy_price: "920.90" };
 
 function renderPage(lang: "en" | "ar") {
   return render(
@@ -43,8 +55,11 @@ function uiStrings(root: HTMLElement): string[] {
 /** Latin words still on screen once data and the codes that stay Latin by design are set aside. */
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
-// Karat codes, plus what the fixtures above supply as data (a coin's code and name, the rate source).
-const DATA = /\b(K?\d\dK?|LIRA-8|Ottoman Lira|goldapi)\b/g;
+// Karat codes, plus what the fixtures above supply as data: the coin's code and its English name.
+const DATA = /\b(K?\d\dK?|FN-COIN-22K-0001|Ottoman Lira)\b/g;
+/** Physical-direction utilities that would not flip in RTL. */
+const physicalClasses = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
 
 const controlOf = (labelText: string) => (screen.getByText(labelText).closest("label") as HTMLLabelElement).control;
 
@@ -52,7 +67,7 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
   beforeEach(() => {
     nav.push.mockClear();
     api.post.mockReset();
-    swr.byKey = { "/gold-price": RATE, "/coins?is_active=true&page_size=200": COINS, "/ounces?is_active=true&page_size=200": { ...COINS, items: [] } };
+    swr.byKey = { "/gold-price": RATE, "/coins?is_active=true&page_size=200": COINS, [COIN_QUOTE_KEY]: COIN_QUOTE, "/ounces?is_active=true&page_size=200": { items: [], total: 0, page: 1, page_size: 200 } };
   });
 
   it("pure gold: every field is reachable by its label, and the label's control is the field", () => {
@@ -101,10 +116,15 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     expect(screen.getByRole("button", { name: b.record })).toBeInTheDocument();
     expect(englishLeft(container, DATA)).toEqual([]);
 
-    // Coin, formula then manual
+    // Coin, formula then manual. The option line is data: code · karat · weight · English name.
     fireEvent.click(screen.getByRole("button", { name: b.kinds.COIN }));
-    expect(screen.getByLabelText(b.coinType)).toBeInTheDocument();
     expect(screen.getByRole("option", { name: b.selectPlaceholder })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "FN-COIN-22K-0001 · K22 · 7.200g · Ottoman Lira" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(b.coinType), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText(ar.common.quantity), { target: { value: "2" } });
+    expect(screen.getByText(b.totalBuyPrice).nextElementSibling).toHaveTextContent("$1,841.80");
+    // The rate source ("live") is an API enum, translated; the amount keeps its order.
+    expect(screen.getByText(b.rate).nextElementSibling).toHaveTextContent(b.rateLine("141.66", ar.goldRate.sources.live, false));
     expect(englishLeft(container, DATA)).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: b.priceModeManual }));
     expect(screen.getByLabelText(b.manualPriceUsdTotal)).toBeInTheDocument();
@@ -121,6 +141,7 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     expect(screen.getByText("تلميعها")).toHaveClass("text-gold");
     expect(screen.getByText("صهرها")).toHaveClass("text-gold");
     expect(englishLeft(container, DATA)).toEqual([]);
+    expect(physicalClasses(container)).toEqual([]);
   });
 
   it("the same scan does find English on the English page", () => {
@@ -158,6 +179,17 @@ describe("POS buyback — what is sent is unchanged", () => {
     expect(api.post).toHaveBeenCalledWith("/buybacks", {
       seller_name: "Rima", seller_phone: "+96170000000", kind: "PURE_GOLD", karat: "K21", weight_grams: "5", notes: null, expected_rate: "141.66",
     });
+  });
+
+  it("the quote card shows the server's figures untouched", () => {
+    renderPage("en");
+    fireEvent.change(screen.getByLabelText(en.products.weightGrams), { target: { value: "5" } });
+    const row = (label: string) => screen.getByText(label).nextElementSibling?.textContent;
+    expect(row("Spot 24K")).toBe("$141.66/g");
+    expect(row("Purity rate")).toBe("$123.95/g (K21)");
+    expect(row("Buyback margin")).toBe("−$2.00/g");
+    expect(row("Effective")).toBe("$121.95/g");
+    expect(row("Pay seller")).toBe("$609.76");
   });
 
   it("a coin at a manual price posts the type, quantity and price", async () => {

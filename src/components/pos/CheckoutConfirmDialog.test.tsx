@@ -14,12 +14,13 @@ vi.mock("@/hooks/useGoldRate", () => ({
   useGoldRate: () => ({ rate: hook.rate, refresh: vi.fn(), error: undefined, isLoading: false, isValidating: false }),
 }));
 
+// GoldRateOut as GET /gold-price sends it; `source` is "live" or "override".
 const RATE: GoldRate = {
-  rate_24k: 141.66, rate_22k: 130.1, rate_21k: 123.95, rate_18k: 106.25,
-  source: "test", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false,
+  rate_24k: 141.66, rate_22k: 129.9, rate_21k: 123.95, rate_18k: 106.25,
+  source: "live", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false,
 };
 const items: CartItem[] = [
-  { cartId: "r1", kind: "PRODUCT", productId: "p1", code: "R-1", nameEn: "Ring", karat: "K21", weightGrams: 5, quantity: 2, goldRate24k: 141.66, unitPrice: 700, finalPrice: 1400 },
+  { cartId: "r1", kind: "PRODUCT", productId: "p1", code: "FN-21K-0001", nameEn: "Ring", karat: "K21", weightGrams: 5, quantity: 2, goldRate24k: 141.66, unitPrice: 700, finalPrice: 1400 },
 ];
 
 function renderDialog(lang: "en" | "ar", props: Partial<React.ComponentProps<typeof CheckoutConfirmDialog>> = {}) {
@@ -49,7 +50,7 @@ function uiStrings(root: HTMLElement): string[] {
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // Karat codes, plus the product name and code the fixture supplies as data.
-const DATA = /\b(K?\d\dK?|R-1|Ring)\b/g;
+const DATA = /\b(FN-21K-0001|K?\d\dK?|Ring)\b/g;
 
 describe("CheckoutConfirmDialog — i18n (NEX-64)", () => {
   beforeEach(() => { hook.rate = RATE; });
@@ -86,8 +87,8 @@ describe("CheckoutConfirmDialog — i18n (NEX-64)", () => {
   });
 
   it("a server error is shown as sent", () => {
-    renderDialog("ar", { error: "Insufficient stock for R-1" });
-    expect(screen.getByText("Insufficient stock for R-1")).toBeInTheDocument();
+    renderDialog("ar", { error: "Insufficient stock for FN-21K-0001" });
+    expect(screen.getByText("Insufficient stock for FN-21K-0001")).toBeInTheDocument();
   });
 });
 

@@ -7,12 +7,14 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
+// Cart lines as the till builds them from GET /products/lookup/{code} and the
+// coin price endpoint: codes in the backend's FN-… format, karat as the enum value.
 const ring: CartItem = {
-  cartId: "r1", kind: "PRODUCT", productId: "p1", code: "R-1", nameEn: "Ring", karat: "K21",
+  cartId: "r1", kind: "PRODUCT", productId: "p1", code: "FN-21K-0001", nameEn: "Ring", karat: "K21",
   weightGrams: 5, quantity: 2, goldRate24k: 141.66, unitPrice: 700, finalPrice: 1400, available: 2,
 };
 const coin: CartItem = {
-  cartId: "c1", kind: "COIN", coinTypeId: "ct1", code: "LIRA-8", nameEn: "Lira", karat: "K21",
+  cartId: "c1", kind: "COIN", coinTypeId: "ct1", code: "FN-COIN-21K-0001", nameEn: "Lira", karat: "K21",
   weightGrams: 8, quantity: 1, goldRate24k: 141.66, unitPrice: 1000, finalPrice: 1000,
 };
 
@@ -45,7 +47,7 @@ function uiStrings(root: HTMLElement): string[] {
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // Karat codes, plus the product names and codes the fixtures supply as data.
-const DATA = /\b(K?\d\dK?|R-1|LIRA-8|Ring|Lira)\b/g;
+const DATA = /\b(FN-21K-0001|FN-COIN-21K-0001|K?\d\dK?|Ring|Lira)\b/g;
 
 describe("CheckoutPanel — labels and i18n (NEX-64)", () => {
   beforeEach(() => sessionStorage.clear());
@@ -103,6 +105,11 @@ describe("CheckoutPanel — labels and i18n (NEX-64)", () => {
     }
     expect(screen.getByRole("button", { name: c.increaseQty("Ring") })).toHaveAttribute("title", c.onlyInStock(2));
 
+    // The code / weight / rate run is isolated left-to-right; the per-piece note beside it is Arabic.
+    const runs = Array.from(container.querySelectorAll('bdi[dir="ltr"]')).map((el) => el.textContent);
+    expect(runs).toEqual(["FN-21K-0001 · 5g @ $141.66/g", "FN-COIN-21K-0001 · 8g @ $141.66/g"]);
+    expect(screen.getByText(`· ${c.perEach("$700.00")}`)).toBeInTheDocument();
+
     expect(englishLeft(container, DATA)).toEqual([]);
   });
 
@@ -113,6 +120,9 @@ describe("CheckoutPanel — labels and i18n (NEX-64)", () => {
     expect(screen.getByText("Current Sale")).toBeInTheDocument();
     expect(screen.getByText("2 items")).toBeInTheDocument();
     expect(screen.getByText("COIN")).toBeInTheDocument();
+    expect(screen.getByText("· $700.00/ea")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Ring" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Increase quantity of Lira" })).toBeInTheDocument();
   });
 });
 

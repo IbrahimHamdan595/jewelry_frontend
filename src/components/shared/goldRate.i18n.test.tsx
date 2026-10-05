@@ -15,9 +15,10 @@ const hook = vi.hoisted(() => ({ value: {} as HookValue }));
 vi.mock("@/hooks/useGoldRate", () => ({ useGoldRate: () => hook.value }));
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api: { post: vi.fn(() => Promise.resolve()) } }));
 
+// GoldRateOut as GET /gold-price sends it; `source` is "live" or "override".
 const rate: GoldRate = {
-  rate_24k: 141.66, rate_22k: 130.1, rate_21k: 123.95, rate_18k: 106.25,
-  source: "test", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false,
+  rate_24k: 141.66, rate_22k: 129.9, rate_21k: 123.95, rate_18k: 106.25,
+  source: "live", fetched_at: "2026-09-08T10:00:00Z", is_stale: false, market_closed: false,
 };
 const setRate = (partial: Partial<GoldRate>, error?: Error) => {
   hook.value = { rate: { ...rate, ...partial }, error, isLoading: false, isValidating: false, refresh: vi.fn(() => Promise.resolve()) };

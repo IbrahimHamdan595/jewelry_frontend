@@ -11,9 +11,21 @@ const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn() }));
 
+// OrderOut as GET /orders/{id} sends it (app/schemas/order.py): decimals are strings,
+// the number is ORD-YYYYMMDD-NNN, karat is the enum value.
+const line = {
+  item_kind: "PRODUCT", product_id: "p1", coin_type_id: null, ounce_type_id: null, quantity: 1, product_code: "FN-21K-0001",
+  product_name: "Gold Ring", karat: "K21", weight_grams: "5.250", gold_rate_at_sale: "141.66", margin_percent: "15.00",
+  making_charge: "25.00", final_price: "668.47", stone_value_at_sale: null, stone_cost_at_sale: null,
+  refunded_qty: 0, refunded_amount: "0", refunded_at: null,
+};
 const order = {
-  id: "o1", order_number: "ORD-2026-0042", total_usd: 1484, total_lbp: 132818000, payment_method: "CARD",
-  customer_name: "Rima", items: [{ id: "i1" }, { id: "i2" }], cashier: { id: "u1", name: "Maya" },
+  id: "o1", order_number: "ORD-20260908-001", status: "COMPLETED", payment_method: "CARD", customer_name: "Rima",
+  cashier_id: "u1", cashier: { id: "u1", name: "Maya", email: "maya@fawazelnamel.com" },
+  subtotal: "1336.94", vat_percent: "11.00", vat_amount: "147.06", discount_percent: "0.00", discount_amount: "0.00",
+  total_usd: "1484.00", total_lbp: "132818000.00", lbp_exchange_rate: "89500.00",
+  voided_at: null, voided_by: null, void_reason: null, created_at: "2026-09-08T10:00:00Z",
+  items: [{ id: "i1", ...line }, { id: "i2", ...line }],
 };
 
 const renderPage = (lang: "en" | "ar") => render(<LanguageProvider initialLang={lang}><ConfirmationPage /></LanguageProvider>);
@@ -30,7 +42,7 @@ function uiStrings(root: HTMLElement): string[] {
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // The order number and the two people's names are data.
-const DATA = /ORD-2026-0042|Rima|Maya/g;
+const DATA = /ORD-20260908-001|Rima|Maya/g;
 
 describe("sale-complete screen (NEX-64)", () => {
   beforeEach(() => { swr.data = order; });
@@ -51,9 +63,20 @@ describe("sale-complete screen (NEX-64)", () => {
 
   it("the order number keeps its bidi isolation and the amounts are untouched", () => {
     const { container } = renderPage("ar");
-    expect(container.querySelector('bdi[dir="ltr"]')).toHaveTextContent("ORD-2026-0042");
+    expect(container.querySelector('bdi[dir="ltr"]')).toHaveTextContent("ORD-20260908-001");
     expect(screen.getByText("$1,484.00")).toBeInTheDocument();
     expect(screen.getByText("ل.ل 132,818,000")).toBeInTheDocument();
+  });
+
+  it("a walk-in sale has no thank-you line, and every payment method the API knows is translated", () => {
+    for (const method of ["CASH", "MIXED", "CREDIT"] as const) {
+      swr.data = { ...order, customer_name: null, payment_method: method };
+      const view = renderPage("ar");
+      expect(screen.getByText(ar.checkout.payment).nextElementSibling).toHaveTextContent(ar.checkout.paymentMethods[method]);
+      expect(view.container).not.toHaveTextContent("شكراً");
+      expect(englishLeft(view.container, DATA)).toEqual([]);
+      view.unmount();
+    }
   });
 
   it("keeps the English wording it had", () => {
