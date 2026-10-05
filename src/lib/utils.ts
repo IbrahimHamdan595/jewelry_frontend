@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { Money } from "@/types/api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -51,11 +52,16 @@ function round(n: number, places = 2) {
 export const MISSING_AMOUNT = "—";
 
 /**
- * The backend serialises money as strings; the UI also passes numbers. Anything
- * that is not a finite number is a bug upstream, and showing "$NaN" or a fake
- * "$0.00" hides it — so it renders as a dash instead.
+ * The one conversion at the API boundary (NEX-54). The backend sends money as
+ * exact decimal strings ("1234.56") and used to send JSON numbers; both read
+ * as the same number here. Anything else — missing, empty, unparseable — is
+ * `null`, never NaN and never 0: showing "$NaN" or a fake "$0.00" hides a bug
+ * upstream, and pricing something at 0 gives it away.
+ *
+ * Use it once, where a value enters arithmetic or long-lived state (the cart,
+ * a chart series). For display, the formatters below already go through it.
  */
-function toFiniteNumber(n: unknown): number | null {
+export function toFiniteNumber(n: unknown): number | null {
   if (typeof n === "number") return Number.isFinite(n) ? n : null;
   if (typeof n === "string" && n.trim() !== "") {
     const v = Number(n);
@@ -69,17 +75,33 @@ function toFiniteNumber(n: unknown): number | null {
  * $20,572.483 through). Intl rounds half away from zero (roundingMode
  * "halfExpand"), which matches the receipts.
  */
-export function formatUSD(n: number | string) {
+export function formatUSD(n: Money | null | undefined) {
   const v = toFiniteNumber(n);
   if (v === null) return MISSING_AMOUNT;
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** Lira has no useful sub-unit: whole numbers only. */
-export function formatLBP(n: number | string) {
+export function formatLBP(n: Money | null | undefined) {
   const v = toFiniteNumber(n);
   if (v === null) return MISSING_AMOUNT;
   return `ل.ل ${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
+
+/**
+ * A bare figure at a fixed number of decimals, no currency sign and no
+ * thousands separators — "141.66". What `n.toFixed(places)` printed, for a
+ * value that may arrive as a string and may be missing.
+ */
+export function formatDecimal(n: Money | null | undefined, places = 2) {
+  const v = toFiniteNumber(n);
+  return v === null ? MISSING_AMOUNT : v.toFixed(places);
+}
+
+/** A per-gram gold rate: "$141.66". Ungrouped, as the rate cards always showed it. */
+export function formatRate(n: Money | null | undefined) {
+  const v = toFiniteNumber(n);
+  return v === null ? MISSING_AMOUNT : `$${v.toFixed(2)}`;
 }
 
 // ── Dates ─────────────────────────────────────────────────────────────────────

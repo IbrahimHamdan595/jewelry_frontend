@@ -1,3 +1,12 @@
+/**
+ * A monetary amount as the API sends it (NEX-54): an exact decimal string
+ * ("1234.56") from a backend that serialises Decimals, a JSON number from one
+ * that still sends floats. Never do arithmetic or call `.toFixed` on it —
+ * format it with `formatUSD` / `formatRate`, or convert it once with
+ * `toFiniteNumber` (src/lib/utils.ts) where it enters a calculation.
+ */
+export type Money = string | number;
+
 export type Karat = "K18" | "K21" | "K22" | "K24";
 export type LotSource = "BUYBACK" | "MELT" | "SUPPLIER" | "SEED" | "ADJUSTMENT";
 export type AdjustmentTarget = "LOT" | "PRODUCT" | "COIN_STOCK" | "OUNCE_STOCK";

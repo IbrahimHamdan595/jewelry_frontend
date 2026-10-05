@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatUSD, formatLBP } from "@/lib/utils";
+import { formatUSD, formatLBP, formatRate, formatDecimal, toFiniteNumber, MISSING_AMOUNT } from "@/lib/utils";
 
 describe("formatUSD", () => {
   it("clamps to two decimals — the orders screen showed $20,572.483", () => {
@@ -38,5 +38,50 @@ describe("formatLBP", () => {
   it("guards the conversion the same way", () => {
     expect(formatLBP("abc")).toBe("—");
     expect(formatLBP(undefined as never)).toBe("—");
+  });
+});
+
+// NEX-54: the backend is moving money from JSON numbers to exact decimal
+// strings. Everything that reads an amount goes through these, so the screen
+// is the same whichever shape arrives.
+describe("toFiniteNumber — the one conversion at the API boundary", () => {
+  it("reads a number and the decimal string for it as the same value", () => {
+    expect(toFiniteNumber(141.66)).toBe(141.66);
+    expect(toFiniteNumber("141.66")).toBe(141.66);
+    expect(toFiniteNumber("0.00")).toBe(0);
+    expect(toFiniteNumber("-12.50")).toBe(-12.5);
+  });
+
+  it("answers null — never NaN, never 0 — for anything that is not an amount", () => {
+    for (const bad of ["abc", "", "  ", "1,234.50", undefined, null, NaN, Infinity, {}, [], true]) {
+      expect(toFiniteNumber(bad), String(bad)).toBeNull();
+    }
+  });
+});
+
+describe("formatRate / formatDecimal — per-gram rates", () => {
+  it("prints a number and its string form identically, two decimals, no grouping", () => {
+    expect(formatRate(141.66)).toBe("$141.66");
+    expect(formatRate("141.66")).toBe("$141.66");
+    expect(formatRate(141.6)).toBe("$141.60");
+    expect(formatRate("141.60")).toBe("$141.60");
+    expect(formatRate(1234.5)).toBe("$1234.50");
+    expect(formatDecimal(123.95)).toBe("123.95");
+    expect(formatDecimal("123.95")).toBe("123.95");
+    expect(formatDecimal("7.2", 3)).toBe("7.200");
+  });
+
+  it("shows the missing-amount dash instead of NaN", () => {
+    for (const bad of ["abc", "", undefined, null, NaN]) {
+      expect(formatRate(bad as never), String(bad)).toBe(MISSING_AMOUNT);
+      expect(formatDecimal(bad as never), String(bad)).toBe(MISSING_AMOUNT);
+    }
+  });
+});
+
+describe("formatUSD with nothing to show", () => {
+  it("takes null and undefined without a cast", () => {
+    expect(formatUSD(null)).toBe(MISSING_AMOUNT);
+    expect(formatUSD(undefined)).toBe(MISSING_AMOUNT);
   });
 });
