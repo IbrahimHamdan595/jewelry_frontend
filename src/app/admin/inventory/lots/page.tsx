@@ -5,7 +5,10 @@ import { Plus, Sliders, History } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorRow, ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
+import { Ltr } from "@/components/shared/Ltr";
+import { useLang } from "@/context/LanguageContext";
 import type {
   Karat,
   Lot,
@@ -19,6 +22,9 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 const REASONS: AdjustmentReason[] = ["LOSS", "THEFT", "GIFT", "SAMPLE", "CORRECTION"];
 
 export default function LotsPage() {
+  const { t } = useLang();
+  const l = t.lots;
+  const { formatDate } = useFormat();
   const [karatFilter, setKaratFilter] = useState<string>("");
   const [includeDepleted, setIncludeDepleted] = useState(false);
 
@@ -57,17 +63,21 @@ export default function LotsPage() {
               className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm"
             >
               <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">
-                {k} pool
+                {l.poolTitle(k)}
               </div>
               <div className="text-2xl font-semibold text-gray-800">
-                {row ? Number(row.total_remaining_grams).toFixed(3) : "0.000"}
-                <span className="text-sm text-gray-400 ml-1">g</span>
+                {/* A number and its unit read left-to-right in both languages:
+                    isolated, so the gap stays between them. */}
+                <Ltr>
+                  {row ? Number(row.total_remaining_grams).toFixed(3) : "0.000"}
+                  <span className="text-sm text-gray-400 ms-1">g</span>
+                </Ltr>
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {row ? `${row.lot_count} lot${row.lot_count !== 1 ? "s" : ""}` : "0 lots"}
+                {l.lotCount(row ? row.lot_count : 0)}
                 {row && Number(row.cost_basis_remaining_usd) > 0 && (
-                  <span className="ml-2 text-gray-400">
-                    · {formatUSD(row.cost_basis_remaining_usd)}
+                  <span className="ms-2 text-gray-400">
+                    · <Ltr>{formatUSD(row.cost_basis_remaining_usd)}</Ltr>
                   </span>
                 )}
               </div>
@@ -82,9 +92,10 @@ export default function LotsPage() {
           <select
             value={karatFilter}
             onChange={(e) => setKaratFilter(e.target.value)}
+            aria-label={l.filterByKarat}
             className="border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
           >
-            <option value="">All karats</option>
+            <option value="">{l.allKarats}</option>
             {KARATS.map((k) => (
               <option key={k} value={k}>
                 {k}
@@ -98,15 +109,15 @@ export default function LotsPage() {
               onChange={(e) => setIncludeDepleted(e.target.checked)}
               className="rounded border-gray-300"
             />
-            Include depleted
+            {l.includeDepleted}
           </label>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          New Lot
+          <Plus className="w-4 h-4" aria-hidden />
+          {l.newLot}
         </button>
       </div>
 
@@ -125,25 +136,25 @@ export default function LotsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Karat
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {l.karat}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Remaining / Original
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {l.remainingOriginal}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Source
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {l.source}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Cost basis
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {l.costBasis}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Acquired
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {l.acquired}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Status
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {t.common.status}
               </th>
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3" aria-label={t.common.actions} />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -154,7 +165,7 @@ export default function LotsPage() {
             ) : !data.items.length ? (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-gray-400 text-sm">
-                  No lots {karatFilter ? `in ${karatFilter}` : "yet"}
+                  {l.empty(karatFilter)}
                 </td>
               </tr>
             ) : (
@@ -173,12 +184,12 @@ export default function LotsPage() {
                       {" "}/ {Number(lot.weight_grams).toFixed(3)}g
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{lot.source}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{l.sources[lot.source]}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">
                     {formatUSD(Number(lot.cost_basis_usd))}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">
-                    {new Date(lot.acquired_at).toLocaleDateString()}
+                    {formatDate(lot.acquired_at)}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -188,7 +199,7 @@ export default function LotsPage() {
                           : "bg-green-50 text-green-700"
                       }`}
                     >
-                      {lot.is_depleted ? "Depleted" : "Active"}
+                      {lot.is_depleted ? l.depleted : l.active}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -196,9 +207,10 @@ export default function LotsPage() {
                       onClick={() => setAdjustLot(lot)}
                       disabled={lot.is_depleted}
                       className="text-gray-400 hover:text-gold disabled:opacity-40 transition-colors"
-                      title="Manual adjustment"
+                      title={l.manualAdjustment}
+                      aria-label={l.adjustLot(lot.karat, lot.id.slice(0, 8))}
                     >
-                      <Sliders className="w-4 h-4" />
+                      <Sliders className="w-4 h-4" aria-hidden />
                     </button>
                   </td>
                 </tr>
@@ -231,6 +243,8 @@ function NewLotForm({
   onCancel: () => void;
   onCreated: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const l = t.lots;
   const [karat, setKarat] = useState<Karat>("K21");
   const [weight, setWeight] = useState("");
   const [source, setSource] = useState<LotSource>("SEED");
@@ -252,7 +266,7 @@ function NewLotForm({
       });
       await onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create lot");
+      setError(err instanceof Error ? err.message : l.createFailed);
     } finally {
       setSaving(false);
     }
@@ -260,12 +274,14 @@ function NewLotForm({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
-      <div className="text-sm font-medium text-gray-700">New Pure-Gold Lot</div>
+      <div className="text-sm font-medium text-gray-700">{l.newLotTitle}</div>
+      {/* Every input sits inside its <label> (NEX-64): a click focuses the field
+          and a screen reader names it, with no ids to keep in sync. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Karat
-          </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {l.karat}
+          </span>
           <select
             value={karat}
             onChange={(e) => setKarat(e.target.value as Karat)}
@@ -277,11 +293,11 @@ function NewLotForm({
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Weight (g)
-          </label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {l.weightG}
+          </span>
           <input
             type="number"
             step="0.001"
@@ -289,24 +305,24 @@ function NewLotForm({
             onChange={(e) => setWeight(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Source
-          </label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {l.source}
+          </span>
           <select
             value={source}
             onChange={(e) => setSource(e.target.value as LotSource)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           >
-            <option value="SEED">SEED</option>
-            <option value="ADJUSTMENT">ADJUSTMENT</option>
+            <option value="SEED">{l.sources.SEED}</option>
+            <option value="ADJUSTMENT">{l.sources.ADJUSTMENT}</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Cost basis (USD)
-          </label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {l.costBasisUsd}
+          </span>
           <input
             type="number"
             step="0.01"
@@ -314,38 +330,35 @@ function NewLotForm({
             onChange={(e) => setCostBasis(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-          Notes (optional)
         </label>
+      </div>
+      <label className="block">
+        <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+          {l.notesOptional}
+        </span>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
-      {error && <div className="text-xs text-red-600">{error}</div>}
+      </label>
+      {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
           disabled={saving || !weight}
           className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
         >
-          {saving ? "Saving…" : "Create Lot"}
+          {saving ? l.saving : l.createLot}
         </button>
         <button
           onClick={onCancel}
           className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
-      <p className="text-xs text-gray-400">
-        Lots from buybacks, supplier purchases, and melts are created automatically by those flows — only SEED or
-        ADJUSTMENT origin allowed here.
-      </p>
+      <p className="text-xs text-gray-400">{l.autoLotsHint}</p>
     </div>
   );
 }
@@ -361,6 +374,8 @@ function AdjustLotDialog({
   onClose: () => void;
   onAdjusted: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const l = t.lots;
   const [delta, setDelta] = useState("");
   const [reason, setReason] = useState<AdjustmentReason>("CORRECTION");
   const [notes, setNotes] = useState("");
@@ -380,7 +395,7 @@ function AdjustLotDialog({
       });
       await onAdjusted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Adjustment failed");
+      setError(err instanceof Error ? err.message : l.adjustFailed);
     } finally {
       setSaving(false);
     }
@@ -390,30 +405,35 @@ function AdjustLotDialog({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-5 space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-800">Adjust lot</div>
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">
-            {lot.karat} · remaining {Number(lot.weight_remaining_grams).toFixed(3)}g
+          <div className="text-sm font-medium text-gray-800">{l.adjustTitle}</div>
+          {/* Monospace in LTR only: .font-mono is laid out left-to-right in RTL
+              (globals.css), which would reverse a translated phrase. The karat
+              and the weight are the machine values, and they keep it. */}
+          <div className="text-xs text-gray-500 mt-0.5 ltr:font-mono">
+            <Ltr className="font-mono">{lot.karat}</Ltr> · {l.remaining} <Ltr className="font-mono">{Number(lot.weight_remaining_grams).toFixed(3)}g</Ltr>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-              Delta (g)
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+                {l.deltaG}
+              </span>
+              <input
+                type="number"
+                step="0.001"
+                placeholder={l.deltaPlaceholder}
+                value={delta}
+                onChange={(e) => setDelta(e.target.value)}
+                className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+              />
             </label>
-            <input
-              type="number"
-              step="0.001"
-              placeholder="e.g. -2.500"
-              value={delta}
-              onChange={(e) => setDelta(e.target.value)}
-              className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Negative reduces, positive adds.</p>
+            <p className="text-[10px] text-gray-400 mt-1">{l.deltaHint}</p>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-              Reason
-            </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+              {l.reason}
+            </span>
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value as AdjustmentReason)}
@@ -421,37 +441,37 @@ function AdjustLotDialog({
             >
               {REASONS.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {l.reasons[r]}
                 </option>
               ))}
             </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Notes (required)
           </label>
+        </div>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {l.notesRequired}
+          </span>
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-            placeholder="What happened?"
+            placeholder={l.notesPlaceholder}
           />
-        </div>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        </label>
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
         <div className="flex justify-end gap-2 pt-1">
           <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !delta || !notes}
             className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
           >
-            {saving ? "Saving…" : "Apply"}
+            {saving ? l.saving : l.apply}
           </button>
         </div>
       </div>
