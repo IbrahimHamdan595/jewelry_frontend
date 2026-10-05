@@ -9,6 +9,7 @@
  */
 import type { PaymentMethod } from "@/types/api";
 import type { CartItem } from "@/hooks/useCart";
+import { toFiniteNumber } from "@/lib/utils";
 
 export const CART_STORAGE_KEY = "mz_cart";
 
@@ -18,6 +19,21 @@ export interface StoredCart {
   discountPercent: number;
 }
 
+/**
+ * Storage is another way into the cart, so the same rule applies as at the
+ * lookup (NEX-54): the figures the cart does arithmetic on are numbers. A tab
+ * still running the previous build can have stored a rate as the decimal
+ * string the API sent; that reads back as a number here. A line whose price
+ * or rate cannot be read at all is `null`.
+ */
+function readStoredLine(line: CartItem): CartItem | null {
+  const goldRate24k = toFiniteNumber(line?.goldRate24k);
+  const unitPrice = toFiniteNumber(line?.unitPrice);
+  const finalPrice = toFiniteNumber(line?.finalPrice);
+  if (goldRate24k === null || unitPrice === null || finalPrice === null) return null;
+  return { ...line, goldRate24k, unitPrice, finalPrice };
+}
+
 export function readStoredCart(): StoredCart | null {
   if (typeof window === "undefined") return null;
   try {
@@ -25,8 +41,16 @@ export function readStoredCart(): StoredCart | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredCart>;
     if (!Array.isArray(parsed.items)) return null;
+    const items = parsed.items.map(readStoredLine);
+    if (items.some((line) => line === null)) {
+      // One line that cannot be priced makes the whole cart suspect. An empty
+      // till is obvious and gets rescanned; a cart quietly missing a line, or
+      // carrying one at NaN, is not.
+      clearStoredCart();
+      return null;
+    }
     return {
-      items: parsed.items,
+      items: items as CartItem[],
       paymentMethod: parsed.paymentMethod ?? "CASH",
       discountPercent: typeof parsed.discountPercent === "number" ? parsed.discountPercent : 0,
     };

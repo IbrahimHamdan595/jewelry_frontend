@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
 import { apiFetcher, api, uploadFile } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatRate, formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
@@ -695,7 +695,7 @@ function LivePriceDialog({
               <div className="text-xs text-gray-500 mt-1">{u.perUnit} · <Ltr>{row.karat}</Ltr></div>
             </div>
             <div className="space-y-1.5 text-xs text-gray-600 border-t border-gray-100 pt-3">
-              <Row label={u.spot24k} value={`$${data.gold_rate_24k.toFixed(2)}/g`} />
+              <Row label={u.spot24k} value={`${formatRate(data.gold_rate_24k)}/g`} />
               <Row
                 label={u.effectiveRate}
                 value={`$${Number(data.effective_rate).toFixed(2)}/g`}

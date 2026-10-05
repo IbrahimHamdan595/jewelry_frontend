@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { useFormat } from "@/hooks/useFormat";
 import { useLang } from "@/context/LanguageContext";
+import { formatRate, toFiniteNumber } from "@/lib/utils";
 import { Ltr } from "@/components/shared/Ltr";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { TradingViewChart } from "@/components/admin/TradingViewChart";
@@ -52,6 +53,21 @@ export default function GoldPricePage() {
     ? new URLSearchParams(calQs).toString()
     : `range=${range}`;
   const { data: history, error: historyError, isValidating: historyValidating, mutate: mutateHistory } = useSWR<GoldRateHistoryPoint[]>(`/gold-price/history?${historyQuery}`, apiFetcher, { refreshInterval: 30000 });
+  // The rates arrive as decimal strings (NEX-54). recharts scales an axis by
+  // comparing the values it is given, and "99.80" sorts after "106.25" as text,
+  // so the series is converted to numbers once, here. A point that cannot be
+  // read becomes a gap (null), not a zero.
+  const series = useMemo(
+    () =>
+      history?.map((p) => ({
+        ...p,
+        rate_24k: toFiniteNumber(p.rate_24k),
+        rate_22k: toFiniteNumber(p.rate_22k),
+        rate_21k: toFiniteNumber(p.rate_21k),
+        rate_18k: toFiniteNumber(p.rate_18k),
+      })),
+    [history],
+  );
 
   async function handleSetOverride() {
     setOverrideError(null);
@@ -109,7 +125,7 @@ export default function GoldPricePage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="text-white/40 text-xs uppercase tracking-widest mb-2">{gp.heroLabel}</div>
-              <div className="font-serif text-kpi text-gold leading-none">{`$${rate.rate_24k.toFixed(2)}`}</div>
+              <div className="font-serif text-kpi text-gold leading-none">{formatRate(rate.rate_24k)}</div>
               <div className="flex items-center gap-2 mt-2">
                 <span className={`w-2 h-2 rounded-full ${rate.is_stale ? "bg-yellow-400" : "bg-green-400"}`} />
                 <span className="text-white/40 text-xs uppercase tracking-widest">{rate.is_stale ? t.goldRate.stale : t.goldRate.live}</span>
@@ -120,15 +136,15 @@ export default function GoldPricePage() {
             <div className="text-end space-y-3">
               <div>
                 <div className="text-white/40 text-xs uppercase tracking-widest">22K</div>
-                <div className="text-white text-xl font-semibold">{`$${rate.rate_22k.toFixed(2)}`}</div>
+                <div className="text-white text-xl font-semibold">{formatRate(rate.rate_22k)}</div>
               </div>
               <div>
                 <div className="text-white/40 text-xs uppercase tracking-widest">21K</div>
-                <div className="text-white text-xl font-semibold">{`$${rate.rate_21k.toFixed(2)}`}</div>
+                <div className="text-white text-xl font-semibold">{formatRate(rate.rate_21k)}</div>
               </div>
               <div>
                 <div className="text-white/40 text-xs uppercase tracking-widest">18K</div>
-                <div className="text-white text-xl font-semibold">{`$${rate.rate_18k.toFixed(2)}`}</div>
+                <div className="text-white text-xl font-semibold">{formatRate(rate.rate_18k)}</div>
               </div>
             </div>
           </div>
@@ -177,15 +193,15 @@ export default function GoldPricePage() {
         </div>
         {historyError && !history ? (
           <ErrorState className="h-[200px]" error={historyError} onRetry={() => mutateHistory()} retrying={historyValidating} />
-        ) : !history ? (
+        ) : !series ? (
           <Skeleton className="h-[200px]" />
-        ) : history.length === 0 ? (
+        ) : series.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-sm text-gray-400">
             {gp.noHistory}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={history}>
+            <AreaChart data={series}>
               <defs>
                 <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
@@ -193,7 +209,7 @@ export default function GoldPricePage() {
                 </linearGradient>
               </defs>
               <XAxis dataKey="fetched_at" tick={{ fontSize: 10 }} tickFormatter={(v) => formatDateTime(v)} />
-              <YAxis domain={["auto", "auto"]} tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v.toFixed(0)}`} />
+              <YAxis domain={["auto", "auto"]} tick={{ fontSize: 10 }} tickFormatter={(v) => `$${Number(v).toFixed(0)}`} />
               <Tooltip formatter={(v) => [`$${Number(v).toFixed(2)}`, gp.tooltipRate(karat.toUpperCase())]} labelFormatter={(v) => formatDateTime(v)} />
               <Area type="monotone" dataKey={`rate_${karat}`} stroke="#C9A84C" strokeWidth={2} fill="url(#goldGrad)" />
             </AreaChart>
@@ -206,7 +222,7 @@ export default function GoldPricePage() {
         <div className="text-sm font-semibold text-gray-700">{gp.overrideTitle}</div>
         {rate?.source === "override" ? (
           <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded p-3">
-            <span className="text-sm text-yellow-800">{gp.overrideActive} <strong><Ltr>{`$${rate.rate_24k.toFixed(2)}`}{t.products.perGram}</Ltr></strong></span>
+            <span className="text-sm text-yellow-800">{gp.overrideActive} <strong><Ltr>{formatRate(rate.rate_24k)}{t.products.perGram}</Ltr></strong></span>
             <button onClick={handleClearOverride} className="text-xs text-red-600 underline hover:no-underline">{gp.clear}</button>
           </div>
         ) : (

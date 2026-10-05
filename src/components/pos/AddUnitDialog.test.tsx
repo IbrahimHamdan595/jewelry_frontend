@@ -129,6 +129,56 @@ describe("AddUnitDialog — labels and i18n (NEX-64)", () => {
   });
 });
 
+// NEX-54: GET /coins/{id}/price is moving gold_rate_24k from a JSON number to
+// an exact decimal string. What lands in the cart must not change.
+describe("AddUnitDialog — the unit price's rate as a decimal string or a number (NEX-54)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    swr.byKey = { [TYPES]: { items: [lira], total: 1, page: 1, page_size: 200 }, "/coins/c1/price": price };
+  });
+
+  function addThree(payload: unknown) {
+    sessionStorage.clear();
+    swr.byKey["/coins/c1/price"] = payload;
+    const view = renderDialog("en");
+    fireEvent.click(screen.getByRole("button", { name: /Ottoman Lira/ }));
+    fireEvent.change(screen.getByLabelText(en.pos.qty), { target: { value: "3" } });
+    const html = view.container.innerHTML;
+    fireEvent.click(screen.getByRole("button", { name: en.pos.addToCart }));
+    const [line] = JSON.parse(sessionStorage.getItem(CART_STORAGE_KEY) ?? '{"items":[]}').items;
+    view.unmount();
+    return { html, line: line ? { ...line, cartId: "" } : undefined, added: view.onAdded.mock.calls.length };
+  }
+
+  it("adds the same line, priced the same, for both shapes", () => {
+    const numeric = addThree(price);
+    const exact = addThree({ ...price, gold_rate_24k: "141.66" });
+    expect(exact.html).toBe(numeric.html);
+    expect(exact.line).toEqual(numeric.line);
+    expect(exact.added).toBe(1);
+    // Numbers in the cart whatever the API sent: 3 × 1000.00
+    expect(exact.line).toMatchObject({ kind: "COIN", coinTypeId: "c1", quantity: 3, goldRate24k: 141.66, unitPrice: 1000, finalPrice: 3000 });
+  });
+
+  it.each([
+    ["no price", { ...price, final_price: null }],
+    ["an unreadable price", { ...price, final_price: "n/a" }],
+    ["no rate", { ...price, gold_rate_24k: null }],
+    ["an unreadable rate", { ...price, gold_rate_24k: "" }],
+  ])("a quote with %s cannot be added: the button stays disabled and nothing is priced at zero", (_name, payload) => {
+    swr.byKey["/coins/c1/price"] = payload;
+    const { container, onAdded } = renderDialog("en");
+    fireEvent.click(screen.getByRole("button", { name: /Ottoman Lira/ }));
+    const add = screen.getByRole("button", { name: en.pos.addToCart });
+    expect(add).toBeDisabled();
+    fireEvent.click(add);
+    expect(onAdded).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(CART_STORAGE_KEY)).toBeNull();
+    expect(container).not.toHaveTextContent("NaN");
+    expect(container).not.toHaveTextContent("$0.00");
+  });
+});
+
 describe("ScanPanel — i18n (NEX-64)", () => {
   it("Arabic: ready state, manual entry and its button — no English left", () => {
     const onScan = vi.fn(() => Promise.resolve());

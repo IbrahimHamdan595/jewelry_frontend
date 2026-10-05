@@ -1012,7 +1012,7 @@ export interface Translations {
     discountPct: (pct: number) => string;
     lbpEquivalent: string;
     paymentMethod: string;
-    payment: { CASH: string; CARD: string; MIXED: string };
+    payment: { CASH: string; CARD: string; MIXED: string; CREDIT: string };
     refundTotalsNote: string;
     refundItem: string;
     refundQty: (max: number) => string;
@@ -2249,7 +2249,7 @@ const en: Translations = {
     discountPct: (pct) => `Discount ${pct}%`,
     lbpEquivalent: "LBP Equivalent",
     paymentMethod: "Payment Method",
-    payment: { CASH: "CASH", CARD: "CARD", MIXED: "MIXED" },
+    payment: { CASH: "CASH", CARD: "CARD", MIXED: "MIXED", CREDIT: "CREDIT" },
     refundTotalsNote: "Totals reflect remaining (un-refunded) items. VAT recalculated on the new subtotal.",
     refundItem: "Refund item",
     refundQty: (max) => `Quantity to refund (max ${max})`,

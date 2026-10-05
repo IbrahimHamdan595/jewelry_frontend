@@ -1,3 +1,12 @@
+/**
+ * A monetary amount as the API sends it (NEX-54): an exact decimal string
+ * ("1234.56") from a backend that serialises Decimals, a JSON number from one
+ * that still sends floats. Never do arithmetic or call `.toFixed` on it —
+ * format it with `formatUSD` / `formatRate`, or convert it once with
+ * `toFiniteNumber` (src/lib/utils.ts) where it enters a calculation.
+ */
+export type Money = string | number;
+
 export type Karat = "K18" | "K21" | "K22" | "K24";
 export type LotSource = "BUYBACK" | "MELT" | "SUPPLIER" | "SEED" | "ADJUSTMENT";
 export type AdjustmentTarget = "LOT" | "PRODUCT" | "COIN_STOCK" | "OUNCE_STOCK";
@@ -12,7 +21,12 @@ export interface Category {
   created_at: string;
 }
 export type OrderStatus = "COMPLETED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "VOIDED";
-export type PaymentMethod = "CASH" | "CARD" | "MIXED";
+/**
+ * Mirrors the backend PaymentMethod enum (app/models/__init__.py). CREDIT is a
+ * sale on account (accounts receivable): the till never offers it, but an order
+ * recorded that way comes back from the API like any other.
+ */
+export type PaymentMethod = "CASH" | "CARD" | "MIXED" | "CREDIT";
 /**
  * Mirrors the backend Role enum (jewelry_backend/app/models/__init__.py).
  * MANAGER is reserved there for a future approvals role and has no screens;
@@ -56,9 +70,10 @@ export interface Product {
 }
 
 export interface ProductLookup extends Product {
-  gold_rate_24k: number;
-  purity_rate: number;
-  final_price: number;
+  gold_rate_24k: Money;
+  /** Decimal columns: strings on the wire. */
+  purity_rate: Money;
+  final_price: Money;
   photo_url: string | null;
 }
 
@@ -137,15 +152,16 @@ export interface OrderSummary {
 export interface OrderListResponse {
   items: OrderSummary[];
   total: number;
-  total_revenue: number;
-  avg_order_value: number;
+  /** Decimal strings ("20572.48"): never JSON numbers, on either backend. */
+  total_revenue: string;
+  avg_order_value: string;
 }
 
 export interface GoldRate {
-  rate_24k: number;
-  rate_22k: number;
-  rate_21k: number;
-  rate_18k: number;
+  rate_24k: Money;
+  rate_22k: Money;
+  rate_21k: Money;
+  rate_18k: Money;
   source: string;
   fetched_at: string;
   is_stale: boolean;
@@ -154,10 +170,10 @@ export interface GoldRate {
 }
 
 export interface GoldRateHistoryPoint {
-  rate_24k: number;
-  rate_22k: number;
-  rate_21k: number;
-  rate_18k: number;
+  rate_24k: Money;
+  rate_22k: Money;
+  rate_21k: Money;
+  rate_18k: Money;
   per_karat_backfilled: boolean;
   fetched_at: string;
 }
@@ -209,17 +225,22 @@ export interface Staff {
   created_at: string;
 }
 
+/**
+ * GET /reports/dashboard. Money is `Money` (a decimal string once the backend
+ * serialises exactly, a number before that); counts, gram weights and
+ * percentages are plain numbers.
+ */
 export interface DashboardData {
   today_orders: number;
-  today_revenue: number;
-  week_revenue: number;
-  prev_week_revenue: number;
-  gold_rate_24k: number | null;
-  chart_data: { date: string; revenue: number; is_today: boolean }[];
-  top_sellers: { code: string; name: string; karat: Karat; units: number; revenue: number }[];
-  recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: number; cashier: string; created_at: string }[];
+  today_revenue: Money;
+  week_revenue: Money;
+  prev_week_revenue: Money;
+  gold_rate_24k: Money | null;
+  chart_data: { date: string; revenue: Money; is_today: boolean }[];
+  top_sellers: { code: string; name: string; karat: Karat; units: number; revenue: Money }[];
+  recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: Money; cashier: string; created_at: string }[];
   // Phase 4 — recent supplier purchases (dashboard receipt links)
-  recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: number; item_count: number }[];
+  recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: Money; item_count: number }[];
   // Phase 7 — inventory pulse
   inventory?: {
     pure_gold_by_karat: { karat: Karat; grams_remaining: number; lot_count: number }[];
@@ -232,25 +253,26 @@ export interface DashboardData {
   // Phase A — headline KPIs
   gold_weight_sold_today_by_karat: { karat: Karat; grams: number }[];
   gold_weight_sold_week_by_karat: { karat: Karat; grams: number }[];
-  avg_invoice_value_today: number;
-  making_charges_today: number;
-  making_charges_week: number;
+  avg_invoice_value_today: Money;
+  making_charges_today: Money;
+  making_charges_week: Money;
   gold_rate_is_stale: boolean;
   gold_rate_fetched_at: string | null;
   // Phase B — money pulse (cash & VAT are null until the GL is live)
-  receivables: { total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number };
+  receivables: { total: Money; b0_30: Money; b31_60: Money; b61_90: Money; b90_plus: Money };
   payables_aging: {
-    cash_total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number;
+    cash_total: Money; b0_30: Money; b31_60: Money; b61_90: Money; b90_plus: Money;
+    /** Grams, not money. */
     metal_owed_by_karat: Record<string, number>;
   };
-  cash_bank_balance: number | null;
-  vat_position: { net_payable: number; direction: string; period_label: string } | null;
+  cash_bank_balance: Money | null;
+  vat_position: { net_payable: Money; direction: string; period_label: string } | null;
   // Phase C — profitability (null until cost-captured sales exist; go-forward)
-  profitability: { gross_profit: number; gross_margin_pct: number | null; profit_per_gram: number | null; since: string } | null;
+  profitability: { gross_profit: Money; gross_margin_pct: number | null; profit_per_gram: Money | null; since: string } | null;
   // Phase D — inventory health
   inventory_value: {
-    total_usd: number; pure_gold_usd: number; coins_usd: number; ounces_usd: number;
-    products_usd: number; rate_24k: number | null; method: string;
+    total_usd: Money; pure_gold_usd: Money; coins_usd: Money; ounces_usd: Money;
+    products_usd: Money; rate_24k: Money | null; method: string;
   };
   inventory_aging: { d0_90: number; d90_180: number; d180_365: number; d365_plus: number };
   dead_stock_count: number;
@@ -370,11 +392,12 @@ export interface UnitTypeListResponse {
 export interface UnitPrice {
   type_id: string;
   code: string;
-  gold_rate_24k: number;
-  effective_rate: number;
-  metal_value: number;
-  margin_amount: number;
-  final_price: number;
+  gold_rate_24k: Money;
+  /** Decimal columns: strings on the wire. */
+  effective_rate: Money;
+  metal_value: Money;
+  margin_amount: Money;
+  final_price: Money;
   on_hand_qty: number;
   rate_source: string;
   rate_is_stale: boolean;
@@ -575,7 +598,8 @@ export interface ReceiptLine {
   quantity: number | string | null;
   unit_price: number | string | null;
   line_total: number | string;
-  stone_value?: number | null;
+  /** A Decimal: a string on the wire, like the other amounts on a line. */
+  stone_value?: Money | null;
 }
 
 export interface ReceiptTotals {
@@ -614,7 +638,11 @@ export type StaleRateErrorCode = "STALE_RATE_ACK_REQUIRED" | "STALE_RATE_ACK_MIS
 export interface StaleRateErrorDetail {
   code: StaleRateErrorCode;
   message: string;
-  rate_24k: number;
+  /**
+   * Display only. The acknowledgement a client sends back is `StaleRateAck`:
+   * the rate's timestamp, never the rate.
+   */
+  rate_24k: Money;
   rate_fetched_at: string;
   age_minutes: number;
 }

@@ -1019,7 +1019,7 @@ const ar: Translations = {
     discountPct: (pct) => `خصم ${pct}%`,
     lbpEquivalent: "المعادل بالليرة",
     paymentMethod: "طريقة الدفع",
-    payment: { CASH: "نقداً", CARD: "بطاقة", MIXED: "مختلط" },
+    payment: { CASH: "نقداً", CARD: "بطاقة", MIXED: "مختلط", CREDIT: "بالأجل" },
     refundTotalsNote: "الإجماليات تعكس الأصناف المتبقية (غير المستردة). أُعيد احتساب الضريبة على المجموع الفرعي الجديد.",
     refundItem: "استرداد صنف",
     refundQty: (max) => `الكمية المراد استردادها (الحد الأقصى ${max})`,

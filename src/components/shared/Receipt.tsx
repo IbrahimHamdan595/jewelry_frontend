@@ -18,7 +18,7 @@ import { Ltr } from "@/components/shared/Ltr";
  * descriptions are data and print as stored.
  */
 import { useLang } from "@/context/LanguageContext";
-import { formatUSD, formatLBP } from "@/lib/utils";
+import { formatUSD, formatLBP, toFiniteNumber } from "@/lib/utils";
 import { useFormat } from "@/hooks/useFormat";
 import type { Receipt as ReceiptData } from "@/types/api";
 
@@ -139,14 +139,17 @@ export function Receipt({ data }: { data: ReceiptData }) {
             line.weight_grams != null ? `${line.weight_grams}g` : null,
             line.unit_price != null && num(line.quantity) > 1 ? `@ ${formatUSD(line.unit_price)}` : null,
           ].filter(Boolean).join(" · ");
-          const stones = line.stone_value != null && line.stone_value > 0 ? r.stonesLine(formatUSD(line.stone_value)) : null;
+          // A Decimal: a string on the wire. Read once; absent, zero or unreadable means no stones.
+          const stoneValue = toFiniteNumber(line.stone_value);
+          const hasStones = stoneValue !== null && stoneValue > 0;
+          const stones = hasStones ? r.stonesLine(formatUSD(stoneValue)) : null;
           return (
             <div key={i}>
               <div className="flex justify-between">
                 <span className="flex-1 truncate pe-2">
                   {isAr && line.description_ar ? line.description_ar : line.description}
                   {num(line.quantity) > 1 ? ` ×${num(line.quantity)}` : ""}
-                  {line.stone_value != null && line.stone_value > 0 ? " 💎" : ""}
+                  {hasStones ? " 💎" : ""}
                 </span>
                 <span className="font-bold">{formatUSD(line.line_total)}</span>
               </div>

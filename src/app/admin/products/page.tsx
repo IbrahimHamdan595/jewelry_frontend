@@ -10,7 +10,7 @@ import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { KaratBadge } from "@/components/shared/KaratBadge";
-import { calculatePrice, cn } from "@/lib/utils";
+import { calculatePrice, cn, toFiniteNumber } from "@/lib/utils";
 import type { ProductListResponse, Category, Product } from "@/types/api";
 import { UnitCatalog } from "@/components/admin/UnitCatalog";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
@@ -102,6 +102,8 @@ function ProductsTab() {
   const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
   const { rate } = useGoldRate();
+  // A decimal string or a number (NEX-54), read once; unreadable means no live price.
+  const rate24k = toFiniteNumber(rate?.rate_24k);
 
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [delBusy, setDelBusy] = useState(false);
@@ -184,7 +186,7 @@ function ProductsTab() {
               {!error && !data && <TableSkeleton cols={10} />}
               {data?.items.map((p) => {
                 const heroUrl = p.photos?.find(x => x.isHero)?.url ?? p.photos?.[0]?.url;
-                const priced = rate ? calculatePrice({ rate24k: rate.rate_24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;
+                const priced = rate24k !== null ? calculatePrice({ rate24k, karat: p.karat, weightGrams: Number(p.weight_grams), marginPercent: Number(p.margin_percent), makingCharge: Number(p.making_charge) }) : null;
                 return (
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3">

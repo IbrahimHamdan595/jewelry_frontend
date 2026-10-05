@@ -16,7 +16,7 @@ import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
 import { api, staleRateError } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
-import { cn } from "@/lib/utils";
+import { cn, toFiniteNumber } from "@/lib/utils";
 import type { OrderItemKind, ProductLookup, StaleRateAck } from "@/types/api";
 
 export default function POSPage() {
@@ -54,6 +54,13 @@ export default function POSPage() {
       setScanError(null);
       try {
         const product = await api.get<ProductLookup>(`/products/lookup/${code}`);
+        // Money arrives as decimal strings or numbers (NEX-54). The cart does
+        // arithmetic on these for the rest of the sale, so they become numbers
+        // here, once. A lookup that cannot be priced is refused like a failed
+        // scan: adding it would put NaN — or a silent $0 — on the till.
+        const goldRate24k = toFiniteNumber(product.gold_rate_24k);
+        const unitPrice = toFiniteNumber(product.final_price);
+        if (goldRate24k === null || unitPrice === null) throw new Error("Lookup without a readable price");
         addItem({
           cartId: `${product.id}-${Date.now()}`,
           kind: "PRODUCT",
@@ -63,9 +70,9 @@ export default function POSPage() {
           karat: product.karat,
           weightGrams: Number(product.weight_grams),
           quantity: 1,
-          goldRate24k: product.gold_rate_24k,
-          unitPrice: Number(product.final_price),
-          finalPrice: Number(product.final_price),
+          goldRate24k,
+          unitPrice,
+          finalPrice: unitPrice,
           available: product.on_hand_qty,
           imageUrl: product.photo_url ?? undefined,
         });

@@ -284,3 +284,30 @@ describe("ReceiptScreen — the frame around the receipt", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 });
+
+// ReceiptLine.stone_value is a Decimal on the backend (app/schemas/receipt.py):
+// a string on the wire. It was typed `number`, and compared with `> 0`.
+describe("Receipt — a line's stone value as the string the API sends", () => {
+  const withStone = (stone_value: unknown) =>
+    ({ ...sale, lines: [{ ...sale.lines[0], stone_value }, sale.lines[1]] }) as unknown as ReceiptData;
+  const sheetText = (data: ReceiptData) => {
+    const view = renderReceipt("en", data);
+    const text = (view.container.querySelector("#receipt") as HTMLElement).textContent ?? "";
+    view.unmount();
+    return text;
+  };
+
+  it("prints the same line for \"120.00\" as for 120", () => {
+    const fromString = sheetText(withStone("120.00"));
+    expect(fromString).toBe(sheetText(withStone(120)));
+    expect(fromString).toContain("Gold Ring 💎");
+    expect(fromString).toContain(en.receipt.stonesLine("$120.00"));
+  });
+
+  it.each(["0.00", 0, null, "n/a"])("no stones note and no gem for %j", (stone_value) => {
+    const text = sheetText(withStone(stone_value));
+    expect(text).toContain("Gold Ring");
+    expect(text).not.toContain("💎");
+    expect(text).not.toContain("NaN");
+  });
+});

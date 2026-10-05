@@ -245,3 +245,20 @@ describe("order detail in English is unchanged", () => {
     );
   });
 });
+
+// The backend PaymentMethod enum (app/models/__init__.py) has four values; the
+// frontend type knew three. CREDIT — a sale on account — printed as the raw code.
+describe("order detail: every payment method the API can send is named", () => {
+  it.each(["CASH", "CARD", "MIXED", "CREDIT"] as const)("%s is translated in Arabic", (method) => {
+    renderPage("ar", order({ payment_method: method }));
+    const value = screen.getByText(ar.orders.paymentMethod).nextElementSibling;
+    expect(value).toHaveTextContent(ar.checkout.paymentMethods[method]);
+    expect(value?.textContent).toMatch(/[\u0600-\u06FF]/);
+    expect(value).not.toHaveTextContent(method);
+  });
+
+  it("CREDIT reads as CREDIT in English, like the other three", () => {
+    renderPage("en", order({ payment_method: "CREDIT" }));
+    expect(screen.getByText("Payment Method").nextElementSibling).toHaveTextContent("CREDIT");
+  });
+});

@@ -99,3 +99,41 @@ describe("GoldRateCard", () => {
     expect(screen.getByText(/stale/i)).toBeInTheDocument();
   });
 });
+
+// NEX-54: GET /gold-price is moving its four rates from JSON numbers to exact
+// decimal strings. The card must read the same either way.
+describe("GoldRateCard — rates as decimal strings or numbers (NEX-54)", () => {
+  // Today's GoldRateOut (floats, so 130.10 arrives as 130.1) and the exact-money one.
+  const asNumbers: GoldRate = { ...rate, rate_22k: 130.1 };
+  const asStrings: GoldRate = { ...rate, rate_24k: "141.66", rate_22k: "130.10", rate_21k: "123.95", rate_18k: "106.25" };
+
+  it.each([
+    ["full", false],
+    ["compact", true],
+  ])("%s card: identical markup for both shapes", (_name, compact) => {
+    setHook({ rate: asNumbers });
+    const numeric = render(<GoldRateCard compact={compact} />);
+    const expected = numeric.container.innerHTML;
+    numeric.unmount();
+
+    setHook({ rate: asStrings });
+    const { container } = render(<GoldRateCard compact={compact} />);
+    expect(container.innerHTML).toBe(expected);
+    for (const figure of ["141.66", "123.95", "106.25"]) expect(screen.getByText(figure)).toBeInTheDocument();
+  });
+
+  it("pads a short figure to two decimals whichever shape it came in", () => {
+    setHook({ rate: { ...rate, rate_24k: 141.6, rate_21k: "123.9" } });
+    render(<GoldRateCard />);
+    expect(screen.getByText("141.60")).toBeInTheDocument();
+    expect(screen.getByText("123.90")).toBeInTheDocument();
+  });
+
+  it("a rate that cannot be read shows the missing-amount dash, never NaN", () => {
+    setHook({ rate: { ...rate, rate_21k: "n/a", rate_18k: null as never } });
+    const { container } = render(<GoldRateCard />);
+    expect(screen.getByText("141.66")).toBeInTheDocument();
+    expect(screen.getAllByText("—")).toHaveLength(2);
+    expect(container).not.toHaveTextContent("NaN");
+  });
+});
