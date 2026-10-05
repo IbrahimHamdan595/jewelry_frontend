@@ -1210,6 +1210,9 @@ const ar: Translations = {
       colCode: "الرمز", colName: "الاسم", colType: "النوع", colDenom: "الوحدة", colNormal: "الطبيعي",
       colCurrency: "العملة", colSystemKey: "مفتاح النظام", colActive: "نشط",
       empty: "لا توجد حسابات بعد — هيّئ حسابات النظام للبدء.",
+      types: { ASSET: "أصل", LIABILITY: "التزام", EQUITY: "حقوق ملكية", INCOME: "إيراد", EXPENSE: "مصروف" },
+      denominations: { MONEY: "نقدي", METAL: "معدن", DUAL: "مزدوج" },
+      normalBalances: { DEBIT: "مدين", CREDIT: "دائن" },
     },
     journal: {
       eyebrow: "سجل القيد المزدوج",

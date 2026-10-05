@@ -1176,6 +1176,10 @@ export interface Translations {
       eyebrow: string; title: string; description: string; seedBtn: string;
       colCode: string; colName: string; colType: string; colDenom: string; colNormal: string;
       colCurrency: string; colSystemKey: string; colActive: string; empty: string;
+      /** The backend's AccountType, Denomination and NormalBalance enums. */
+      types: { ASSET: string; LIABILITY: string; EQUITY: string; INCOME: string; EXPENSE: string };
+      denominations: { MONEY: string; METAL: string; DUAL: string };
+      normalBalances: { DEBIT: string; CREDIT: string };
     };
     journal: {
       eyebrow: string; title: string; description: string; recentEntries: string;
@@ -2460,6 +2464,9 @@ const en: Translations = {
       colCode: "Code", colName: "Name", colType: "Type", colDenom: "Denom.", colNormal: "Normal",
       colCurrency: "Currency", colSystemKey: "System key", colActive: "Active",
       empty: "No accounts yet — seed the system accounts to begin.",
+      types: { ASSET: "ASSET", LIABILITY: "LIABILITY", EQUITY: "EQUITY", INCOME: "INCOME", EXPENSE: "EXPENSE" },
+      denominations: { MONEY: "MONEY", METAL: "METAL", DUAL: "DUAL" },
+      normalBalances: { DEBIT: "DEBIT", CREDIT: "CREDIT" },
     },
     journal: {
       eyebrow: "The raw double-entry log",

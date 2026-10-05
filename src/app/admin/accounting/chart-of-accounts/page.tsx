@@ -10,6 +10,9 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/api-client";
 
+/** An enum value's label in the UI language; a value with no label prints as the API sent it. */
+const named = (labels: Record<string, string>, value: string) => labels[value] ?? value;
+
 export default function ChartOfAccounts() {
   const { t } = useLang();
   const a = t.accounting.coa;
@@ -51,9 +54,9 @@ export default function ChartOfAccounts() {
           columns={[
             { key: "code", label: a.colCode, render: (r: GLAccount) => <span className="font-mono">{r.code}</span> },
             { key: "name", label: a.colName },
-            { key: "type", label: a.colType },
-            { key: "denomination", label: a.colDenom },
-            { key: "normal_balance", label: a.colNormal },
+            { key: "type", label: a.colType, render: (r: GLAccount) => named(a.types, r.type) },
+            { key: "denomination", label: a.colDenom, render: (r: GLAccount) => named(a.denominations, r.denomination) },
+            { key: "normal_balance", label: a.colNormal, render: (r: GLAccount) => named(a.normalBalances, r.normal_balance) },
             { key: "currency", label: a.colCurrency, render: (r: GLAccount) => r.currency ?? "—" },
             { key: "system_key", label: a.colSystemKey, render: (r: GLAccount) => <span className="font-mono text-xs">{r.system_key ?? ""}</span> },
             { key: "is_active", label: a.colActive, render: (r: GLAccount) => (r.is_active ? "✓" : "—") },
