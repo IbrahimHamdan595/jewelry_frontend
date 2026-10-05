@@ -11,6 +11,11 @@ import { Ltr } from "@/components/shared/Ltr";
  *
  * RTL: when the active language is Arabic the receipt body flips to dir="rtl";
  * Arabic store name / line descriptions are used when present.
+ *
+ * i18n (NEX-64): the receipt prints in the active language, like the rest of
+ * the UI — none of its text is fixed or bilingual. Every label comes from
+ * t.receipt / t.checkout; store name, address, footer, party and line
+ * descriptions are data and print as stored.
  */
 import { useLang } from "@/context/LanguageContext";
 import { formatUSD, formatLBP } from "@/lib/utils";
@@ -20,18 +25,6 @@ import type { Receipt as ReceiptData } from "@/types/api";
 function num(v: number | string | null | undefined): number {
   return v == null ? 0 : Number(v);
 }
-
-const ROLE_LABEL: Record<string, { en: string; ar: string }> = {
-  customer: { en: "CUSTOMER", ar: "الزبون" },
-  supplier: { en: "SUPPLIER", ar: "المورّد" },
-  seller: { en: "SELLER", ar: "البائع" },
-};
-
-const TYPE_TITLE: Record<string, { en: string; ar: string }> = {
-  SALE: { en: "SALES RECEIPT", ar: "إيصال بيع" },
-  SUPPLIER_PURCHASE: { en: "PURCHASE RECEIPT", ar: "إيصال شراء" },
-  BUYBACK: { en: "BUYBACK RECEIPT", ar: "إيصال شراء ذهب" },
-};
 
 export function ReceiptPrintStyles() {
   return (
@@ -79,15 +72,22 @@ export function ReceiptPrintStyles() {
 
 export function Receipt({ data }: { data: ReceiptData }) {
   const { formatDateTime } = useFormat();
-  const { lang, isRTL } = useLang();
+  // `t` is already the totals below, so the dictionary goes by `tr` here.
+  const { lang, isRTL, t: tr } = useLang();
+  const r = tr.receipt;
   const isAr = lang === "ar";
-  const pick = (m: { en: string; ar: string }) => (isAr ? m.ar : m.en);
 
   const t = data.totals;
   const hasDiscount = num(t.discount_amount) > 0;
   const hasVat = t.vat_amount != null;
   const storeName = isAr && data.store.name_ar ? data.store.name_ar : data.store.name;
-  const role = ROLE_LABEL[data.party.role] ?? { en: data.party.role.toUpperCase(), ar: data.party.role };
+  // Roles and payment methods arrive as plain strings: translate the ones the
+  // dictionary knows, print anything else as the server sent it.
+  const roleLabel =
+    (r.roles as Record<string, string>)[data.party.role] ?? (isAr ? data.party.role : data.party.role.toUpperCase());
+  const paymentLabel = data.payment_method
+    ? (tr.checkout.paymentMethods as Record<string, string>)[data.payment_method] ?? data.payment_method
+    : null;
 
   return (
     <div
@@ -105,24 +105,24 @@ export function Receipt({ data }: { data: ReceiptData }) {
         <div className="font-serif text-lg font-bold tracking-widest">{storeName}</div>
         {data.store.address ? <div className="text-[10px] mt-1 text-gray-500">{data.store.address}</div> : null}
         {data.store.phone ? <div className="text-[9px] text-gray-500"><Ltr>{data.store.phone}</Ltr></div> : null}
-        {data.store.vat_number ? <div className="text-[9px] text-gray-500">VAT: {data.store.vat_number}</div> : null}
-        <div className="text-[10px] mt-1 font-bold tracking-wider text-gold-dark">{pick(TYPE_TITLE[data.type])}</div>
+        {data.store.vat_number ? <div className="text-[9px] text-gray-500">{r.vatNumber} <Ltr>{data.store.vat_number}</Ltr></div> : null}
+        <div className="text-[10px] mt-1 font-bold tracking-wider text-gold-dark">{r.titles[data.type]}</div>
       </div>
 
       <div className="border-t border-dashed border-gray-300 my-3" />
 
       {/* Metadata */}
       <div className="space-y-1 text-[10px]">
-        <div className="flex justify-between"><span className="text-gray-500">REF</span><span>{data.reference}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">DATE</span><span>{formatDateTime(data.issued_at)}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">{r.ref}</span><span>{data.reference}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">{r.date}</span><span>{formatDateTime(data.issued_at)}</span></div>
         {data.cashier_name && (
-          <div className="flex justify-between"><span className="text-gray-500">CASHIER</span><span>{data.cashier_name}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">{r.cashier}</span><span>{data.cashier_name}</span></div>
         )}
         {data.party.name && (
-          <div className="flex justify-between"><span className="text-gray-500">{pick(role)}</span><span>{data.party.name}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">{roleLabel}</span><span>{data.party.name}</span></div>
         )}
         {data.party.phone && (
-          <div className="flex justify-between"><span className="text-gray-500">PHONE</span><span><Ltr>{data.party.phone}</Ltr></span></div>
+          <div className="flex justify-between"><span className="text-gray-500">{r.phone}</span><span><Ltr>{data.party.phone}</Ltr></span></div>
         )}
       </div>
 
@@ -147,7 +147,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
                 line.weight_grams != null ? `${line.weight_grams}g` : null,
                 line.unit_price != null && num(line.quantity) > 1 ? `@ ${formatUSD(line.unit_price)}` : null,
                 line.stone_value != null && line.stone_value > 0
-                  ? `${isAr ? "أحجار" : "Stones"}: ${formatUSD(line.stone_value)}`
+                  ? r.stonesLine(formatUSD(line.stone_value))
                   : null,
               ]
                 .filter(Boolean)
@@ -161,22 +161,22 @@ export function Receipt({ data }: { data: ReceiptData }) {
 
       {/* Totals */}
       <div className="space-y-1 text-[10px]">
-        <div className="flex justify-between"><span>Subtotal</span><span>{formatUSD(t.subtotal)}</span></div>
+        <div className="flex justify-between"><span>{tr.common.subtotal}</span><span>{formatUSD(t.subtotal)}</span></div>
         {hasVat && (
-          <div className="flex justify-between"><span>VAT {num(t.vat_percent)}%</span><span>{formatUSD(t.vat_amount!)}</span></div>
+          <div className="flex justify-between"><span>{tr.checkout.vatLine(num(t.vat_percent))}</span><span>{formatUSD(t.vat_amount!)}</span></div>
         )}
         {hasDiscount && (
           <div className="flex justify-between text-status-refunded">
-            <span>Discount {num(t.discount_percent) ? `${num(t.discount_percent)}%` : ""}</span>
+            <span>{tr.checkout.discountLine(num(t.discount_percent))}</span>
             <span>−{formatUSD(t.discount_amount!)}</span>
           </div>
         )}
-        <div className="flex justify-between font-bold text-sm mt-1"><span>TOTAL</span><span>{formatUSD(t.total_usd)}</span></div>
+        <div className="flex justify-between font-bold text-sm mt-1"><span>{r.total}</span><span>{formatUSD(t.total_usd)}</span></div>
         {t.total_lbp != null && num(t.total_lbp) > 0 && (
-          <div className="flex justify-between text-gray-400"><span>LBP Equiv.</span><span>{formatLBP(t.total_lbp)}</span></div>
+          <div className="flex justify-between text-gray-400"><span>{r.lbpEquiv}</span><span>{formatLBP(t.total_lbp)}</span></div>
         )}
-        {data.payment_method && (
-          <div className="flex justify-between"><span>Payment</span><span>{data.payment_method}</span></div>
+        {paymentLabel && (
+          <div className="flex justify-between"><span>{tr.checkout.payment}</span><span>{paymentLabel}</span></div>
         )}
       </div>
 
@@ -191,7 +191,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
 
       {/* Footer */}
       <div className="text-center text-[9px] text-gray-400 space-y-1">
-        {data.store.footer ? <div>{data.store.footer}</div> : <div>Thank you — {storeName}</div>}
+        {data.store.footer ? <div>{data.store.footer}</div> : <div>{r.thankYou(storeName)}</div>}
         <div className="mt-2 font-bold text-gray-600">{data.reference}</div>
       </div>
     </div>
@@ -200,6 +200,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
 
 /** Convenience wrapper: dark POS frame + Print/Back actions around <Receipt />. */
 export function ReceiptScreen({ data }: { data: ReceiptData }) {
+  const { t } = useLang();
   return (
     <div className="min-h-screen bg-pos-bg flex flex-col items-center justify-center py-8 print:bg-white print:min-h-0 print:py-0">
       <ReceiptPrintStyles />
@@ -208,13 +209,13 @@ export function ReceiptScreen({ data }: { data: ReceiptData }) {
           onClick={() => window.print()}
           className="px-5 py-2.5 bg-gold text-pos-bg rounded text-sm font-medium hover:bg-gold-dark transition-colors"
         >
-          Print Receipt
+          {t.receipt.printReceipt}
         </button>
         <button
           onClick={() => window.history.back()}
           className="px-5 py-2.5 border border-white/20 rounded text-sm text-pos-cream hover:bg-white/5 transition-colors"
         >
-          Back
+          {t.common.back}
         </button>
       </div>
       <Receipt data={data} />
