@@ -566,6 +566,9 @@ export interface Translations {
     capture: string;
     step01: string;
     itemNotFound: string;
+    /** The code was found, but what came back for it has no readable price or rate. */
+    cannotPrice: string;
+    cannotPriceHint: string;
     readyToScan: string;
     scanHint: string;
     manualEntry: string;
@@ -1838,6 +1841,8 @@ const en: Translations = {
     capture: "Capture",
     step01: "Step 01",
     itemNotFound: "Item not found",
+    cannotPrice: "Can't price this item",
+    cannotPriceHint: "The item exists, but its price couldn't be read. Ask an admin.",
     readyToScan: "Ready to scan",
     scanHint: "Point scanner at barcode or enter code below",
     manualEntry: "Manual entry",

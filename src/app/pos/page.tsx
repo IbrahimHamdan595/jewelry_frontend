@@ -5,7 +5,7 @@ import { LogOut, Coins, Layers } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useScanner } from "@/hooks/useScanner";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { ScanPanel } from "@/components/pos/ScanPanel";
+import { ScanPanel, type ScanErrorReason } from "@/components/pos/ScanPanel";
 import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
@@ -37,7 +37,7 @@ export default function POSPage() {
   // that gates the button. Both read the same SWR key, so refreshing from this
   // side flows straight through to the dialog's `required` / `fetchedAt`.
   const { refresh: refreshRate } = useGoldRate();
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<{ code: string; reason: ScanErrorReason } | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -49,6 +49,11 @@ export default function POSPage() {
     router.push("/login");
   }
 
+  const showScanError = useCallback((code: string, reason: ScanErrorReason) => {
+    setScanError({ code, reason });
+    setTimeout(() => setScanError(null), 5000);
+  }, []);
+
   const handleScan = useCallback(
     async (code: string) => {
       setScanError(null);
@@ -56,11 +61,21 @@ export default function POSPage() {
         const product = await api.get<ProductLookup>(`/products/lookup/${code}`);
         // Money arrives as decimal strings or numbers (NEX-54). The cart does
         // arithmetic on these for the rest of the sale, so they become numbers
-        // here, once. A lookup that cannot be priced is refused like a failed
-        // scan: adding it would put NaN — or a silent $0 — on the till.
+        // here, once. A lookup that cannot be priced is refused: adding it
+        // would put NaN — or a silent $0 — on the till.
         const goldRate24k = toFiniteNumber(product.gold_rate_24k);
         const unitPrice = toFiniteNumber(product.final_price);
-        if (goldRate24k === null || unitPrice === null) throw new Error("Lookup without a readable price");
+        if (goldRate24k === null || unitPrice === null) {
+          // The item exists, so this is not a mistyped barcode and must not
+          // read as one. It is a data fault: say so, and leave a line for
+          // whoever is asked to look.
+          console.error(`[pos] lookup for "${code}" returned no readable price or rate`, {
+            final_price: product.final_price,
+            gold_rate_24k: product.gold_rate_24k,
+          });
+          showScanError(code, "cannot-price");
+          return;
+        }
         addItem({
           cartId: `${product.id}-${Date.now()}`,
           kind: "PRODUCT",
@@ -77,11 +92,10 @@ export default function POSPage() {
           imageUrl: product.photo_url ?? undefined,
         });
       } catch {
-        setScanError(code);
-        setTimeout(() => setScanError(null), 5000);
+        showScanError(code, "not-found");
       }
     },
-    [addItem]
+    [addItem, showScanError]
   );
 
   useScanner(handleScan);
@@ -173,7 +187,7 @@ export default function POSPage() {
       <div className={cn("flex flex-col md:flex-row flex-1 overflow-hidden", isRTL && "md:flex-row-reverse")}>
         {/* Scan/capture panel */}
         <aside className="w-full md:w-[22rem] border-b md:border-b-0 md:border-e border-white/10 p-4 md:p-6 shrink-0 overflow-y-auto">
-          <ScanPanel onScan={handleScan} scanError={scanError} />
+          <ScanPanel onScan={handleScan} scanError={scanError?.code ?? null} scanErrorReason={scanError?.reason} />
 
           <div className="mt-8 space-y-2">
             <p className="text-pos-gray text-[10px] uppercase tracking-widest">

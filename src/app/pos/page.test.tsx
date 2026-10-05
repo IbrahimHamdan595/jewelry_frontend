@@ -120,22 +120,70 @@ describe("POS sell — a lookup's rate as a decimal string or a number (NEX-54)"
     expect(numeric.total).toBe("$2,320.14");
   });
 
+  // The item exists; what came back for it cannot be priced. That is a data
+  // fault for an admin, not a mistyped barcode, and it must not read as one.
   it.each([
     ["no price", { ...LOOKUP, gold_rate_24k: "141.66", final_price: null }],
     ["an unreadable price", { ...LOOKUP, gold_rate_24k: "141.66", final_price: "n/a" }],
     ["no rate", { ...LOOKUP, gold_rate_24k: null }],
     ["an unreadable rate", { ...LOOKUP, gold_rate_24k: "" }],
-  ])("a lookup with %s is refused: nothing is added, nothing is priced at zero", async (_name, payload) => {
+  ])("a lookup with %s is refused as unpriceable: nothing is added, nothing is priced at zero", async (_name, payload) => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     api.get.mockResolvedValue(payload);
     renderPage();
     await scan("FN-21K-0001");
-    // Refused the way a failed scan is: the red panel naming the code.
-    expect(await screen.findByText(en.pos.itemNotFound)).toBeInTheDocument();
+
+    expect(await screen.findByText(en.pos.cannotPrice)).toBeInTheDocument();
+    expect(screen.getByText(en.pos.cannotPriceHint)).toBeInTheDocument();
+    expect(screen.getByText("FN-21K-0001")).toHaveClass("font-mono"); // which item, so the admin can find it
+    expect(screen.queryByText(en.pos.itemNotFound)).toBeNull();
+    // …and a line in the console that names the code, for whoever is asked to look.
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(String(logged.mock.calls[0][0])).toContain("FN-21K-0001");
+
     expect(screen.queryByText("Twisted Ring")).toBeNull();
     expect(within(sale()).getByText(en.checkout.noItems)).toBeInTheDocument();
     expect(amount(en.common.total)).toBe("$0.00");
     expect(storedLines()).toEqual([]);
     expect(sale()).not.toHaveTextContent("NaN");
+    logged.mockRestore();
+  });
+
+  it("a code the server does not know is still 'item not found', and is not logged as a fault", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    api.get.mockRejectedValue(new ApiError(404, "Product not found"));
+    renderPage();
+    await scan("FN-21K-9999");
+    expect(await screen.findByText(en.pos.itemNotFound)).toBeInTheDocument();
+    expect(screen.getByText("FN-21K-9999")).toBeInTheDocument();
+    expect(screen.queryByText(en.pos.cannotPrice)).toBeNull();
+    expect(screen.queryByText(en.pos.cannotPriceHint)).toBeNull();
+    expect(logged).not.toHaveBeenCalled();
+    logged.mockRestore();
+  });
+
+  it("Arabic: the unpriceable message is translated, and the next good scan clears it", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    api.get.mockResolvedValueOnce({ ...LOOKUP, final_price: "n/a", gold_rate_24k: "141.66" });
+    render(
+      <LanguageProvider initialLang="ar">
+        <CartProvider vatPercent={11}><POSPage /></CartProvider>
+      </LanguageProvider>,
+    );
+    const scanIn = async (code: string) => {
+      fireEvent.change(screen.getByLabelText(ar.pos.manualEntry), { target: { value: code } });
+      fireEvent.click(screen.getByRole("button", { name: ar.pos.find }));
+    };
+    await scanIn("FN-21K-0001");
+    expect(await screen.findByText(ar.pos.cannotPrice)).toBeInTheDocument();
+    expect(screen.getByText(ar.pos.cannotPriceHint)).toBeInTheDocument();
+    expect(ar.pos.cannotPrice).not.toBe(ar.pos.itemNotFound);
+
+    api.get.mockResolvedValueOnce({ ...LOOKUP, gold_rate_24k: "141.66" });
+    await scanIn("FN-21K-0001");
+    expect(await screen.findByText("Twisted Ring")).toBeInTheDocument();
+    expect(screen.queryByText(ar.pos.cannotPrice)).toBeNull();
+    logged.mockRestore();
   });
 });
 

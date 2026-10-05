@@ -5,12 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLang } from "@/context/LanguageContext";
 
+/**
+ * Why a scan did not add a line. "not-found" is a code the server does not
+ * know — usually a mistyped or damaged barcode. "cannot-price" is an item
+ * that exists but came back without a readable price: a data fault, which the
+ * cashier cannot fix by scanning again.
+ */
+export type ScanErrorReason = "not-found" | "cannot-price";
+
 interface Props {
   onScan: (code: string) => Promise<void>;
+  /** The code that failed, or null. */
   scanError: string | null;
+  scanErrorReason?: ScanErrorReason;
 }
 
-export function ScanPanel({ onScan, scanError }: Props) {
+export function ScanPanel({ onScan, scanError, scanErrorReason = "not-found" }: Props) {
   const [manual, setManual] = useState("");
   const { t } = useLang();
 
@@ -43,11 +53,14 @@ export function ScanPanel({ onScan, scanError }: Props) {
           {scanError ? (
             <>
               <p className="text-red-400 text-xs uppercase tracking-widest mb-2">
-                {t.pos.itemNotFound}
+                {scanErrorReason === "cannot-price" ? t.pos.cannotPrice : t.pos.itemNotFound}
               </p>
               <p className="text-red-300/70 text-sm font-mono break-all">
                 {scanError}
               </p>
+              {scanErrorReason === "cannot-price" && (
+                <p className="text-red-300 text-xs mt-2">{t.pos.cannotPriceHint}</p>
+              )}
             </>
           ) : (
             <>

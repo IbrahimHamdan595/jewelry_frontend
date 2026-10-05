@@ -579,6 +579,8 @@ const ar: Translations = {
     capture: "المسح",
     step01: "الخطوة 01",
     itemNotFound: "الصنف غير موجود",
+    cannotPrice: "تعذّر تسعير هذا الصنف",
+    cannotPriceHint: "الصنف موجود لكن تعذّرت قراءة سعره. راجع المشرف.",
     readyToScan: "جاهز للمسح",
     scanHint: "وجّه الماسح نحو الباركود أو أدخل الرمز أدناه",
     manualEntry: "إدخال يدوي",
