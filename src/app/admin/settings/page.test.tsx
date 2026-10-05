@@ -16,7 +16,7 @@ const api = vi.hoisted(() => ({
   get: vi.fn(),
   delete: vi.fn(),
 }));
-vi.mock("@/lib/api-client", () => ({ api, apiFetcher: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api, apiFetcher: vi.fn() }));
 
 const SETTINGS = "/settings";
 const VERIFY = "/accounting/ledger/verify";

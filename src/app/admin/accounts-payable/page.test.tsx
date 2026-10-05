@@ -7,7 +7,7 @@ import ar from "@/i18n/ar";
 
 const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn() }));
 
 const payable = {
   total_cash_owed: 1250.5,

@@ -204,6 +204,23 @@ describe("ScanPanel — i18n (NEX-64)", () => {
     expect(englishLeft(container, DATA)).toEqual([]);
   });
 
+  it.each([["en", en], ["ar", ar]] as const)("%s: an item that exists but cannot be priced says so, names the code, and says who to ask", (lang, dict) => {
+    const { container } = render(<LanguageProvider initialLang={lang}><ScanPanel onScan={vi.fn()} scanError="FN-21K-0001" scanErrorReason="cannot-price" /></LanguageProvider>);
+    expect(screen.getByText(dict.pos.cannotPrice)).toBeInTheDocument();
+    expect(screen.getByText(dict.pos.cannotPriceHint)).toBeInTheDocument();
+    expect(screen.getByText("FN-21K-0001")).toHaveClass("font-mono");
+    expect(screen.queryByText(dict.pos.itemNotFound)).toBeNull();
+    // The hint is a sentence: not in the monospace run, which RTL lays out left-to-right.
+    expect(screen.getByText(dict.pos.cannotPriceHint).closest(".font-mono")).toBeNull();
+    if (lang === "ar") expect(englishLeft(container, DATA)).toEqual([]);
+  });
+
+  it("with no reason given, a scan error is 'not found', as before", () => {
+    render(<ScanPanel onScan={vi.fn()} scanError="FN-21K-9999" />);
+    expect(screen.getByText(en.pos.itemNotFound)).toBeInTheDocument();
+    expect(screen.queryByText(en.pos.cannotPriceHint)).toBeNull();
+  });
+
   it("keeps the English wording it had", () => {
     render(<ScanPanel onScan={vi.fn()} scanError={null} />);
     for (const text of ["Capture", "Step 01", "Ready to scan", "Manual entry", "Find"]) expect(screen.getByText(text), text).toBeInTheDocument();

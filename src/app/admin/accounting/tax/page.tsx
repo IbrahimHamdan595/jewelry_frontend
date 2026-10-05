@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { tax, TaxCodeT } from "@/lib/accounting";
 import { downloadFile } from "@/lib/api-client";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -28,24 +29,28 @@ export default function Tax() {
   const [ret, setRet] = useState<Awaited<ReturnType<typeof tax.vatReturn>> | null>(null);
   const [year, setYear] = useState(2026);
   const [quarter, setQuarter] = useState(2);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
 
   async function loadCodes() {
-    try { setCodes((await tax.listCodes()).items); } catch (e) { setError((e as Error).message); }
+    try { setCodes((await tax.listCodes()).items); } catch (e) { setFailure({ err: e, during: "load" }); }
     finally { setLoading(false); }
   }
   useEffect(() => { loadCodes(); }, []);
 
-  async function seed() { await tax.seedCodes(); await loadCodes(); }
+  async function seed() {
+    setFailure(null);
+    try { await tax.seedCodes(); await loadCodes(); }
+    catch (e) { setFailure({ err: e, during: "action" }); }
+  }
   async function runReturn() {
-    setError(null);
-    try { setRet(await tax.vatReturn(year, quarter)); } catch (e) { setError((e as Error).message); }
+    setFailure(null);
+    try { setRet(await tax.vatReturn(year, quarter)); } catch (e) { setFailure({ err: e, during: "load" }); }
   }
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      <ErrorNote failure={failure} />
 
       <SectionCard
         title={a.taxCodes}

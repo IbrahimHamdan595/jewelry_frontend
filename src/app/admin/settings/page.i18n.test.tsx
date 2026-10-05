@@ -18,7 +18,7 @@ const api = vi.hoisted(() => ({
   patch: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})),
   post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})),
 }));
-vi.mock("@/lib/api-client", () => ({ api, apiFetcher: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api, apiFetcher: vi.fn() }));
 
 // SettingsOut and StaffOut as GET /settings and GET /staff send them (app/schemas/settings.py):
 // decimals are strings at their column scale, and — until the backend exposes it — there is

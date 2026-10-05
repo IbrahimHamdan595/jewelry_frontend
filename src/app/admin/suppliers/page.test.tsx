@@ -9,7 +9,7 @@ const supplier = { id: "s1", name: "Abu Ali", contact_name: null, phone: "+961-0
 const inactiveSupplier = { id: "s2", name: "Dar Al Dahab", contact_name: null, phone: null, email: null, payment_terms: null, is_active: false };
 // The inactive supplier is only listed when the "include inactive" filter drops is_active=true from the request.
 vi.mock("swr", () => ({ default: (key: string) => ({ data: key?.startsWith("/suppliers") ? { items: key.includes("is_active=true") ? [supplier] : [supplier, inactiveSupplier], total: 1 } : undefined, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 describe("suppliers list in Arabic (NEX-63)", () => {
   it("keeps the phone number left-to-right and intact", () => {

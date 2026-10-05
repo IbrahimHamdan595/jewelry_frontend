@@ -4,7 +4,7 @@ import useSWR from "swr";
 import {
   ChevronDown, ChevronRight, RefreshCw, CheckCircle, AlertTriangle, Bell, BellOff,
 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { useFormat } from "@/hooks/useFormat";
 import { useLang } from "@/context/LanguageContext";
@@ -69,7 +69,7 @@ function ReconcilePanel() {
       setResult(data);
       setAlertRequested(requested);
     } catch (err) {
-      setError(err instanceof Error ? err.message : l.reconcileFailed);
+      setError(errorMessage(err, l.reconcileFailed));
     } finally {
       setRunning(false);
     }

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { useFormat } from "@/hooks/useFormat";
@@ -84,8 +84,8 @@ export default function GoldPricePage() {
       refresh();
       setOverrideInput("");
       setReasonInput("");
-    } catch (e: any) {
-      setOverrideError(e.message ?? "Failed to set override");
+    } catch (e) {
+      setOverrideError(errorMessage(e, gp.setOverrideFailed));
     }
   }
 
@@ -94,8 +94,8 @@ export default function GoldPricePage() {
     try {
       await api.delete("/gold-price/override");
       refresh();
-    } catch (e: any) {
-      setOverrideError(e.message ?? "Failed to clear override");
+    } catch (e) {
+      setOverrideError(errorMessage(e, gp.clearOverrideFailed));
     }
   }
 

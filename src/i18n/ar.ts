@@ -14,6 +14,9 @@ const ar: Translations = {
     showPassword: "إظهار كلمة المرور",
     hidePassword: "إخفاء كلمة المرور",
     failed: "فشل تسجيل الدخول",
+    invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    accountDisabled: "هذا الحساب معطَّل",
+    tooManyAttempts: "محاولات كثيرة جداً. حاول مجدداً لاحقاً.",
   },
 
   suppliers: {
@@ -214,9 +217,12 @@ const ar: Translations = {
     goldPrice: "سعر الذهب",
     zakat: "الزكاة",
     auditLedger: "سجل المراجعة",
+    accounting: "المحاسبة",
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
     admin: "المشرف",
+    openMenu: "فتح القائمة",
+    closeMenu: "إغلاق القائمة",
   },
 
   // المخزون › دفعات الذهب الخالص. \u2066…\u2069 (LRI/PDI) keeps a signed number
@@ -575,6 +581,8 @@ const ar: Translations = {
     capture: "المسح",
     step01: "الخطوة 01",
     itemNotFound: "الصنف غير موجود",
+    cannotPrice: "تعذّر تسعير هذا الصنف",
+    cannotPriceHint: "الصنف موجود لكن تعذّرت قراءة سعره. راجع المشرف.",
     readyToScan: "جاهز للمسح",
     scanHint: "وجّه الماسح نحو الباركود أو أدخل الرمز أدناه",
     manualEntry: "إدخال يدوي",
@@ -629,11 +637,12 @@ const ar: Translations = {
     perUnitFormula: "للوحدة (حسب المعادلة)",
     totalBuyPrice: "إجمالي سعر الشراء",
     rate: "السعر",
-    rateLine: (rate, source, stale) => `\u2066$${rate}/غ\u2069 (24K) · ${source}${stale ? " (قديم)" : ""}`,
+    rateLine: (rate, source, stale) => `\u2066${rate}/غ\u2069 (24K) · ${source}${stale ? " (قديم)" : ""}`,
     sellerRequired: "اسم البائع ورقم الهاتف مطلوبان.",
     record: "تسجيل إعادة الشراء",
     recording: "جارٍ التسجيل…",
     recorded: "تم تسجيل إعادة الشراء",
+    failed: "تعذّر تسجيل إعادة الشراء",
     paidTo: (amount, name) => `تم دفع \u2066${amount}\u2069 إلى \u2068${name}\u2069`,
     newBuyback: "إعادة شراء جديدة",
   },
@@ -672,6 +681,7 @@ const ar: Translations = {
     confirmRateAbove: "أكّد السعر أعلاه",
     confirmComplete: "تأكيد وإتمام",
     saleComplete: "تم البيع",
+    failed: "تعذّر إتمام الشراء",
     thankYou: (name) => `شكراً لك، ${name}`,
     items: "الأصناف",
     cashier: "أمين الصندوق",
@@ -739,6 +749,8 @@ const ar: Translations = {
     reasonInputLabel: "سبب التجاوز",
     auditNote: "يُسجَّل كل تجاوز مع المنفّذ والسعر والسعر السابق والسبب. السبب إلزامي.",
     setOverride: "تعيين التجاوز",
+    setOverrideFailed: "تعذّر تعيين التجاوز",
+    clearOverrideFailed: "تعذّرت إزالة التجاوز",
   },
 
   // NEX-64 الشريحة 5 — صفحة ملصقات الباركود في لوحة الإدارة
@@ -754,6 +766,12 @@ const ar: Translations = {
     formatHelp: "متوافق مع أي ماسح باركود أحادي الأبعاد قياسي. يمسح أمين الصندوق الخطوط، ورمز المنتج أسفلها بديل للإدخال اليدوي.",
     fewerCopies: (product) => `نسخ أقل من \u2068${product}\u2069`,
     moreCopies: (product) => `نسخ أكثر من \u2068${product}\u2069`,
+  },
+
+  // فلتر اليوم / الشهر / السنة أعلى قوائم الطلبات وسجل الأسعار
+  calendar: {
+    allTime: "كل الفترات",
+    granularity: { day: "يوم", month: "شهر", year: "سنة" },
   },
 
   common: {
@@ -809,11 +827,13 @@ const ar: Translations = {
     autoPostDisableConfirm: "إيقاف",
     autoPostDisableBlocked: "يحتوي دفتر الأستاذ على قيود بالفعل. إيقاف الترحيل التلقائي الآن سيترك فجوة في الدفاتر، لذا لا يمكن إيقافه من هنا. اسأل محاسبك عن طريقة إقفال الدفاتر بدلاً من ذلك.",
     autoPostStateUnknownBlocked: "تعذّر التحقق من حالة دفتر الأستاذ، لذا لا يمكن إيقاف الترحيل التلقائي من هنا الآن. حاول مجدداً بعد قليل.",
+    autoPostFailed: "تعذّر تغيير الإعداد",
     cancel: "إلغاء",
     close: "إغلاق",
     saving: "جارٍ الحفظ…",
     // NEX-64 الشريحة 5 — بقية صفحة الإعدادات
     saveChanges: "حفظ التغييرات",
+    saveFailed: "تعذّر حفظ الإعدادات",
     tabStore: "معلومات المحل",
     tabPricing: "التسعير الافتراضي",
     tabReceipt: "الإيصال",
@@ -853,8 +873,10 @@ const ar: Translations = {
     confirmNewPassword: "تأكيد كلمة المرور الجديدة",
     updatePassword: "تحديث كلمة المرور",
     passwordsMismatch: "كلمتا المرور الجديدتان غير متطابقتين",
+    changePasswordFailed: "تعذّر تغيير كلمة المرور",
     cashiers: "أمناء الصندوق",
     addCashier: "إضافة أمين صندوق",
+    addCashierFailed: "تعذّرت إضافة أمين الصندوق",
     staffFields: { name: "الاسم", email: "البريد الإلكتروني", password: "كلمة المرور" },
     staffActive: "نشط",
     staffDisabled: "معطّل",
@@ -883,6 +905,8 @@ const ar: Translations = {
     rateFeedDown: "المصدر متوقف",
     rateAsOf: "بتاريخ",
     fetchingRate: "جارٍ جلب السعر…",
+    actionFailed: "تعذّر إتمام العملية. حاول مجددًا.",
+    downloadFailed: "تعذّر التنزيل",
   },
 
   stockTake: {
@@ -1019,7 +1043,6 @@ const ar: Translations = {
     discountPct: (pct) => `خصم ${pct}%`,
     lbpEquivalent: "المعادل بالليرة",
     paymentMethod: "طريقة الدفع",
-    payment: { CASH: "نقداً", CARD: "بطاقة", MIXED: "مختلط", CREDIT: "بالأجل" },
     refundTotalsNote: "الإجماليات تعكس الأصناف المتبقية (غير المستردة). أُعيد احتساب الضريبة على المجموع الفرعي الجديد.",
     refundItem: "استرداد صنف",
     refundQty: (max) => `الكمية المراد استردادها (الحد الأقصى ${max})`,
@@ -1192,6 +1215,9 @@ const ar: Translations = {
       colCode: "الرمز", colName: "الاسم", colType: "النوع", colDenom: "الوحدة", colNormal: "الطبيعي",
       colCurrency: "العملة", colSystemKey: "مفتاح النظام", colActive: "نشط",
       empty: "لا توجد حسابات بعد — هيّئ حسابات النظام للبدء.",
+      types: { ASSET: "أصل", LIABILITY: "التزام", EQUITY: "حقوق ملكية", INCOME: "إيراد", EXPENSE: "مصروف" },
+      denominations: { MONEY: "نقدي", METAL: "معدن", DUAL: "مزدوج" },
+      normalBalances: { DEBIT: "مدين", CREDIT: "دائن" },
     },
     journal: {
       eyebrow: "سجل القيد المزدوج",
@@ -1230,6 +1256,7 @@ const ar: Translations = {
       namePlaceholder: "الاسم", creditLimitPlaceholder: "حد الائتمان (فارغ = غير محدود)",
       createBtn: "إنشاء", recordReceipt: "تسجيل سند قبض", amountPlaceholder: "المبلغ",
       recordBtn: "تسجيل القبض", receiptHint: "يسدّد أقدم الفواتير أولاً",
+      receiptRecorded: (receiptNo, unapplied) => `سُجّل سند القبض \u2066${receiptNo}\u2069 (غير مطبَّق: \u2066${unapplied}\u2069)`,
       colCustomer: "العميل", colOpenBalance: "الرصيد المفتوح",
       agingCurrent: "حالي", aging3160: "31–60 يوم", aging6190: "61–90 يوم", aging90: "+90 يوم",
       empty: "لا يوجد عملاء لديهم رصيد.",
@@ -1264,6 +1291,8 @@ const ar: Translations = {
       noVat: "بدون ضريبة", recordBtn: "تسجيل", byCategory: "المصاريف حسب الفئة",
       colBill: "الفاتورة", colVendor: "المورّد", colDate: "التاريخ", colTotal: "الإجمالي", colPaid: "المدفوع",
       colStatus: "الحالة", empty: "لم تُسجَّل أي فواتير بعد.",
+      billRecorded: (billNo, status, total) => `سُجّلت الفاتورة \u2066${billNo}\u2069 (${status}، الإجمالي \u2066${total}\u2069)`,
+      billStatus: { OPEN: "مفتوحة", PARTIAL: "مدفوعة جزئياً", PAID: "مدفوعة", VOID: "ملغاة" },
     },
     tax: {
       eyebrow: "ضريبة لبنان (11%)",

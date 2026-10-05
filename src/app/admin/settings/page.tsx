@@ -2,7 +2,7 @@
 import { Ltr } from "@/components/shared/Ltr";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/context/LanguageContext";
@@ -23,6 +23,8 @@ export default function SettingsPage() {
   const [autoPostError, setAutoPostError] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [addStaffError, setAddStaffError] = useState<string | null>(null);
   const [newStaff, setNewStaff] = useState({ name: "", email: "", password: "" });
   const [showAdd, setShowAdd] = useState(false);
   const [pwForm, setPwForm] = useState({ current_password: "", new_password: "", confirm: "" });
@@ -60,7 +62,7 @@ export default function SettingsPage() {
       await mutate(); // the switch renders the server's answer, never the click
       setAutoPostPrompt(null);
     } catch (e) {
-      setAutoPostError(e instanceof Error ? e.message : "Failed");
+      setAutoPostError(errorMessage(e, t.settings.autoPostFailed));
     } finally {
       setAutoPostBusy(false);
     }
@@ -68,20 +70,35 @@ export default function SettingsPage() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveError(null);
     try {
       const { accounting_auto_post_enabled: _autoPost, ...payload } = form;
       await api.patch("/settings", payload);
       mutate();
+    } catch (e) {
+      // The form keeps what was typed; the user fixes it and saves again.
+      setSaveError(errorMessage(e, t.settings.saveFailed));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleAddStaff() {
-    await api.post("/staff", newStaff);
-    mutateStaff();
-    setNewStaff({ name: "", email: "", password: "" });
+    setAddStaffError(null);
+    try {
+      await api.post("/staff", newStaff);
+      mutateStaff();
+      setNewStaff({ name: "", email: "", password: "" });
+      setShowAdd(false);
+    } catch (e) {
+      // The form stays open with what was typed (an email already in use is one edit away).
+      setAddStaffError(errorMessage(e, t.settings.addCashierFailed));
+    }
+  }
+
+  function closeAddStaff() {
     setShowAdd(false);
+    setAddStaffError(null); // an old refusal must not greet the next time the form opens
   }
 
   async function handleChangePassword() {
@@ -92,6 +109,10 @@ export default function SettingsPage() {
     }
     setPwSaving(true);
     try {
+      // The answer is ignored on purpose. The old backend sends 204; the new one
+      // sends 200 with a fresh token in the body and — what matters — a fresh
+      // HttpOnly cookie, which the browser has already stored. Like the login
+      // token, the one in the body is never kept where a script can read it.
       await api.post("/auth/change-password", {
         current_password: pwForm.current_password,
         new_password: pwForm.new_password,
@@ -99,8 +120,8 @@ export default function SettingsPage() {
       setPwSuccess(true);
       setPwForm({ current_password: "", new_password: "", confirm: "" });
       setTimeout(() => setPwSuccess(false), 3000);
-    } catch (e: any) {
-      setPwError(e.message ?? "Failed to change password");
+    } catch (e) {
+      setPwError(errorMessage(e, t.settings.changePasswordFailed));
     } finally {
       setPwSaving(false);
     }
@@ -129,6 +150,8 @@ export default function SettingsPage() {
           </button>
         )}
       </div>
+
+      {saveError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{saveError}</div>}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
@@ -277,8 +300,8 @@ export default function SettingsPage() {
         {tab === "security" && (
           <div className="space-y-4">
             <div className="text-sm font-medium text-gray-800">{t.settings.changePassword}</div>
-            {pwSuccess && <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">{t.settings.passwordChanged}</div>}
-            {pwError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{pwError}</div>}
+            {pwSuccess && <div role="status" className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">{t.settings.passwordChanged}</div>}
+            {pwError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{pwError}</div>}
             {(["current_password", "new_password", "confirm"] as const).map((f) => (
               <label key={f} className="block">
                 <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
@@ -374,9 +397,10 @@ export default function SettingsPage() {
                 {(["name", "email", "password"] as const).map((f) => (
                   <input key={f} dir={f === "name" ? undefined : "ltr"} placeholder={t.settings.staffFields[f]} aria-label={t.settings.staffFields[f]} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
                 ))}
+                {addStaffError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-xs rounded p-2">{addStaffError}</div>}
                 <div className="flex gap-2">
                   <button onClick={handleAddStaff} className="px-4 py-2 bg-gold text-white text-xs rounded">{t.common.save}</button>
-                  <button onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded text-xs">{t.settings.cancel}</button>
+                  <button onClick={closeAddStaff} className="px-4 py-2 border rounded text-xs">{t.settings.cancel}</button>
                 </div>
               </div>
             )}

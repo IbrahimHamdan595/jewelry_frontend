@@ -236,6 +236,29 @@ describe("dashboard in Arabic — figures inside a sentence keep their own order
     expect(figure.parentElement).toHaveTextContent(`${change} ${ar.dashboard.vsLastWeek}`);
   });
 
+  // A losing week, an overdrawn account, a VAT refund: figures that stand alone
+  // in their tile, where a leading "-" would otherwise land after the digits.
+  it("negative amounts and percentages are isolated, sign first", () => {
+    renderArabic({
+      ...EXACT,
+      cash_bank_balance: "-1520.75",
+      vat_position: { net_payable: "-310.40", direction: "REFUNDABLE", period_label: "Q3 2026" },
+      profitability: { gross_profit: "-120.40", gross_margin_pct: -4.25, profit_per_gram: "-0.85", since: "2026-09-02" },
+      receivables: { ...EXACT.receivables, total: "-45.00", b0_30: "-45.00" },
+    });
+    for (const figure of ["-$1,520.75", "-$310.40", "-$120.40", "-4.25%", "-$0.85"]) {
+      expect(isolated(figure), figure).toHaveAttribute("dir", "ltr");
+    }
+    expect(screen.getAllByText("-$45.00", { selector: "bdi" })).toHaveLength(2); // the AR total and its 0–30 chip
+  });
+
+  it("the same tiles read normally when the figures are positive", () => {
+    renderArabic(EXACT);
+    for (const figure of ["$15,234.07", "$842.19", "$3,120.40", "15.17%", "$9.87"]) {
+      expect(isolated(figure), figure).toHaveAttribute("dir", "ltr");
+    }
+  });
+
   it("the profitability start date keeps its year-month-day order", () => {
     renderArabic(EXACT);
     expect(isolated("2026-09-02")).toHaveAttribute("dir", "ltr");

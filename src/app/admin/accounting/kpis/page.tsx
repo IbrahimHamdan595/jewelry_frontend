@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { kpis } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,7 @@ import { ActionBar } from "@/components/accounting/ActionBar";
 import { StatTile } from "@/components/accounting/StatTile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 export default function Kpis() {
   const { t } = useLang();
@@ -25,21 +26,23 @@ export default function Kpis() {
 
   async function run() {
     setError(null);
-    try { setData(await kpis.compute(start, end)); } catch (e) { setError((e as Error).message); }
+    try { setData(await kpis.compute(start, end)); } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
   }
   useEffect(() => { run(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const cards: { key: keyof NonNullable<typeof data>; label: string; suffix?: string }[] = [
-    { key: "dsi", label: a.dsi, suffix: x.daysSuffix },
-    { key: "inventory_turnover", label: a.turnover, suffix: "×" },
-    { key: "dpo", label: a.dpo, suffix: x.daysSuffix },
-    { key: "dso", label: a.dso, suffix: x.daysSuffix },
-    { key: "ccc", label: a.ccc, suffix: x.daysSuffix },
-    { key: "gross_margin", label: a.grossMargin, suffix: "%" },
-    { key: "net_margin", label: a.netMargin, suffix: "%" },
-    { key: "metal_turnover", label: a.metalTurnover, suffix: "×" },
-    { key: "current_ratio", label: a.currentRatio, suffix: "×" },
-    { key: "quick_ratio", label: a.quickRatio, suffix: "×" },
+  // `symbol` belongs to the number ("-4.25%", "2.1×") and is isolated with it;
+  // `unit` is a translated word that follows it ("45 d", "45 يوم").
+  const cards: { key: keyof NonNullable<typeof data>; label: string; symbol?: string; unit?: string }[] = [
+    { key: "dsi", label: a.dsi, unit: x.daysSuffix },
+    { key: "inventory_turnover", label: a.turnover, symbol: "×" },
+    { key: "dpo", label: a.dpo, unit: x.daysSuffix },
+    { key: "dso", label: a.dso, unit: x.daysSuffix },
+    { key: "ccc", label: a.ccc, unit: x.daysSuffix },
+    { key: "gross_margin", label: a.grossMargin, symbol: "%" },
+    { key: "net_margin", label: a.netMargin, symbol: "%" },
+    { key: "metal_turnover", label: a.metalTurnover, symbol: "×" },
+    { key: "current_ratio", label: a.currentRatio, symbol: "×" },
+    { key: "quick_ratio", label: a.quickRatio, symbol: "×" },
   ];
 
   return (
@@ -78,7 +81,8 @@ export default function Kpis() {
                 value={
                   k.value === null
                     ? <span className="text-gray-400 text-base">{x.notAvailable}</span>
-                    : <>{k.value}{card.suffix}</>
+                    // A margin or a cash cycle can be negative; isolated, its sign stays in front.
+                    : <><Ltr>{k.value}{card.symbol}</Ltr>{card.unit}</>
                 }
               />
             );

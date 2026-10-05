@@ -9,7 +9,7 @@ const swr = vi.hoisted(() => ({ alerts: undefined as unknown }));
 vi.mock("swr", () => ({
   default: () => ({ data: swr.alerts, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }),
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn() }));
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 
 // The response of GET /inventory/alerts (jewelry_backend/app/api/inventory.py):

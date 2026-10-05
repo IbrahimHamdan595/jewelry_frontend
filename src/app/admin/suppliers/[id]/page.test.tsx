@@ -8,7 +8,7 @@ import ar from "@/i18n/ar";
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "s1" }) }));
 const swr = vi.hoisted(() => ({ byKey: {} as Record<string, unknown> }));
 vi.mock("swr", () => ({ default: (key: string) => ({ data: swr.byKey[key], error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api: { post: vi.fn() } }));
 
 const LOT_ID = "7b1e4c90-55aa-4d2f-9c11-0a1b2c3d4e5f";
 const SECOND_LOT_ID = "91d2f0a7-3c44-4b6e-8f20-5e6f7a8b9c0d";

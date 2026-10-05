@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
-import { apiFetcher, api, uploadFile } from "@/lib/api-client";
+import { apiFetcher, api, uploadFile, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { formatRate, formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -21,18 +21,14 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 const REASONS: AdjustmentReason[] = ["LOSS", "THEFT", "GIFT", "SAMPLE", "CORRECTION"];
 
 interface Props {
-  /** API resource path segment, e.g. "coins" or "ounces" */
+  /**
+   * API resource path segment. Also picks the catalog's wording
+   * (t.unitCatalog[resource]): "New coin type" and "No coin types yet" are
+   * whole phrases per language, not a noun slotted into an English sentence.
+   */
   resource: "coins" | "ounces";
   /** Adjustment target_type for stock changes */
   adjustmentTarget: "COIN_STOCK" | "OUNCE_STOCK";
-  /**
-   * @deprecated Ignored. The catalog's wording comes from t.unitCatalog[resource]:
-   * "New {singular}" and "No {plural} yet" cannot be assembled from a noun in
-   * Arabic. Still accepted so existing callers compile; drop it at the call site.
-   */
-  singular?: string;
-  /** @deprecated Ignored — see `singular`. */
-  plural?: string;
 }
 
 export function UnitCatalog({ resource, adjustmentTarget }: Props) {
@@ -328,8 +324,8 @@ function UnitTypeForm({
       fd.append("file", file);
       const { url } = await uploadFile<{ url: string }>("/products/upload-image", fd);
       setPhotoUrl(url);
-    } catch (err: any) {
-      setUploadError(err?.message ?? u.uploadFailed);
+    } catch (err) {
+      setUploadError(errorMessage(err, u.uploadFailed));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -360,7 +356,7 @@ function UnitTypeForm({
       }
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : u.saveFailed);
+      setError(errorMessage(err, u.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -582,7 +578,7 @@ function StockAdjustDialog({
       });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : u.adjustFailed);
+      setError(errorMessage(err, u.adjustFailed));
     } finally {
       setSaving(false);
     }
@@ -685,7 +681,7 @@ function LivePriceDialog({
           <div className="text-xs text-gray-500 mt-0.5 font-mono"><Ltr>{row.code}</Ltr></div>
         </div>
         {isLoading && <div className="text-sm text-gray-500">{u.pricing}</div>}
-        {error && <div role="alert" className="text-sm text-red-600">{(error as Error).message}</div>}
+        {error && <div role="alert" className="text-sm text-red-600">{errorMessage(error, t.errors.loadFailed)}</div>}
         {data && (
           <>
             <div className="text-center py-3">
@@ -698,7 +694,7 @@ function LivePriceDialog({
               <Row label={u.spot24k} value={`${formatRate(data.gold_rate_24k)}/g`} />
               <Row
                 label={u.effectiveRate}
-                value={`$${Number(data.effective_rate).toFixed(2)}/g`}
+                value={`${formatRate(data.effective_rate)}/g`}
                 note={<>{" "}{u.markupApplied}</>}
               />
               <Row label={u.metalValue} value={formatUSD(data.metal_value)} />

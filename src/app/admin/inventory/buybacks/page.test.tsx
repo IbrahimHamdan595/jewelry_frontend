@@ -38,7 +38,7 @@ vi.mock("swr", () => ({
     return { data: { items, total: items.length, page: 1, page_size: 50 }, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() };
   },
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 function renderPage(lang: "en" | "ar") {
   return render(<LanguageProvider initialLang={lang}><BuybacksTab /></LanguageProvider>);

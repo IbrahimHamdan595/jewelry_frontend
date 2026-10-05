@@ -81,3 +81,18 @@ describe("accounting periods i18n and labels (NEX-64)", () => {
     expect(await screen.findByText("Year 2026 closed — entry JE-000123. Opened 12 periods for 2027.")).toBeInTheDocument();
   });
 });
+
+// A year that ended in a loss: the net income in the year-end preview is
+// negative, and it sits inside an Arabic sentence.
+describe("accounting periods — a net loss keeps its sign in front", () => {
+  beforeEach(() => { lib.listPeriods.mockResolvedValue({ items: periods }); });
+
+  it("the previewed net income is isolated left-to-right after its Arabic label", async () => {
+    lib.yearPreview.mockResolvedValue({ net_income: "-3420.50", already_closed: false, lines: [] });
+    await renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.accounting.periods.preview }));
+    const figure = await screen.findByText("-3420.50", { selector: "bdi" });
+    expect(figure).toHaveAttribute("dir", "ltr");
+    expect(figure.closest("div")).toHaveTextContent(`${ar.accounting.periods.netIncome}: -3420.50`);
+  });
+});

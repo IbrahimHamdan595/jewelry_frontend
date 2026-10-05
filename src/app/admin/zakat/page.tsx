@@ -2,10 +2,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { formatUSD } from "@/lib/utils";
 import type { ZakatSnapshot, ZakatSnapshotList, ZakatSummary } from "@/types/zakat";
 
@@ -26,6 +27,9 @@ function todayISO(): string {
 export default function ZakatPage() {
   const { t } = useLang();
   const z = t.zakat;
+  // "live" or "override" (the gold-rate source enum), in the wording the rate
+  // cards use. Anything else — an older snapshot's value — prints as stored.
+  const rateSource = (source: string) => t.goldRate.sources[source as keyof typeof t.goldRate.sources] ?? source;
   const { formatDateTime } = useFormat();
 
   const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary, isValidating: validatingSummary } =
@@ -41,15 +45,18 @@ export default function ZakatPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const snapDateRef = useRef<HTMLInputElement>(null);
+  const snapPanelRef = useRef<HTMLDivElement>(null);
 
   // The snapshot dialog is modal: focus moves to its first field when it
-  // opens and goes back to whatever opened it when it closes.
+  // opens, Tab stays inside it, and focus goes back to whatever opened it
+  // when it closes.
   useEffect(() => {
     if (!snapModalOpen) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     snapDateRef.current?.focus();
     return () => opener?.focus();
   }, [snapModalOpen]);
+  useFocusTrap(snapPanelRef, snapModalOpen);
 
   // Escape closes it, like the backdrop and Cancel: not while a save is in flight.
   useEffect(() => {
@@ -84,8 +91,8 @@ export default function ZakatPage() {
       setSnapModalOpen(false);
       setSnapNotes("");
       await Promise.all([mutateSummary(), mutateSnapshots()]);
-    } catch (e: any) {
-      setSaveError(e.message ?? z.saveFailed);
+    } catch (e) {
+      setSaveError(errorMessage(e, z.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -94,8 +101,9 @@ export default function ZakatPage() {
   // ── render ─────────────────────────────────────────────────────────────────
 
   if (summaryErr && !summary) {
-    const msg = summaryErr.message ?? String(summaryErr);
-    const isRateUnavail = msg.includes("Gold rate") || msg.toLowerCase().includes("rate");
+    // Only what the backend itself said; a dropped connection has no message here.
+    const msg = errorMessage(summaryErr, "");
+    const isRateUnavail = msg.toLowerCase().includes("rate");
     // The rate-unavailable case is a deliberate backend message for the admin;
     // anything else is a generic failure and gets the generic state.
     if (!isRateUnavail) {
@@ -160,7 +168,7 @@ export default function ZakatPage() {
               {formatUSD(summary.gold_rate_24k)}{t.products.perGram}
               <span className="ms-1.5 inline-flex items-center gap-1 text-[10px]">
                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                  {summary.gold_rate_source}
+                  {rateSource(summary.gold_rate_source)}
                 </span>
                 {summary.gold_rate_is_stale && (
                   <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded uppercase">
@@ -322,7 +330,7 @@ export default function ZakatPage() {
                     <td className="px-3 py-2.5 text-end text-gray-600">{formatUSD(s.gold_rate_24k_usd_per_gram)}</td>
                     <td className="px-3 py-2.5 text-xs">
                       <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                        {s.gold_rate_source}
+                        {rateSource(s.gold_rate_source)}
                       </span>
                     </td>
                     <td className="px-5 py-2.5 text-gray-600">
@@ -364,6 +372,7 @@ export default function ZakatPage() {
           }}
         >
           <div
+            ref={snapPanelRef}
             role="dialog"
             aria-modal="true"
             aria-label={z.saveSnapshotModalTitle}

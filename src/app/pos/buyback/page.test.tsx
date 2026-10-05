@@ -8,8 +8,6 @@ import ar from "@/i18n/ar";
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }), usePathname: () => "/pos/buyback" }));
-// The Sell / Buy Back tabs are not part of this slice and are still hardcoded English.
-vi.mock("@/components/pos/PosModeTabs", () => ({ PosModeTabs: () => null }));
 vi.mock("@/lib/auth", () => ({ logout: vi.fn(), getStoredUser: () => null }));
 
 const swr = vi.hoisted(() => ({ byKey: {} as Record<string, unknown> }));
@@ -56,7 +54,8 @@ function uiStrings(root: HTMLElement): string[] {
 const englishLeft = (root: HTMLElement, keep: RegExp) =>
   uiStrings(root).map((s) => s.replace(keep, "")).filter((s) => /[A-Za-z]{2,}/.test(s));
 // Karat codes, plus what the fixtures above supply as data: the coin's code and its English name.
-const DATA = /\b(K?\d\dK?|FN-COIN-22K-0001|Ottoman Lira)\b/g;
+// "English" is the language switcher's label in Arabic mode: it names the other language in that language.
+const DATA = /\b(K?\d\dK?|FN-COIN-22K-0001|Ottoman Lira|English)\b/g;
 /** Physical-direction utilities that would not flip in RTL. */
 const physicalClasses = (root: HTMLElement) =>
   Array.from(root.querySelectorAll("[class]")).flatMap((el) => Array.from(el.classList)).filter((c) => /^(text-(left|right)|-?m[lr]-|p[lr]-|(left|right)-)/.test(c));
@@ -108,6 +107,10 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     const b = ar.posBuyback;
     expect(screen.getByText(ar.appName)).toBeInTheDocument();
     expect(screen.getByText(b.title)).toBeInTheDocument();
+    // The header's shared pieces: the Sell / Buy Back tabs and the language switcher.
+    expect(screen.getByRole("link", { name: ar.orders.tabSell })).toHaveAttribute("href", "/pos");
+    expect(screen.getByRole("link", { name: b.eyebrow })).toHaveAttribute("href", "/pos/buyback");
+    expect(screen.getByRole("button", { name: "English" })).toBeInTheDocument();
 
     // Pure gold, with a live quote on screen
     fireEvent.change(screen.getByLabelText(ar.products.weightGrams), { target: { value: "5" } });
@@ -124,7 +127,7 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     fireEvent.change(screen.getByLabelText(ar.common.quantity), { target: { value: "2" } });
     expect(screen.getByText(b.totalBuyPrice).nextElementSibling).toHaveTextContent("$1,841.80");
     // The rate source ("live") is an API enum, translated; the amount keeps its order.
-    expect(screen.getByText(b.rate).nextElementSibling).toHaveTextContent(b.rateLine("141.66", ar.goldRate.sources.live, false));
+    expect(screen.getByText(b.rate).nextElementSibling).toHaveTextContent(b.rateLine("$141.66", ar.goldRate.sources.live, false));
     expect(englishLeft(container, DATA)).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: b.priceModeManual }));
     expect(screen.getByLabelText(b.manualPriceUsdTotal)).toBeInTheDocument();
@@ -156,6 +159,28 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     fireEvent.click(screen.getByRole("button", { name: ar.posBuyback.record }));
     expect(screen.getByText(ar.posBuyback.sellerRequired)).toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("POS buyback — language switcher (NEX-64)", () => {
+  beforeEach(() => {
+    swr.byKey = { "/gold-price": RATE };
+    document.cookie = "mz_lang=; path=/; max-age=0";
+    localStorage.clear();
+  });
+
+  it("sits in the header where the sell page has it — before Sign out — and switches the page", () => {
+    renderPage("en");
+    const header = screen.getByRole("banner");
+    const switcher = screen.getByRole("button", { name: "العربية" });
+    const signOut = screen.getByRole("button", { name: en.pos.signOut });
+    expect(header).toContainElement(switcher);
+    expect(switcher.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(switcher.parentElement).toBe(signOut.parentElement);
+
+    fireEvent.click(switcher);
+    expect(screen.getByText(ar.posBuyback.title)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "English" })).toBeInTheDocument();
   });
 });
 
@@ -221,6 +246,77 @@ describe("POS buyback — what is sent is unchanged", () => {
     fireEvent.change(screen.getByLabelText(ar.products.weightGrams), { target: { value: "5" } });
     fireEvent.click(screen.getByRole("button", { name: b.record }));
     expect(await screen.findByText(detail)).toBeInTheDocument();
+  });
+});
+
+// BuybackQuoteOut (GET /buybacks/quote) is all Decimals: strings on the wire.
+// The quote rows printed `$${Number(x).toFixed(2)}`, which turns a missing
+// figure into "$NaN/g" and a null one into a confident "$0.00/g".
+describe("POS buyback — quote figures are formatted, never NaN or a made-up zero (NEX-54)", () => {
+  beforeEach(() => {
+    nav.push.mockClear();
+    api.post.mockReset();
+    swr.byKey = { "/gold-price": RATE, "/coins?is_active=true&page_size=200": COINS, [COIN_QUOTE_KEY]: COIN_QUOTE };
+  });
+
+  const row = (label: string) => screen.getByText(label).nextElementSibling?.textContent;
+  function quoteCard(quote: unknown) {
+    swr.byKey[QUOTE_KEY] = quote;
+    const view = renderPage("en");
+    fireEvent.change(screen.getByLabelText(en.products.weightGrams), { target: { value: "5" } });
+    const rows = ["Spot 24K", "Purity rate", "Buyback margin", "Effective", "Pay seller"].map(row);
+    view.unmount();
+    return rows;
+  }
+
+  it("prints the same card whether the figures arrive as strings or as numbers", () => {
+    const fromStrings = quoteCard(QUOTE);
+    const fromNumbers = quoteCard({ ...QUOTE, rate_24k: 141.66, purity_rate: 123.95, margin_value: 2, effective_rate_per_gram: 121.95, buy_price: 609.76 });
+    expect(fromStrings).toEqual(["$141.66/g", "$123.95/g (K21)", "−$2.00/g", "$121.95/g", "$609.76"]);
+    expect(fromNumbers).toEqual(fromStrings);
+  });
+
+  it("a percentage margin reads as a percentage", () => {
+    expect(quoteCard({ ...QUOTE, margin_mode: "PERCENT", margin_value: "1.50" })[2]).toBe("1.50%");
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["null", null],
+    ["unreadable", "n/a"],
+  ])("a %s figure shows the missing-amount dash", (_name, bad) => {
+    const rows = quoteCard({ ...QUOTE, rate_24k: bad, purity_rate: bad, margin_value: bad, effective_rate_per_gram: bad, buy_price: bad });
+    expect(rows).toEqual(["—/g", "—/g (K21)", "—", "—/g", "—"]);
+    for (const text of rows) {
+      expect(text).not.toMatch(/NaN/);
+      expect(text).not.toContain("0.00");
+    }
+  });
+
+  function perUnit(quote: unknown, qty = "2") {
+    swr.byKey[COIN_QUOTE_KEY] = quote;
+    const view = renderPage("en");
+    const b = en.posBuyback;
+    fireEvent.click(screen.getByRole("button", { name: b.kinds.COIN }));
+    fireEvent.change(screen.getByLabelText(b.coinType), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText(en.common.quantity), { target: { value: qty } });
+    const rows = [b.perUnitFormula, b.totalBuyPrice, b.rate].map(row);
+    view.unmount();
+    return rows;
+  }
+
+  it("the per-unit quote: price, total and rate, the same for strings and numbers", () => {
+    const fromStrings = perUnit(COIN_QUOTE);
+    expect(fromStrings).toEqual(["$920.90", "$1,841.80", "$141.66/g (24K) · live"]);
+    expect(perUnit({ ...COIN_QUOTE, rate_24k: 141.66, buy_price: 920.9 })).toEqual(fromStrings);
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["null", null],
+    ["unreadable", "n/a"],
+  ])("the per-unit quote with a %s price and rate shows dashes, not $0.00 × 2", (_name, bad) => {
+    expect(perUnit({ ...COIN_QUOTE, rate_24k: bad, buy_price: bad })).toEqual(["—", "—", "—/g (24K) · live"]);
   });
 });
 

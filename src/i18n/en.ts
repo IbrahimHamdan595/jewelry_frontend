@@ -11,6 +11,12 @@ export interface Translations {
     showPassword: string;
     hidePassword: string;
     failed: string;
+    /** HTTP 401 on sign-in: wrong email or password (the server never says which). */
+    invalidCredentials: string;
+    /** HTTP 403 on sign-in: the account exists and is switched off. */
+    accountDisabled: string;
+    /** HTTP 429 on sign-in: the per-IP rate limit, or a locked account. */
+    tooManyAttempts: string;
   };
 
   suppliers: {
@@ -201,9 +207,13 @@ export interface Translations {
     goldPrice: string;
     zakat: string;
     auditLedger: string;
+    accounting: string;
     settings: string;
     signOut: string;
     admin: string;
+    /** The mobile drawer's two icon buttons. */
+    openMenu: string;
+    closeMenu: string;
   };
 
   // Inventory › Pure Gold Lots (NEX-64, slice 3). Enum maps (sources, reasons)
@@ -560,6 +570,9 @@ export interface Translations {
     capture: string;
     step01: string;
     itemNotFound: string;
+    /** The code was found, but what came back for it has no readable price or rate. */
+    cannotPrice: string;
+    cannotPriceHint: string;
     readyToScan: string;
     scanHint: string;
     manualEntry: string;
@@ -606,11 +619,13 @@ export interface Translations {
     perUnitFormula: string;
     totalBuyPrice: string;
     rate: string;
+    /** `rate` arrives formatted ("$141.66", or the missing-amount dash). */
     rateLine: (rate: string, source: string, stale: boolean) => string;
     sellerRequired: string;
     record: string;
     recording: string;
     recorded: string;
+    failed: string;
     paidTo: (amount: string, name: string) => string;
     newBuyback: string;
   };
@@ -655,6 +670,7 @@ export interface Translations {
     confirmRateAbove: string;
     confirmComplete: string;
     saleComplete: string;
+    failed: string;
     thankYou: (name: string) => string;
     items: string;
     cashier: string;
@@ -723,6 +739,8 @@ export interface Translations {
     reasonInputLabel: string;
     auditNote: string;
     setOverride: string;
+    setOverrideFailed: string;
+    clearOverrideFailed: string;
   };
 
   // NEX-64 slice 5 — admin barcode-label page
@@ -738,6 +756,12 @@ export interface Translations {
     /** One stepper per product row, so each names its product. */
     fewerCopies: (product: string) => string;
     moreCopies: (product: string) => string;
+  };
+
+  /** The day / month / year filter above the orders lists and the rate history. */
+  calendar: {
+    allTime: string;
+    granularity: { day: string; month: string; year: string };
   };
 
   common: {
@@ -794,11 +818,13 @@ export interface Translations {
     autoPostDisableConfirm: string;
     autoPostDisableBlocked: string;
     autoPostStateUnknownBlocked: string;
+    autoPostFailed: string;
     cancel: string;
     close: string;
     saving: string;
     // NEX-64 slice 5 — the rest of the settings page
     saveChanges: string;
+    saveFailed: string;
     tabStore: string;
     tabPricing: string;
     tabReceipt: string;
@@ -838,8 +864,10 @@ export interface Translations {
     confirmNewPassword: string;
     updatePassword: string;
     passwordsMismatch: string;
+    changePasswordFailed: string;
     cashiers: string;
     addCashier: string;
+    addCashierFailed: string;
     staffFields: { name: string; email: string; password: string };
     staffActive: string;
     staffDisabled: string;
@@ -868,6 +896,9 @@ export interface Translations {
     rateFeedDown: string;
     rateAsOf: string;
     fetchingRate: string;
+    /** Fallbacks for a failed request that came back with no reason of its own (see errorMessage). */
+    actionFailed: string;
+    downloadFailed: string;
   };
 
   stockTake: {
@@ -1012,7 +1043,6 @@ export interface Translations {
     discountPct: (pct: number) => string;
     lbpEquivalent: string;
     paymentMethod: string;
-    payment: { CASH: string; CARD: string; MIXED: string; CREDIT: string };
     refundTotalsNote: string;
     refundItem: string;
     refundQty: (max: number) => string;
@@ -1155,6 +1185,10 @@ export interface Translations {
       eyebrow: string; title: string; description: string; seedBtn: string;
       colCode: string; colName: string; colType: string; colDenom: string; colNormal: string;
       colCurrency: string; colSystemKey: string; colActive: string; empty: string;
+      /** The backend's AccountType, Denomination and NormalBalance enums. */
+      types: { ASSET: string; LIABILITY: string; EQUITY: string; INCOME: string; EXPENSE: string };
+      denominations: { MONEY: string; METAL: string; DUAL: string };
+      normalBalances: { DEBIT: string; CREDIT: string };
     };
     journal: {
       eyebrow: string; title: string; description: string; recentEntries: string;
@@ -1178,6 +1212,7 @@ export interface Translations {
       eyebrow: string; title: string; description: string; newCustomer: string;
       namePlaceholder: string; creditLimitPlaceholder: string; createBtn: string;
       recordReceipt: string; amountPlaceholder: string; recordBtn: string; receiptHint: string;
+      receiptRecorded: (receiptNo: string, unapplied: string) => string;
       colCustomer: string; colOpenBalance: string;
       agingCurrent: string; aging3160: string; aging6190: string; aging90: string; empty: string;
     };
@@ -1199,6 +1234,9 @@ export interface Translations {
       paidCash: string; paidBank: string; noVat: string; recordBtn: string; byCategory: string;
       colBill: string; colVendor: string; colDate: string; colTotal: string; colPaid: string;
       colStatus: string; empty: string;
+      billRecorded: (billNo: string, status: string, total: string) => string;
+      /** The backend's VendorBillStatus enum. */
+      billStatus: { OPEN: string; PARTIAL: string; PAID: string; VOID: string };
     };
     tax: {
       eyebrow: string; title: string; description: string; taxCodes: string; seedCodes: string;
@@ -1260,6 +1298,9 @@ const en: Translations = {
     showPassword: "Show password",
     hidePassword: "Hide password",
     failed: "Login failed",
+    invalidCredentials: "Invalid credentials",
+    accountDisabled: "Account disabled",
+    tooManyAttempts: "Too many attempts. Try again later.",
   },
 
   suppliers: {
@@ -1460,9 +1501,12 @@ const en: Translations = {
     goldPrice: "Gold Price",
     zakat: "Zakat",
     auditLedger: "Audit Ledger",
+    accounting: "Accounting",
     settings: "Settings",
     signOut: "Sign out",
     admin: "Admin",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
 
   lots: {
@@ -1808,6 +1852,8 @@ const en: Translations = {
     capture: "Capture",
     step01: "Step 01",
     itemNotFound: "Item not found",
+    cannotPrice: "Can't price this item",
+    cannotPriceHint: "The item exists, but its price couldn't be read. Ask an admin.",
     readyToScan: "Ready to scan",
     scanHint: "Point scanner at barcode or enter code below",
     manualEntry: "Manual entry",
@@ -1859,11 +1905,12 @@ const en: Translations = {
     perUnitFormula: "Per unit (formula)",
     totalBuyPrice: "Total buy price",
     rate: "Rate",
-    rateLine: (rate, source, stale) => `$${rate}/g (24K) · ${source}${stale ? " (stale)" : ""}`,
+    rateLine: (rate, source, stale) => `${rate}/g (24K) · ${source}${stale ? " (stale)" : ""}`,
     sellerRequired: "Seller name and phone are required.",
     record: "Record buy back",
     recording: "Recording…",
     recorded: "Buy back recorded",
+    failed: "Buyback failed",
     paidTo: (amount, name) => `Paid ${amount} to ${name}`,
     newBuyback: "New buy back",
   },
@@ -1902,6 +1949,7 @@ const en: Translations = {
     confirmRateAbove: "CONFIRM THE RATE ABOVE",
     confirmComplete: "CONFIRM & COMPLETE",
     saleComplete: "SALE COMPLETE",
+    failed: "Checkout failed",
     thankYou: (name) => `Thank you, ${name}`,
     items: "Items",
     cashier: "Cashier",
@@ -1969,6 +2017,8 @@ const en: Translations = {
     reasonInputLabel: "Reason for the override",
     auditNote: "Every override is logged with actor, rate, prior rate, and reason. Reason is mandatory.",
     setOverride: "Set Override",
+    setOverrideFailed: "Failed to set override",
+    clearOverrideFailed: "Failed to clear override",
   },
 
   // NEX-64 slice 5 — admin barcode-label page
@@ -1983,6 +2033,11 @@ const en: Translations = {
     formatHelp: "Compatible with any standard 1D barcode scanner. The cashier scans the bars; the product code below is a fallback for manual entry.",
     fewerCopies: (product) => `Fewer copies of ${product}`,
     moreCopies: (product) => `More copies of ${product}`,
+  },
+
+  calendar: {
+    allTime: "All time",
+    granularity: { day: "day", month: "month", year: "year" },
   },
 
   common: {
@@ -2039,11 +2094,13 @@ const en: Translations = {
     autoPostDisableConfirm: "Turn off",
     autoPostDisableBlocked: "The ledger already has entries. Turning auto-posting off now would leave a gap in the books, so it can't be switched off from here. Ask your accountant how to close the books instead.",
     autoPostStateUnknownBlocked: "The ledger's state couldn't be checked, so auto-posting can't be switched off from here right now. Try again in a moment.",
+    autoPostFailed: "Failed",
     cancel: "Cancel",
     close: "Close",
     saving: "Saving…",
     // NEX-64 slice 5 — the rest of the settings page
     saveChanges: "Save Changes",
+    saveFailed: "Failed to save settings",
     tabStore: "Store Info",
     tabPricing: "Default Pricing",
     tabReceipt: "Receipt",
@@ -2083,8 +2140,10 @@ const en: Translations = {
     confirmNewPassword: "Confirm New Password",
     updatePassword: "Update Password",
     passwordsMismatch: "New passwords do not match",
+    changePasswordFailed: "Failed to change password",
     cashiers: "Cashiers",
     addCashier: "Add Cashier",
+    addCashierFailed: "Failed to add cashier",
     staffFields: { name: "name", email: "email", password: "password" },
     staffActive: "Active",
     staffDisabled: "Disabled",
@@ -2113,6 +2172,8 @@ const en: Translations = {
     rateFeedDown: "Feed down",
     rateAsOf: "as of",
     fetchingRate: "Fetching rate…",
+    actionFailed: "Couldn't complete this action. Try again.",
+    downloadFailed: "Download failed",
   },
 
   stockTake: {
@@ -2249,7 +2310,6 @@ const en: Translations = {
     discountPct: (pct) => `Discount ${pct}%`,
     lbpEquivalent: "LBP Equivalent",
     paymentMethod: "Payment Method",
-    payment: { CASH: "CASH", CARD: "CARD", MIXED: "MIXED", CREDIT: "CREDIT" },
     refundTotalsNote: "Totals reflect remaining (un-refunded) items. VAT recalculated on the new subtotal.",
     refundItem: "Refund item",
     refundQty: (max) => `Quantity to refund (max ${max})`,
@@ -2422,6 +2482,9 @@ const en: Translations = {
       colCode: "Code", colName: "Name", colType: "Type", colDenom: "Denom.", colNormal: "Normal",
       colCurrency: "Currency", colSystemKey: "System key", colActive: "Active",
       empty: "No accounts yet — seed the system accounts to begin.",
+      types: { ASSET: "ASSET", LIABILITY: "LIABILITY", EQUITY: "EQUITY", INCOME: "INCOME", EXPENSE: "EXPENSE" },
+      denominations: { MONEY: "MONEY", METAL: "METAL", DUAL: "DUAL" },
+      normalBalances: { DEBIT: "DEBIT", CREDIT: "CREDIT" },
     },
     journal: {
       eyebrow: "The raw double-entry log",
@@ -2460,6 +2523,7 @@ const en: Translations = {
       namePlaceholder: "Name", creditLimitPlaceholder: "Credit limit (blank = unlimited)",
       createBtn: "Create", recordReceipt: "Record a receipt", amountPlaceholder: "Amount",
       recordBtn: "Record receipt", receiptHint: "pays off oldest invoices first",
+      receiptRecorded: (receiptNo, unapplied) => `Receipt ${receiptNo} (unapplied ${unapplied})`,
       colCustomer: "Customer", colOpenBalance: "Open balance",
       agingCurrent: "Current", aging3160: "31–60d", aging6190: "61–90d", aging90: "90d+",
       empty: "No customers with a balance.",
@@ -2494,6 +2558,8 @@ const en: Translations = {
       noVat: "No VAT", recordBtn: "Record", byCategory: "Expense by category",
       colBill: "Bill", colVendor: "Vendor", colDate: "Date", colTotal: "Total", colPaid: "Paid",
       colStatus: "Status", empty: "No bills recorded yet.",
+      billRecorded: (billNo, status, total) => `Bill ${billNo} (${status}, total ${total})`,
+      billStatus: { OPEN: "OPEN", PARTIAL: "PARTIAL", PAID: "PAID", VOID: "VOID" },
     },
     tax: {
       eyebrow: "Lebanon VAT (11%)",

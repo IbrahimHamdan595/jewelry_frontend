@@ -8,7 +8,7 @@ const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn(() => Promise.resolve()) }) }));
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "p1" }), useRouter: () => ({ push: vi.fn() }) }));
 const api = vi.hoisted(() => ({ post: vi.fn(() => Promise.resolve({})), patch: vi.fn(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 // The form has its own tests (ProductForm.test.tsx); this file is about the page around it.
 vi.mock("@/components/admin/ProductForm", () => ({ ProductForm: () => null }));
 

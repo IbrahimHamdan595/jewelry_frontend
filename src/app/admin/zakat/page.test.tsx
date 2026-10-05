@@ -2,17 +2,18 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import ZakatPage from "@/app/admin/zakat/page";
 import { LanguageProvider } from "@/context/LanguageContext";
+import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
 const TAKEN = "2026-09-05T10:00:00Z";
 const summary = {
   holdings: { by_karat: [{ karat: "K21", grams_by_source: { products: "10", coins: "8", ounces: "0", lots: "2" }, total_weight_grams: "20", au_grams: "17.5" }], total_au_grams: "17.5" },
-  gold_rate_24k: "100", gold_rate_source: "goldapi", gold_rate_is_stale: false, gold_rate_fetched_at: TAKEN,
+  gold_rate_24k: "100", gold_rate_source: "live", gold_rate_is_stale: false, gold_rate_fetched_at: TAKEN,
   nisab_grams: "85", meets_nisab: false, total_au_value_usd: "1750", zakat_au_grams: "0.4375", zakat_value_usd: "43.75",
 };
 const snapshot = {
   id: "s1", taken_at: TAKEN, assessment_date: "2026-09-05", taken_by_user_id: "u1", notes: null, gold_rate_24k_usd_per_gram: "100",
-  gold_rate_source: "goldapi", nisab_grams_used: "85", meets_nisab: true, total_au_grams: "17.5", zakat_au_grams: "0.4375",
+  gold_rate_source: "override", nisab_grams_used: "85", meets_nisab: true, total_au_grams: "17.5", zakat_au_grams: "0.4375",
   zakat_value_usd: "43.75", integrity_ok: true,
 };
 const swr = vi.hoisted(() => ({ loading: false }));
@@ -23,10 +24,13 @@ vi.mock("swr", () => ({
   }),
 }));
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
-// The rate feed's name comes from the server.
-const DATA = ["goldapi"];
+// ZakatSummary / ZakatSnapshot as GET /zakat and GET /zakat/snapshots send them
+// (app/core/zakat.py): gold_rate_source is the rate's source at that moment,
+// "live" for the polled feed or "override" for an admin override — an enum, so
+// it is translated. Nothing on this screen is free-text data.
+const DATA: string[] = [];
 
 /** Text a user reads or a screen reader announces, minus the given data values. */
 function englishLeft(root: HTMLElement): string[] {
@@ -121,6 +125,26 @@ describe("zakat page labels and i18n (NEX-64)", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("snapshot dialog keeps Tab inside it: the page behind is not reachable while it is open", () => {
+    renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.zakat.saveSnapshot }));
+    const date = screen.getByLabelText(ar.zakat.assessmentDate);
+    const save = screen.getByRole("button", { name: ar.zakat.save });
+    const press = (shiftKey = false) => !fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey });
+
+    save.focus(); // the last control
+    expect(press()).toBe(true);
+    expect(date).toHaveFocus(); // the first
+    expect(press(true)).toBe(true);
+    expect(save).toHaveFocus();
+    screen.getByLabelText(ar.zakat.notesOptional).focus(); // in the middle: the browser's own order
+    expect(press()).toBe(false);
+
+    // Closed, it lets go of Tab.
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(fireEvent.keyDown(document.body, { key: "Tab" })).toBe(true);
+  });
+
   it("snapshot dialog cannot be dismissed while the save is in flight, and still saves what was entered", async () => {
     let finish: (value: unknown) => void = () => {};
     api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
@@ -146,5 +170,23 @@ describe("zakat page labels and i18n (NEX-64)", () => {
     expect(screen.getByText("$1,750.00")).toBeInTheDocument();
     expect(screen.getByText(/^05 Sept? 2026, 13:00$/)).toBeInTheDocument();
     expect(screen.getAllByText("g")).toHaveLength(3);
+  });
+});
+
+describe("zakat — the gold-rate source is named, not printed raw (NEX-64)", () => {
+  /** The pill after the rate on the summary card, and the one in the snapshot's row. */
+  const sourcePills = (root: HTMLElement) => Array.from(root.querySelectorAll("span.bg-gray-100.uppercase")).map((el) => el.textContent);
+
+  it("Arabic: the live feed on the summary and the override on the saved snapshot", () => {
+    const { container } = renderPage("ar");
+    expect(sourcePills(container)).toEqual([ar.goldRate.sources.live, ar.goldRate.sources.override]);
+    expect(container).not.toHaveTextContent(/\blive\b|\boverride\b/);
+    expect(englishLeft(container)).toEqual([]);
+  });
+
+  it("English keeps the API's own words (set in capitals)", () => {
+    const { container } = renderPage("en");
+    expect(sourcePills(container)).toEqual(["live", "override"]);
+    expect(en.goldRate.sources).toEqual({ live: "live", override: "override" });
   });
 });

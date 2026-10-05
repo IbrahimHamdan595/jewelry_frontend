@@ -5,7 +5,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Plus, Edit2, ToggleLeft, ToggleRight, Trash2, Image as ImageIcon } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useGoldRate } from "@/hooks/useGoldRate";
@@ -77,16 +77,12 @@ function ProductsPageInner() {
         <UnitCatalog
           resource="coins"
           adjustmentTarget="COIN_STOCK"
-          singular="Coin Type"
-          plural="Coin Types"
         />
       )}
       {activeTab === "ounces" && (
         <UnitCatalog
           resource="ounces"
           adjustmentTarget="OUNCE_STOCK"
-          singular="Ounce Type"
-          plural="Ounce Types"
         />
       )}
     </div>
@@ -129,7 +125,7 @@ function ProductsTab() {
       setDeleting(null);
       mutate();
     } catch (err) {
-      setDelErr(err instanceof Error ? err.message : pr.deleteFailed);
+      setDelErr(errorMessage(err, pr.deleteFailed));
     } finally {
       setDelBusy(false);
     }
@@ -210,7 +206,7 @@ function ProductsTab() {
                         {p.is_used && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">{pr.usedBadge}</span>
                         )}
-                        {p.stone_value_usd != null && p.stone_value_usd > 0 && (
+                        {(toFiniteNumber(p.stone_value_usd) ?? 0) > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">💎 {pr.stones}</span>
                         )}
                         {p.status !== "AVAILABLE" && (

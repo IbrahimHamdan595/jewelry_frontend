@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor, act } from "@testing-library/react";
 import OrderDetailPage from "@/app/admin/orders/[id]/page";
+import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
+import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
 const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "o1" }) }));
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 const item = (over: Record<string, unknown>) => ({
   id: "i1", item_kind: "PRODUCT", product_id: "p1", coin_type_id: null, ounce_type_id: null, quantity: 3,
@@ -26,11 +28,7 @@ const order = (over: Record<string, unknown>) => ({
 
 // Database values: names, codes, the order number.
 const DATA = ["ORD-20260905-002", "Ibrahim", "Rana Haddad", "RNG-0042", "Twisted Ring", "LIRA-8G", "Gold Lira"];
-// StatusBadge is a shared component outside this slice; it still prints the
-// order-status enum lowercased in English.
-const SHARED = ["completed", "partially refunded", "refunded", "voided"];
-
-/** Text a user reads or a screen reader announces, minus data and shared-component text. */
+/** Text a user reads or a screen reader announces, minus data — the status badge included. */
 function englishLeft(root: HTMLElement): string[] {
   const found: string[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -40,7 +38,7 @@ function englishLeft(root: HTMLElement): string[] {
   });
   return found
     .map((text) => DATA.reduce((rest, value) => rest.split(value).join(""), text).trim())
-    .filter((text) => !SHARED.includes(text) && /[A-Za-z]{2,}/.test(text));
+    .filter((text) => /[A-Za-z]{2,}/.test(text));
 }
 
 /** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
@@ -70,9 +68,10 @@ describe("order detail in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.orders.customerLine("Rana Haddad"))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.itemKind.PRODUCT)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.itemKind.COIN)).toBeInTheDocument();
-    expect(screen.getByText(ar.orders.payment.CASH)).toBeInTheDocument();
+    expect(screen.getByText(ar.checkout.paymentMethods.CASH)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.discountPct(5))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.refundedLine(1, 3, "$106.00"))).toBeInTheDocument();
+    expect(screen.getByText(ar.orders.status.COMPLETED)).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
     expect(arabicInMono(container)).toEqual([]);
   });
@@ -142,8 +141,11 @@ describe("order detail in Arabic (NEX-64)", () => {
 
   it("translates the voided stamp and the refunded-totals note", () => {
     const { container, unmount } = renderPage("ar", order({ status: "VOIDED" }));
-    expect(screen.getByText(ar.orders.voidedStamp)).toBeInTheDocument();
+    // The watermark across the table, and — the same word in Arabic — the status badge in the header.
+    expect(screen.getByText(ar.orders.voidedStamp, { selector: ".rotate-\\[-30deg\\]" })).toBeInTheDocument();
+    expect(screen.getByText(ar.orders.status.VOIDED, { selector: ".rounded-full" })).toBeInTheDocument();
     expect(screen.queryByText("VOIDED")).toBeNull();
+    expect(screen.queryByText("voided")).toBeNull();
     expect(englishLeft(container)).toEqual([]);
     unmount();
     renderPage("ar", order({ status: "PARTIALLY_REFUNDED" }));
@@ -189,7 +191,7 @@ describe("order detail: voiding an order", () => {
   });
 
   it("stays open and shows the server's reason when the void fails", async () => {
-    api.post.mockRejectedValueOnce(new Error("Order already voided"));
+    api.post.mockRejectedValueOnce(new ApiError(400, "Order already voided")); // POST /orders/{id}/void on a voided order
     openVoidPanel("duplicate sale");
     confirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("Order already voided");
@@ -257,8 +259,30 @@ describe("order detail: every payment method the API can send is named", () => {
     expect(value).not.toHaveTextContent(method);
   });
 
+  it("there is one payment-method map, shared with the till, the confirmation and the receipt", () => {
+    // The order detail used to carry its own copy under orders.payment, which is
+    // how CREDIT went missing from one screen and not the others.
+    for (const dict of [en, ar]) expect(Object.keys(dict.orders)).not.toContain("payment");
+    expect(Object.keys(ar.checkout.paymentMethods)).toEqual(["CASH", "CARD", "MIXED", "CREDIT", "GOLD"]);
+  });
+
   it("CREDIT reads as CREDIT in English, like the other three", () => {
     renderPage("en", order({ payment_method: "CREDIT" }));
     expect(screen.getByText("Payment Method").nextElementSibling).toHaveTextContent("CREDIT");
+  });
+});
+
+// OrderItemOut.gold_rate_at_sale is a Decimal: a string on the wire.
+describe("order detail: the rate at sale is formatted, never NaN", () => {
+  it.each([
+    ["a string", "88.40", "$88.40/g"],
+    ["a number", 88.4, "$88.40/g"],
+    ["null", null, "—/g"],
+    ["unreadable", "n/a", "—/g"],
+  ])("gold_rate_at_sale as %s", (_name, gold_rate_at_sale, shown) => {
+    renderPage("en", order({ items: [item({ gold_rate_at_sale })] }));
+    const row = screen.getByText("Twisted Ring").closest("tr") as HTMLElement;
+    expect(within(row).getAllByRole("cell")[5]).toHaveTextContent(shown);
+    expect(row).not.toHaveTextContent("NaN");
   });
 });

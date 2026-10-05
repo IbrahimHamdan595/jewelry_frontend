@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { ArrowLeft, Plus, Banknote, Coins } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
@@ -393,7 +393,7 @@ function PaymentDialog({
       await api.post(`/suppliers/${supplierId}/payments`, { unit, amount, notes });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : su.paymentFailed);
+      setError(errorMessage(err, su.paymentFailed));
     } finally {
       setSaving(false);
     }
@@ -491,7 +491,7 @@ function GoldPaymentDialog({
       });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : su.paymentFailed);
+      setError(errorMessage(err, su.paymentFailed));
     } finally {
       setSaving(false);
     }

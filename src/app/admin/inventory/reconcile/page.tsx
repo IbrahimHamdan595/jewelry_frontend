@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CheckCircle, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
-import { api } from "@/lib/api-client";
+import { api, errorMessage } from "@/lib/api-client";
 import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
@@ -49,8 +49,8 @@ export default function InventoryReconcilePage() {
       );
       setData(res);
       setRanAt(new Date());
-    } catch (e: any) {
-      setError(e.message ?? r.failed);
+    } catch (e) {
+      setError(errorMessage(e, r.failed));
     } finally {
       setLoading(false);
     }

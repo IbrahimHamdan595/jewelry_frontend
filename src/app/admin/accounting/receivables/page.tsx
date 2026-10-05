@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
 import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
 import { firstOfYear, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -13,6 +14,7 @@ import { CardSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -33,7 +35,7 @@ export default function Receivables() {
   const [customers, setCustomers] = useState<CustomerT[]>([]);
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [tie, setTie] = useState<{ matches: boolean; gl_ar_balance: string; subledger_balance: string } | null>(null);
   const [aging, setAging] = useState<{ totals: Record<string, string>; grand_total: string } | null>(null);
   const [rcCust, setRcCust] = useState("");
@@ -44,7 +46,8 @@ export default function Receivables() {
   const [rcCcy, setRcCcy] = useState("USD");
   const [rcRate, setRcRate] = useState("1");
   const [lbpRate, setLbpRate] = useState("1");
-  const [ok, setOk] = useState<string | null>(null);
+  // The last receipt as the server answered; worded when it is shown.
+  const [recorded, setRecorded] = useState<{ receipt_no: string; unapplied_amount: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -52,7 +55,7 @@ export default function Receivables() {
       setCustomers((await ar.listCustomers()).items);
       setTie(await ar.verify());
       setAging(await ar.aging(today()));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setFailure({ err: e, during: "load" }); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
@@ -68,19 +71,19 @@ export default function Receivables() {
   }
 
   async function create() {
-    setError(null);
+    setFailure(null);
     try { await ar.createCustomer({ name, credit_limit: limit || undefined }); setName(""); setLimit(""); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setFailure({ err: e, during: "action" }); }
   }
   async function receipt() {
-    setError(null); setOk(null);
+    setFailure(null); setRecorded(null);
     try {
       const r = await ar.createReceipt({
         customer_id: rcCust, receipt_date: today(), amount: rcAmt, payment_system_key: "CASH",
         currency: rcCcy, fx_rate: rcCcy === "USD" ? "1" : (rcRate || "1"),
       });
-      setOk(`Receipt ${r.receipt_no} (unapplied ${r.unapplied_amount})`); setRcAmt(""); await load();
-    } catch (e) { setError((e as Error).message); }
+      setRecorded(r); setRcAmt(""); await load();
+    } catch (e) { setFailure({ err: e, during: "action" }); }
   }
 
   const agingCells = aging ? [
@@ -99,11 +102,11 @@ export default function Receivables() {
         description={a.description}
         actions={tie && (
           <span className={`text-xs ${tie.matches ? "text-green-700" : "text-red-700"}`}>
-            {tie.matches ? "✓" : "✗"} {tie.gl_ar_balance} / {tie.subledger_balance}
+            {tie.matches ? "✓" : "✗"} <Ltr>{tie.gl_ar_balance} / {tie.subledger_balance}</Ltr>
           </span>
         )}
       />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      <ErrorNote failure={failure} />
 
       {loading && !aging && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -137,7 +140,7 @@ export default function Receivables() {
                disabled={rcCcy === "USD"} className="w-28 text-end disabled:bg-gray-50 disabled:text-gray-400" />
         <Input placeholder={a.amountPlaceholder} value={rcAmt} onChange={(e) => setRcAmt(e.target.value)} className="w-32 text-end" />
         <Button onClick={receipt} disabled={!rcCust || !rcAmt}>{a.recordBtn}</Button>
-        {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}
+        {recorded && <span role="status" className="text-sm text-green-700 ms-1">{a.receiptRecorded(recorded.receipt_no, recorded.unapplied_amount)}</span>}
       </ActionBar>
 
       <SectionCard title={a.title} flush>

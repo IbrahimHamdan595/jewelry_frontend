@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { Plus, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { useLang } from "@/context/LanguageContext";
@@ -32,7 +32,7 @@ export default function SuppliersPage() {
       await api.patch(`/suppliers/${s.id}`, { is_active: !s.is_active });
       mutate();
     } catch (err) {
-      alert(err instanceof Error ? err.message : su.toggleFailed);
+      alert(errorMessage(err, su.toggleFailed));
     }
   }
 
@@ -184,7 +184,7 @@ function SupplierForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: ()
       await api.post("/suppliers", form);
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : su.saveFailed);
+      setError(errorMessage(err, su.saveFailed));
     } finally {
       setSaving(false);
     }
