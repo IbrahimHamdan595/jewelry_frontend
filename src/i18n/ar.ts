@@ -833,6 +833,7 @@ const ar: Translations = {
     saving: "جارٍ الحفظ…",
     // NEX-64 الشريحة 5 — بقية صفحة الإعدادات
     saveChanges: "حفظ التغييرات",
+    saveFailed: "تعذّر حفظ الإعدادات",
     tabStore: "معلومات المحل",
     tabPricing: "التسعير الافتراضي",
     tabReceipt: "الإيصال",
@@ -875,6 +876,7 @@ const ar: Translations = {
     changePasswordFailed: "تعذّر تغيير كلمة المرور",
     cashiers: "أمناء الصندوق",
     addCashier: "إضافة أمين صندوق",
+    addCashierFailed: "تعذّرت إضافة أمين الصندوق",
     staffFields: { name: "الاسم", email: "البريد الإلكتروني", password: "كلمة المرور" },
     staffActive: "نشط",
     staffDisabled: "معطّل",

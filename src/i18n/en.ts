@@ -824,6 +824,7 @@ export interface Translations {
     saving: string;
     // NEX-64 slice 5 — the rest of the settings page
     saveChanges: string;
+    saveFailed: string;
     tabStore: string;
     tabPricing: string;
     tabReceipt: string;
@@ -866,6 +867,7 @@ export interface Translations {
     changePasswordFailed: string;
     cashiers: string;
     addCashier: string;
+    addCashierFailed: string;
     staffFields: { name: string; email: string; password: string };
     staffActive: string;
     staffDisabled: string;
@@ -2098,6 +2100,7 @@ const en: Translations = {
     saving: "Saving…",
     // NEX-64 slice 5 — the rest of the settings page
     saveChanges: "Save Changes",
+    saveFailed: "Failed to save settings",
     tabStore: "Store Info",
     tabPricing: "Default Pricing",
     tabReceipt: "Receipt",
@@ -2140,6 +2143,7 @@ const en: Translations = {
     changePasswordFailed: "Failed to change password",
     cashiers: "Cashiers",
     addCashier: "Add Cashier",
+    addCashierFailed: "Failed to add cashier",
     staffFields: { name: "name", email: "email", password: "password" },
     staffActive: "Active",
     staffDisabled: "Disabled",

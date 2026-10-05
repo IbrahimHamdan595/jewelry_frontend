@@ -23,6 +23,8 @@ export default function SettingsPage() {
   const [autoPostError, setAutoPostError] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [addStaffError, setAddStaffError] = useState<string | null>(null);
   const [newStaff, setNewStaff] = useState({ name: "", email: "", password: "" });
   const [showAdd, setShowAdd] = useState(false);
   const [pwForm, setPwForm] = useState({ current_password: "", new_password: "", confirm: "" });
@@ -68,20 +70,35 @@ export default function SettingsPage() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveError(null);
     try {
       const { accounting_auto_post_enabled: _autoPost, ...payload } = form;
       await api.patch("/settings", payload);
       mutate();
+    } catch (e) {
+      // The form keeps what was typed; the user fixes it and saves again.
+      setSaveError(errorMessage(e, t.settings.saveFailed));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleAddStaff() {
-    await api.post("/staff", newStaff);
-    mutateStaff();
-    setNewStaff({ name: "", email: "", password: "" });
+    setAddStaffError(null);
+    try {
+      await api.post("/staff", newStaff);
+      mutateStaff();
+      setNewStaff({ name: "", email: "", password: "" });
+      setShowAdd(false);
+    } catch (e) {
+      // The form stays open with what was typed (an email already in use is one edit away).
+      setAddStaffError(errorMessage(e, t.settings.addCashierFailed));
+    }
+  }
+
+  function closeAddStaff() {
     setShowAdd(false);
+    setAddStaffError(null); // an old refusal must not greet the next time the form opens
   }
 
   async function handleChangePassword() {
@@ -133,6 +150,8 @@ export default function SettingsPage() {
           </button>
         )}
       </div>
+
+      {saveError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{saveError}</div>}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
@@ -378,9 +397,10 @@ export default function SettingsPage() {
                 {(["name", "email", "password"] as const).map((f) => (
                   <input key={f} dir={f === "name" ? undefined : "ltr"} placeholder={t.settings.staffFields[f]} aria-label={t.settings.staffFields[f]} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
                 ))}
+                {addStaffError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-xs rounded p-2">{addStaffError}</div>}
                 <div className="flex gap-2">
                   <button onClick={handleAddStaff} className="px-4 py-2 bg-gold text-white text-xs rounded">{t.common.save}</button>
-                  <button onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded text-xs">{t.settings.cancel}</button>
+                  <button onClick={closeAddStaff} className="px-4 py-2 border rounded text-xs">{t.settings.cancel}</button>
                 </div>
               </div>
             )}
