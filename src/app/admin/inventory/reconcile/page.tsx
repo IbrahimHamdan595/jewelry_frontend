@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { CheckCircle, AlertTriangle, RefreshCw, ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
 
 /** The column this page audits: a machine identifier shown as-is, not copy. */
 const STOCK_FIELD = "on_hand_qty";
@@ -28,6 +30,7 @@ interface ReconcileResponse {
 export default function InventoryReconcilePage() {
   const { t } = useLang();
   const r = t.reconcile;
+  const { formatDateTime } = useFormat();
   // Each sentence decides where its styled element goes; split it there, so the
   // element can be styled without fixing its position for every language.
   const [introBefore, introAfter = ""] = r.intro(SLOT).split(SLOT);
@@ -90,7 +93,7 @@ export default function InventoryReconcilePage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+        <div role="alert" className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -98,7 +101,7 @@ export default function InventoryReconcilePage() {
       {data !== null && (
         <>
           <div className="text-xs text-gray-400">
-            {ranAt && <>{r.lastRun} {ranAt.toLocaleString()}</>}
+            {ranAt && <>{r.lastRun} {formatDateTime(ranAt)}</>}
             {data.discord_alerted && <> · {r.discordAlertSent}</>}
           </div>
 
@@ -130,12 +133,12 @@ export default function InventoryReconcilePage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.kind}</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.code}</th>
-                      <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
-                      <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.stored}</th>
-                      <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.computed}</th>
-                      <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.drift}</th>
+                      <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.kind}</th>
+                      <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.code}</th>
+                      <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                      <th className="text-end px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.stored}</th>
+                      <th className="text-end px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.computed}</th>
+                      <th className="text-end px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{r.drift}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -143,15 +146,18 @@ export default function InventoryReconcilePage() {
                       <tr key={`${d.kind}-${d.id}`}>
                         <td className="px-4 py-3">
                           <span className="px-2 py-0.5 bg-gray-100 rounded text-xs uppercase tracking-wide text-gray-600">
-                            {r.kinds[d.kind] ?? d.kind}
+                            {r.kinds[d.kind]}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs">{d.code}</td>
+                        <td className="px-4 py-3 font-mono text-xs"><Ltr>{d.code}</Ltr></td>
                         <td className="px-4 py-3 text-gray-700">{d.name_en}</td>
-                        <td className="px-4 py-3 text-right text-gray-800">{d.stored}</td>
-                        <td className="px-4 py-3 text-right text-gray-800">{d.computed}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span
+                        {/* Signed counts stay left-to-right: in RTL a bare "+2" or "-1"
+                            renders with its sign on the far side ("2+", "1-"). The replayed
+                            count can itself be negative when an event is missing. */}
+                        <td className="px-4 py-3 text-end text-gray-800"><Ltr>{d.stored}</Ltr></td>
+                        <td className="px-4 py-3 text-end text-gray-800"><Ltr>{d.computed}</Ltr></td>
+                        <td className="px-4 py-3 text-end">
+                          <Ltr
                             className={
                               d.drift > 0
                                 ? "text-amber-700 font-medium"
@@ -160,7 +166,7 @@ export default function InventoryReconcilePage() {
                           >
                             {d.drift > 0 ? "+" : ""}
                             {d.drift}
-                          </span>
+                          </Ltr>
                         </td>
                       </tr>
                     ))}

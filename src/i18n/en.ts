@@ -186,6 +186,7 @@ export interface Translations {
   // Inventory › Reconcile. `intro` and `idleHint` are whole sentences built
   // around one styled element; each takes that element's text and places it.
   reconcile: {
+    tab: string;
     title: string;
     intro: (field: string) => string;
     readOnlyNote: string;
@@ -210,6 +211,7 @@ export interface Translations {
 
   // Inventory › Alerts. `healthyHint` is built around one styled element too.
   stockAlerts: {
+    tab: string;
     allHealthy: string;
     healthyHint: (field: string) => string;
     belowMinimum: (n: number) => string;
@@ -220,6 +222,7 @@ export interface Translations {
     minimum: string;
     kinds: { COIN: string; OUNCE: string; PRODUCT: string };
     manage: string;
+    manageRow: (code: string) => string;
   };
 
   // Admin › Categories
@@ -794,6 +797,7 @@ const en: Translations = {
   },
 
   reconcile: {
+    tab: "Reconcile",
     title: "Coin & Ounce Stock Reconciliation",
     intro: (field) => `Replays every event that mutates ${field} (supplier purchases, walk-in buybacks, manual adjustments, completed & refunded sales) and compares the result against the stored quantity. Drift means the stored value disagrees with what the audit history implies.`,
     readOnlyNote: "Read-only. Resolving drift is a separate step — find the missing event in code, or run a physical stock-take and post a manual adjustment for the variance.",
@@ -817,6 +821,7 @@ const en: Translations = {
   },
 
   stockAlerts: {
+    tab: "Alerts",
     allHealthy: "All stock above thresholds",
     healthyHint: (field) => `Coin and ounce types you've set ${field} on are healthy.`,
     belowMinimum: (n) => `${n} item${n !== 1 ? "s" : ""} at or below minimum stock`,
@@ -827,6 +832,7 @@ const en: Translations = {
     minimum: "Minimum",
     kinds: { COIN: "COIN", OUNCE: "OUNCE", PRODUCT: "PRODUCT" },
     manage: "Manage →",
+    manageRow: (code) => `Manage: ${code}`,
   },
 
   categories: {

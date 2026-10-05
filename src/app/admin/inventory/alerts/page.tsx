@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
+import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
 import type { InventoryAlertsResponse } from "@/types/api";
 
@@ -67,19 +68,19 @@ export default function InventoryAlertsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {a.kind}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {a.code}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {t.common.name}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {a.onHand}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {a.minimum}
               </th>
               <th className="px-4 py-3" aria-label={t.common.actions} />
@@ -90,17 +91,19 @@ export default function InventoryAlertsPage() {
               <tr key={`${row.kind}:${row.id}`} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
-                    {a.kinds[row.kind] ?? row.kind}
+                    {a.kinds[row.kind]}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-700">{row.code}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-700"><Ltr>{row.code}</Ltr></td>
                 <td className="px-4 py-3 text-gray-800">{row.name_en}</td>
                 <td className="px-4 py-3">
                   <span className="font-semibold text-amber-700">{row.on_hand_qty}</span>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{row.min_stock_qty}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-end">
+                  {/* One link per row: each is named after its row's code. */}
                   <Link
+                    aria-label={a.manageRow(row.code)}
                     href={
                       row.kind === "COIN"
                         ? "/admin/products?tab=coins"
