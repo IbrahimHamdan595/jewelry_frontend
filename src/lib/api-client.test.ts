@@ -86,13 +86,54 @@ describe("errorMessage — the backend's words, or the caller's translated fallb
     ["a bare status with an empty JSON body", () => json({}, 500), 500],
     ["a gateway's HTML error page", () => new Response("<html>502 Bad Gateway</html>", { status: 502, headers: { "content-type": "text/html" } }), 502],
     ["the rate limiter's {\"error\": …} body, which has no detail", () => json({ error: "Rate limit exceeded: 5 per 1 minute" }, 429), 429],
-    ["a validation list (422), which is not a sentence", () => json({ detail: [{ type: "string_too_short", loc: ["body", "new_password"], msg: "String should have at least 8 characters", input: "x" }] }, 422), 422],
+    ["a validation list with nothing readable in it", () => json({ detail: [{ type: "missing" }] }, 422), 422],
+    ["an empty validation list", () => json({ detail: [] }, 422), 422],
     ["an empty detail", () => json({ detail: "" }, 400), 400],
   ])("%s falls back to the caller's translated message, and still carries the status", async (_name, response, status) => {
     const err = await failure(response());
     expect(errorMessage(err, FALLBACK)).toBe(FALLBACK);
     expect(errorStatus(err)).toBe(status);
     expect(String((err as Error).message)).not.toBe(FALLBACK); // the Error keeps a technical message for logs
+  });
+
+  // A FastAPI 422 is a list, one entry per rejected field. The fallback alone
+  // ("couldn't save") leaves the user guessing what to change, so the first
+  // entry follows it — inside LRI…PDI, because it is English and may sit in an
+  // Arabic sentence.
+  describe("a 422 validation list", () => {
+    const LRI = "\u2066", PDI = "\u2069";
+    const tooShort = { type: "string_too_short", loc: ["body", "new_password"], msg: "String should have at least 8 characters", input: "short", ctx: { min_length: 8 } };
+
+    it("shows the fallback, then what the server rejected and why, isolated left-to-right", async () => {
+      const err = await failure(json({ detail: [tooShort] }, 422));
+      expect(errorMessage(err, FALLBACK)).toBe(`${FALLBACK} — ${LRI}new_password: String should have at least 8 characters${PDI}`);
+      expect(errorStatus(err)).toBe(422);
+    });
+
+    it("shows only the first of several", async () => {
+      const err = await failure(json({ detail: [
+        { type: "value_error", loc: ["body", "email"], msg: "value is not a valid email address: An email address must have an @-sign.", input: "lina" },
+        tooShort,
+      ] }, 422));
+      const shown = errorMessage(err, FALLBACK);
+      expect(shown).toBe(`${FALLBACK} — ${LRI}email: value is not a valid email address: An email address must have an @-sign.${PDI}`);
+      expect(shown).not.toContain("new_password");
+    });
+
+    it.each([
+      ["a nested field", ["body", "items", 0, "quantity"], "items.0.quantity: Input should be greater than 0"],
+      ["a query parameter", ["query", "page_size"], "page_size: Input should be greater than 0"],
+      ["the body as a whole", ["body"], "Input should be greater than 0"],
+      ["no location at all", undefined, "Input should be greater than 0"],
+    ])("names %s", async (_name, loc, expected) => {
+      const err = await failure(json({ detail: [{ type: "greater_than", loc, msg: "Input should be greater than 0" }] }, 422));
+      expect(errorMessage(err, FALLBACK)).toBe(`${FALLBACK} — ${LRI}${expected}${PDI}`);
+    });
+
+    it("a plain string detail on a 422 is still shown as it is, with no fallback in front", async () => {
+      const err = await failure(json({ detail: "Discount exceeds the maximum of 10%" }, 422));
+      expect(errorMessage(err, FALLBACK)).toBe("Discount exceeds the maximum of 10%");
+    });
   });
 
   it("a transport failure has no status and shows the fallback, not the browser's \"Failed to fetch\"", async () => {

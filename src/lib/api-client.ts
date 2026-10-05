@@ -33,10 +33,10 @@ function handleUnauthorized() {
 }
 
 /**
- * The backend's own words for a failure, when it sent any: a string `detail`,
- * or the `message` of a structured one (the stale-rate guard). A validation
- * list, an empty string, or no `detail` at all is `null` — there is nothing a
- * person could read.
+ * The backend's own sentence for a failure, when it wrote one: a string
+ * `detail`, or the `message` of a structured one (the stale-rate guard). An
+ * empty string, a validation list (see validationMessageOf) or no `detail` at
+ * all is `null`.
  */
 function serverMessageOf(detail: unknown): string | null {
   if (typeof detail === "string") return detail.trim() ? detail : null;
@@ -47,13 +47,34 @@ function serverMessageOf(detail: unknown): string | null {
   return null;
 }
 
+/** Where in the request a validation entry points; not part of the field's own name. */
+const REQUEST_PARTS = new Set(["body", "query", "path", "header", "cookie"]);
+
+/**
+ * What a FastAPI validation failure (422) rejected, from the first entry of
+ * its list: `[{loc: ["body", "new_password"], msg: "String should have at
+ * least 8 characters", …}]` reads "new_password: String should have at least
+ * 8 characters". One entry is enough to act on; fixing it surfaces the next.
+ * null when `detail` is not such a list.
+ */
+function validationMessageOf(detail: unknown): string | null {
+  if (!Array.isArray(detail)) return null;
+  const first = detail[0] as { loc?: unknown; msg?: unknown } | undefined;
+  if (!first || typeof first.msg !== "string" || !first.msg.trim()) return null;
+  const field = Array.isArray(first.loc)
+    ? first.loc.filter((part, i) => !(i === 0 && REQUEST_PARTS.has(String(part)))).join(".")
+    : "";
+  return field ? `${field}: ${first.msg}` : first.msg;
+}
+
 /**
  * An API failure: the HTTP status, and the parsed `detail` when the body had one.
  *
- * FastAPI's `detail` is sometimes a string and sometimes an object (the
- * stale-rate guard returns `{code, message, rate_24k, ...}`). `detail` is there
- * for callers that branch on a code; `serverMessage` is the part a person can
- * read, or null.
+ * FastAPI's `detail` is sometimes a string, sometimes an object (the
+ * stale-rate guard returns `{code, message, rate_24k, ...}`) and, for a 422, a
+ * list of rejected fields. `detail` is there for callers that branch on a
+ * code; `serverMessage` is a sentence the server wrote for a person, or null;
+ * `validationMessage` is the first rejected field of a 422, or null.
  *
  * `message` is for logs: the server's words when there are any, else
  * "API error <status>". Do not put it on screen — use `errorMessage(err,
@@ -63,29 +84,45 @@ export class ApiError extends Error {
   readonly status: number;
   readonly detail: unknown;
   readonly serverMessage: string | null;
+  readonly validationMessage: string | null;
 
   constructor(status: number, detail: unknown) {
     const serverMessage = serverMessageOf(detail);
-    super(serverMessage ?? `API error ${status}`);
+    const validationMessage = validationMessageOf(detail);
+    super(serverMessage ?? validationMessage ?? `API error ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
     this.serverMessage = serverMessage;
+    this.validationMessage = validationMessage;
   }
 }
+
+// Left-to-right isolate … pop directional isolate: the same pair the Arabic
+// dictionary puts around codes and amounts, so an English run inside an Arabic
+// sentence keeps its own order. Invisible, and harmless in English.
+const LRI = "\u2066";
+const PDI = "\u2069";
 
 /**
  * What to show a person when a request fails — the one place that decides.
  *
- *   - the backend said why (`detail`): show that, as it is. It is server data,
- *     like a product name, and is not translated here.
+ *   - the backend said why (a string `detail`, or a structured one's
+ *     `message`): show that, as it is. It is server data, like a product
+ *     name, and is not translated here.
+ *   - the backend rejected a field (a 422 validation list): `fallback`, then
+ *     the first rejected field and its reason, isolated left-to-right — so the
+ *     user reads "couldn't save" in their language and still learns what to fix.
  *   - anything else — the connection dropped ("Failed to fetch"), a bare
  *     status, a body with no `detail` such as the rate limiter's
  *     `{"error": ...}`, or something that was not a request at all: show
  *     `fallback`, which the caller passes already translated (t.….saveFailed).
  */
 export function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError && err.serverMessage !== null ? err.serverMessage : fallback;
+  if (!(err instanceof ApiError)) return fallback;
+  if (err.serverMessage !== null) return err.serverMessage;
+  if (err.validationMessage !== null) return `${fallback} — ${LRI}${err.validationMessage}${PDI}`;
+  return fallback;
 }
 
 /** The HTTP status of a failed request; undefined when no response came back at all. */

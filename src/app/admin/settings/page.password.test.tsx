@@ -88,8 +88,17 @@ describe("settings › change password, on either backend", () => {
     expect(fields(s).map((f) => (f as HTMLInputElement).value)).toEqual(["old-passw0rd", "new-passw0rd", "new-passw0rd"]);
   });
 
+  it("Arabic: a new password the server finds too short says so — the translated failure, then the server's reason kept left-to-right", async () => {
+    // ChangePasswordRequest.new_password has min_length=8 (app/schemas/auth.py).
+    fetchMock.mockResolvedValue(json({ detail: [{ type: "string_too_short", loc: ["body", "new_password"], msg: "String should have at least 8 characters", input: "short", ctx: { min_length: 8 } }] }, 422));
+    const s = change("ar", "short");
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe(`${ar.settings.changePasswordFailed} — \u2066new_password: String should have at least 8 characters\u2069`);
+    // Nothing was cleared: the user fixes the one field and tries again.
+    expect(fields(s).map((f) => (f as HTMLInputElement).value)).toEqual(["old-passw0rd", "short", "short"]);
+  });
+
   it.each([
-    ["a new password the server rejects with a validation list (422)", () => Promise.resolve(json({ detail: [{ type: "string_too_short", loc: ["body", "new_password"], msg: "String should have at least 8 characters", input: "short" }] }, 422))],
     ["a dropped connection", () => Promise.reject(new TypeError("Failed to fetch"))],
     ["a bare 500", () => Promise.resolve(json({}, 500))],
   ])("Arabic: %s shows the translated failure, not the client's English", async (_name, respond) => {
