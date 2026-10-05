@@ -43,6 +43,11 @@ function arabicInMono(root: HTMLElement): string[] {
   return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
 }
 
+/** Every <label> on screen must reach a control: a click focuses it and it names the field. */
+function labelsWithoutControl(): string[] {
+  return Array.from(document.querySelectorAll("label")).filter((label) => label.control === null).map((label) => label.textContent ?? "");
+}
+
 function renderPage(lang: "en" | "ar", data: unknown = product({})) {
   swr.data = data;
   return render(<LanguageProvider initialLang={lang}><EditProductPage /></LanguageProvider>);
@@ -90,6 +95,8 @@ describe("product detail in Arabic (NEX-64)", () => {
       const label = screen.getByText(text).closest("label") as HTMLLabelElement;
       expect(label.control, text).toBe(field);
     }
+    expect(document.querySelectorAll("label")).toHaveLength(3);
+    expect(labelsWithoutControl()).toEqual([]);
     expect(screen.getByLabelText(ar.products.overrideWeight)).toHaveAttribute("placeholder", ar.products.keep("4.250"));
     expect(screen.getByRole("option", { name: ar.products.keep("K21") })).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
