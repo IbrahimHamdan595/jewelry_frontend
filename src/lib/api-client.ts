@@ -25,33 +25,78 @@ function handleUnauthorized() {
     } catch {
       // storage unavailable — nothing to forget
     }
-    window.location.href = "/login";
+    // On the sign-in page a 401 is a wrong password, not a lost session.
+    // Navigating to /login from /login reloads it, which throws away the
+    // form, the ?next= deep link and the error the user is about to read.
+    if (window.location.pathname !== "/login") window.location.href = "/login";
   }
 }
 
 /**
- * An API failure that keeps the parsed `detail` reachable.
+ * The backend's own words for a failure, when it sent any: a string `detail`,
+ * or the `message` of a structured one (the stale-rate guard). A validation
+ * list, an empty string, or no `detail` at all is `null` — there is nothing a
+ * person could read.
+ */
+function serverMessageOf(detail: unknown): string | null {
+  if (typeof detail === "string") return detail.trim() ? detail : null;
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return null;
+}
+
+/**
+ * An API failure: the HTTP status, and the parsed `detail` when the body had one.
  *
  * FastAPI's `detail` is sometimes a string and sometimes an object (the
- * stale-rate guard returns `{code, message, rate_24k, ...}`). The old code did
- * `new Error(body.detail)`, which rendered an object as the literal string
- * "[object Object]" on screen. `message` keeps the old behaviour for the many
- * callers that only read it; `detail` is there for the ones that branch on a code.
+ * stale-rate guard returns `{code, message, rate_24k, ...}`). `detail` is there
+ * for callers that branch on a code; `serverMessage` is the part a person can
+ * read, or null.
+ *
+ * `message` is for logs: the server's words when there are any, else
+ * "API error <status>". Do not put it on screen — use `errorMessage(err,
+ * fallback)`, which never shows that English placeholder.
  */
 export class ApiError extends Error {
   readonly status: number;
   readonly detail: unknown;
+  readonly serverMessage: string | null;
 
   constructor(status: number, detail: unknown) {
-    const message =
-      typeof detail === "string"
-        ? detail
-        : (detail as { message?: string })?.message ?? `API error ${status}`;
-    super(message);
+    const serverMessage = serverMessageOf(detail);
+    super(serverMessage ?? `API error ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
+    this.serverMessage = serverMessage;
   }
+}
+
+/**
+ * What to show a person when a request fails — the one place that decides.
+ *
+ *   - the backend said why (`detail`): show that, as it is. It is server data,
+ *     like a product name, and is not translated here.
+ *   - anything else — the connection dropped ("Failed to fetch"), a bare
+ *     status, a body with no `detail` such as the rate limiter's
+ *     `{"error": ...}`, or something that was not a request at all: show
+ *     `fallback`, which the caller passes already translated (t.….saveFailed).
+ */
+export function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof ApiError && err.serverMessage !== null ? err.serverMessage : fallback;
+}
+
+/** The HTTP status of a failed request; undefined when no response came back at all. */
+export function errorStatus(err: unknown): number | undefined {
+  return err instanceof ApiError ? err.status : undefined;
+}
+
+/** `detail` of an error response; undefined when the body is not JSON or has none. */
+async function detailOf(res: Response): Promise<unknown> {
+  const body = await res.json().catch(() => null);
+  return body && typeof body === "object" ? (body as { detail?: unknown }).detail : undefined;
 }
 
 /** Narrow an unknown catch value to a stale-rate guard rejection. */
@@ -72,14 +117,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${getBase()}${path}`, { ...init, headers, credentials: "include" });
 
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body?.detail);
-  }
+  if (res.status === 401) handleUnauthorized();
+  if (!res.ok) throw new ApiError(res.status, await detailOf(res));
   if (res.status === 204) return undefined as T;
   return res.json();
 }
@@ -99,15 +138,10 @@ export async function apiFetcher<T>(path: string): Promise<T> {
 // fetch pipeline, then trigger a browser save. Used by report Excel exports.
 export async function downloadFile(path: string, filename: string): Promise<void> {
   const res = await fetch(`${getBase()}${path}`, { credentials: "include" });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-  if (!res.ok) {
-    // Body is expected to be binary, so there is no `detail` to parse — but the
-    // status is still worth carrying on the same error type as everything else.
-    throw new ApiError(res.status, `Download failed (${res.status})`);
-  }
+  if (res.status === 401) handleUnauthorized();
+  // A refusal is JSON even where the success is binary, so a `detail` is read
+  // when there is one; otherwise the error carries the status alone.
+  if (!res.ok) throw new ApiError(res.status, await detailOf(res));
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -126,13 +160,7 @@ export async function uploadFile<T>(path: string, formData: FormData): Promise<T
     credentials: "include",
     // No Content-Type — browser sets it with multipart boundary automatically.
   });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body?.detail ?? `Upload error ${res.status}`);
-  }
+  if (res.status === 401) handleUnauthorized();
+  if (!res.ok) throw new ApiError(res.status, await detailOf(res));
   return res.json();
 }
