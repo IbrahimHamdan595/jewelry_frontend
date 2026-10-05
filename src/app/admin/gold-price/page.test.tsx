@@ -29,14 +29,25 @@ vi.mock("@/components/admin/CalendarFilter", () => ({ CalendarFilter: () => null
 // first point, so the chart's dates and labels can be asserted like any other text.
 vi.mock("recharts", async () => {
   const { createContext, useContext } = await import("react");
-  type Point = { fetched_at: string; rate_24k: number };
+  type Point = { fetched_at: string; rate_24k: number; rate_22k: number; rate_21k: number; rate_18k: number };
   const First = createContext<Point | null>(null);
   const Stub = () => null;
   const Pass = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
-  const AreaChart = ({ data, children }: { data: Point[]; children?: React.ReactNode }) => <First.Provider value={data[0]}>{children}</First.Provider>;
+  // The series exactly as the chart receives it: recharts scales an axis by comparing
+  // these values, so whether they are numbers or strings is part of what the page owns.
+  const AreaChart = ({ data, children }: { data: Point[]; children?: React.ReactNode }) => (
+    <First.Provider value={data[0]}>
+      <span data-testid="series">{JSON.stringify(data.map((p) => [p.rate_24k, p.rate_22k, p.rate_21k, p.rate_18k]))}</span>
+      {children}
+    </First.Provider>
+  );
   const XAxis = ({ tickFormatter }: { tickFormatter: (v: string) => string }) => {
     const point = useContext(First);
     return point ? <span data-testid="tick">{tickFormatter(point.fetched_at)}</span> : null;
+  };
+  const YAxis = ({ tickFormatter }: { tickFormatter: (v: number) => string }) => {
+    const point = useContext(First);
+    return point ? <span data-testid="y-tick">{tickFormatter(point.rate_24k)}</span> : null;
   };
   const Tooltip = ({ formatter, labelFormatter }: { formatter: (v: number) => [string, string]; labelFormatter: (v: string) => string }) => {
     const point = useContext(First);
@@ -44,7 +55,7 @@ vi.mock("recharts", async () => {
     const [value, name] = formatter(point.rate_24k);
     return <span data-testid="tooltip"><span>{labelFormatter(point.fetched_at)}</span><span>{name}</span><span>{value}</span></span>;
   };
-  return { ResponsiveContainer: Pass, AreaChart, Area: Stub, LineChart: Stub, Line: Stub, XAxis, YAxis: Stub, Tooltip };
+  return { ResponsiveContainer: Pass, AreaChart, Area: Stub, LineChart: Stub, Line: Stub, XAxis, YAxis, Tooltip };
 });
 
 // GoldRateOut and GoldRateHistoryPoint as the API sends them (app/schemas/gold_rate.py).
@@ -218,5 +229,68 @@ describe("gold price — the override still does what it did", () => {
     fireEvent.click(screen.getByRole("button", { name: ar.goldPrice.clear }));
     await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/gold-price/override"));
     await waitFor(() => expect(hook.refresh).toHaveBeenCalled());
+  });
+});
+
+// NEX-54: the backend is moving the rates on GET /gold-price and on every
+// /gold-price/history point from JSON numbers to exact decimal strings. The
+// frontend ships first, so each payload below is rendered in both shapes.
+describe("gold price — rates as decimal strings or numbers (NEX-54)", () => {
+  const RATE_S: GoldRate = { ...RATE, rate_24k: "141.66", rate_22k: "129.90", rate_21k: "123.95", rate_18k: "106.25" };
+  const OVERRIDE_S: GoldRate = { ...OVERRIDE, rate_24k: "150.50", rate_22k: "138.01", rate_21k: "131.69", rate_18k: "112.88" };
+  // The second point crosses 100 on the way down to 18K: "99.80" sorts after "106.25" as text.
+  const HISTORY_N = [
+    { rate_24k: 141.66, rate_22k: 129.9, rate_21k: 123.95, rate_18k: 106.25, per_karat_backfilled: false, fetched_at: "2026-09-08T10:00:00Z" },
+    { rate_24k: 133.07, rate_22k: 122.03, rate_21k: 116.44, rate_18k: 99.8, per_karat_backfilled: false, fetched_at: "2026-09-08T10:15:00Z" },
+  ];
+  const HISTORY_S = [
+    { rate_24k: "141.66", rate_22k: "129.90", rate_21k: "123.95", rate_18k: "106.25", per_karat_backfilled: false, fetched_at: "2026-09-08T10:00:00Z" },
+    { rate_24k: "133.07", rate_22k: "122.03", rate_21k: "116.44", rate_18k: "99.80", per_karat_backfilled: false, fetched_at: "2026-09-08T10:15:00Z" },
+  ];
+
+  beforeEach(() => {
+    hook.rate = RATE;
+    swr.history = [];
+  });
+
+  function markup(rate: GoldRate, history: unknown) {
+    hook.rate = rate;
+    swr.history = history;
+    const view = renderPage("en");
+    const html = view.container.innerHTML;
+    view.unmount();
+    return html;
+  }
+
+  it("hero and karat cards: identical page for both shapes", () => {
+    expect(markup(RATE_S, HISTORY_S)).toBe(markup(RATE, HISTORY_N));
+    hook.rate = RATE_S;
+    swr.history = []; // no chart: the tooltip stub would print the 24K figure a second time
+    renderPage("en");
+    for (const figure of ["$141.66", "$129.90", "$123.95", "$106.25"]) expect(screen.getByText(figure), figure).toBeInTheDocument();
+  });
+
+  it("the override banner prints the same amount for both shapes", () => {
+    expect(markup(OVERRIDE_S, [])).toBe(markup(OVERRIDE, []));
+    hook.rate = OVERRIDE_S;
+    renderPage("en");
+    expect(screen.getByText("Override active:", { exact: false })).toHaveTextContent("Override active: $150.50/g");
+  });
+
+  it("the chart is handed numbers either way, so its axis is scaled by value and not as text", () => {
+    swr.history = HISTORY_S;
+    renderPage("en");
+    const series = JSON.parse(screen.getByTestId("series").textContent ?? "[]");
+    expect(series).toEqual([[141.66, 129.9, 123.95, 106.25], [133.07, 122.03, 116.44, 99.8]]);
+    expect(screen.getByTestId("y-tick")).toHaveTextContent("$142");
+    expect(screen.getByTestId("tooltip")).toHaveTextContent("$141.66");
+  });
+
+  it("a rate that cannot be read shows the missing-amount dash, never NaN", () => {
+    hook.rate = { ...RATE, rate_24k: "n/a", rate_18k: null };
+    const { container } = renderPage("en");
+    expect(screen.getAllByText("—")).toHaveLength(2);
+    expect(screen.getByText("$129.90")).toBeInTheDocument();
+    expect(container).not.toHaveTextContent("NaN");
   });
 });

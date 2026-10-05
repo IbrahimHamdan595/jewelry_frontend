@@ -151,10 +151,10 @@ export interface OrderListResponse {
 }
 
 export interface GoldRate {
-  rate_24k: number;
-  rate_22k: number;
-  rate_21k: number;
-  rate_18k: number;
+  rate_24k: Money;
+  rate_22k: Money;
+  rate_21k: Money;
+  rate_18k: Money;
   source: string;
   fetched_at: string;
   is_stale: boolean;
@@ -163,10 +163,10 @@ export interface GoldRate {
 }
 
 export interface GoldRateHistoryPoint {
-  rate_24k: number;
-  rate_22k: number;
-  rate_21k: number;
-  rate_18k: number;
+  rate_24k: Money;
+  rate_22k: Money;
+  rate_21k: Money;
+  rate_18k: Money;
   per_karat_backfilled: boolean;
   fetched_at: string;
 }

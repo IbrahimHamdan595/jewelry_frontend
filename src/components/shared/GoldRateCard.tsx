@@ -3,6 +3,7 @@ import { useGoldRate } from "@/hooks/useGoldRate";
 import { api } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
+import { formatDecimal } from "@/lib/utils";
 import { RetryButton } from "@/components/ui/error-state";
 
 /**
@@ -66,19 +67,19 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
         <div className="flex items-baseline gap-2">
           <span className="text-pos-gray text-[10px] uppercase tracking-widest">24K</span>
           <span className="font-serif text-xl text-gold leading-none">
-            {rate.rate_24k.toFixed(2)}
+            {formatDecimal(rate.rate_24k)}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-pos-gray text-[10px] uppercase tracking-widest">21K</span>
           <span className="text-base font-semibold text-pos-cream leading-none">
-            {rate.rate_21k.toFixed(2)}
+            {formatDecimal(rate.rate_21k)}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-pos-gray text-[10px] uppercase tracking-widest">18K</span>
           <span className="text-base font-semibold text-pos-cream leading-none">
-            {rate.rate_18k.toFixed(2)}
+            {formatDecimal(rate.rate_18k)}
           </span>
         </div>
         <div className="flex items-center gap-1.5 ps-4 border-s border-white/10">
@@ -132,7 +133,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
             {t.goldRate.karatUsdPerGram("24K")}
           </div>
           <div className="font-serif text-3xl text-gold leading-none">
-            {rate.rate_24k.toFixed(2)}
+            {formatDecimal(rate.rate_24k)}
           </div>
           <div className="flex items-center gap-1 mt-2">
             <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
@@ -146,7 +147,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
             {t.goldRate.karatUsdPerGram("21K")}
           </div>
           <div className="text-2xl font-semibold text-pos-cream leading-none">
-            {rate.rate_21k.toFixed(2)}
+            {formatDecimal(rate.rate_21k)}
           </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-3">
@@ -154,7 +155,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
             {t.goldRate.karatUsdPerGram("18K")}
           </div>
           <div className="text-2xl font-semibold text-pos-cream leading-none">
-            {rate.rate_18k.toFixed(2)}
+            {formatDecimal(rate.rate_18k)}
           </div>
         </div>
       </div>

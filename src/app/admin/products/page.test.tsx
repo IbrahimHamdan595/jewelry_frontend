@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ProductsPage from "@/app/admin/products/page";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -16,7 +16,8 @@ vi.mock("swr", () => ({
   default: (key: string) => ({ data: key === "/categories" ? [{ id: "c1", name_en: "Rings", name_ar: "خواتم" }] : key?.startsWith("/products") ? list : undefined, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }),
 }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(), useRouter: () => ({ replace: vi.fn() }), usePathname: () => "/admin/products" }));
-vi.mock("@/hooks/useGoldRate", () => ({ useGoldRate: () => ({ rate: { rate_24k: 100 } }) }));
+const gold = vi.hoisted(() => ({ rate: { rate_24k: 100 } as unknown }));
+vi.mock("@/hooks/useGoldRate", () => ({ useGoldRate: () => ({ rate: gold.rate }) }));
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { patch: vi.fn(), delete: vi.fn() } }));
 
 // Database values: product names and codes, and the category name.
@@ -89,5 +90,31 @@ describe("products list in English is unchanged", () => {
     for (const header of ["Image", "Code", "Name", "Category", "Karat", "Weight", "Stock", "Live Price", "Status", "Actions"]) {
       expect(screen.getByRole("columnheader", { name: header })).toBeInTheDocument();
     }
+  });
+});
+
+// NEX-54: the Live Price column is computed from GET /gold-price, whose rates are
+// moving from JSON numbers to exact decimal strings.
+describe("products list — live price from a string or a number rate (NEX-54)", () => {
+  afterEach(() => { gold.rate = { rate_24k: 100 }; });
+
+  const livePrices = () => screen.getAllByRole("row").slice(1).map((row) => row.querySelectorAll("td")[7].textContent);
+
+  it("prices every row identically for both shapes", () => {
+    // 141.66 × 0.875 × 4.25 g = 526.80 → +10% = 579.48 → + $15 making = 594.48
+    gold.rate = { rate_24k: 141.66 };
+    const numeric = renderPage("en");
+    expect(livePrices()).toEqual(["$594.48", "$594.48"]);
+    numeric.unmount();
+
+    gold.rate = { rate_24k: "141.66" };
+    renderPage("en");
+    expect(livePrices()).toEqual(["$594.48", "$594.48"]);
+  });
+
+  it("shows the missing-amount dash, never a price built on zero, when the rate cannot be read", () => {
+    gold.rate = { rate_24k: "n/a" };
+    renderPage("en");
+    expect(livePrices()).toEqual(["—", "—"]);
   });
 });

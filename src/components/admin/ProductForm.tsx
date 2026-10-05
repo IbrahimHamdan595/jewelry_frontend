@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { ImagePlus, Star, Trash2, Loader2 } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { apiFetcher, uploadFile } from "@/lib/api-client";
-import { calculatePrice, formatUSD, KARAT_LABEL } from "@/lib/utils";
+import { calculatePrice, formatUSD, KARAT_LABEL, toFiniteNumber } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import type { Category, Product, Settings } from "@/types/api";
 
@@ -106,9 +106,12 @@ export function ProductForm({ initial, onSave }: Props) {
     K24: Number(settings?.markup_k24 ?? 0),
   };
 
-  const priced = rate && watched.karat && watched.weight_grams
+  // The rate arrives as a decimal string or a number (NEX-54); read it once.
+  // No readable rate means no preview at all, never a price built on zero.
+  const rate24k = toFiniteNumber(rate?.rate_24k);
+  const priced = rate24k !== null && watched.karat && watched.weight_grams
     ? calculatePrice({
-        rate24k: rate.rate_24k,
+        rate24k,
         karat: watched.karat,
         weightGrams: Number(watched.weight_grams),
         marginPercent: Number(watched.margin_percent ?? 0),
@@ -432,7 +435,7 @@ export function ProductForm({ initial, onSave }: Props) {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-white/40">
                 <span>{p.marketRate24k}</span>
-                <span>{formatUSD(rate?.rate_24k ?? 0)}{p.perGram}</span>
+                <span>{formatUSD(rate24k)}{p.perGram}</span>
               </div>
               <div className="flex justify-between text-white/40">
                 <span>{p.purityRate} ({KARAT_LABEL[watched.karat ?? ""] ?? ""})</span>
