@@ -24,6 +24,12 @@
      alignment; on inline spans text-align has no effect. See <Ltr> for
      identifiers that are not monospace (phones, emails). */
   [dir="rtl"] .font-mono { direction: ltr; unicode-bidi: isolate; text-align: right; }
+
+  /* The receipt is a whole document set in mono, not an identifier: it keeps
+     the direction its own dir attribute asks for, so an Arabic receipt reads
+     right-to-left (labels on the right, dates and "11%" in reading order).
+     Identifiers inside it are still isolated by <Ltr>. */
+  [dir="rtl"] #receipt.font-mono { direction: rtl; unicode-bidi: normal; text-align: start; }
 }
 
 @media print {
