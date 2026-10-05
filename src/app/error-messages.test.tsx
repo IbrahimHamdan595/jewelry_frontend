@@ -91,16 +91,38 @@ describe("sign-in errors in Arabic", () => {
     expectNoClientEnglish();
   });
 
-  it("a wrong password shows the server's reason and keeps the form on screen", async () => {
+  // The two fixed answers POST /auth/login gives on purpose (app/api/auth.py).
+  // They are the same sentence every time, so they are translated by status
+  // instead of shown in the server's English.
+  it("a wrong email or password (401) is said in Arabic, and the form stays on screen", async () => {
     fetchMock.mockResolvedValue(json({ detail: "Invalid credentials" }, 401));
-    expect(await submit()).toHaveTextContent("Invalid credentials");
+    const alert = await submit();
+    expect(alert).toHaveTextContent(ar.login.invalidCredentials);
+    expect(alert.textContent).not.toMatch(/[A-Za-z]{3,}/);
     expect(screen.getByLabelText(ar.login.email)).toHaveValue("owner@fawazelnamel.com");
     expectNoClientEnglish();
   });
 
-  it("a disabled account shows the server's reason", async () => {
+  it("a disabled account (403) is said in Arabic", async () => {
     fetchMock.mockResolvedValue(json({ detail: "Account disabled" }, 403));
-    expect(await submit()).toHaveTextContent("Account disabled");
+    const alert = await submit();
+    expect(alert).toHaveTextContent(ar.login.accountDisabled);
+    expect(alert.textContent).not.toMatch(/[A-Za-z]{3,}/);
+  });
+
+  it("the three sign-in refusals are three different sentences", () => {
+    for (const dict of [en, ar]) {
+      expect(new Set([dict.login.invalidCredentials, dict.login.accountDisabled, dict.login.tooManyAttempts, dict.login.failed]).size).toBe(4);
+    }
+    // English keeps the server's own wording.
+    expect(en.login.invalidCredentials).toBe("Invalid credentials");
+    expect(en.login.accountDisabled).toBe("Account disabled");
+  });
+
+  it("a malformed email the server rejects (422) says which field, after the translated failure", async () => {
+    fetchMock.mockResolvedValue(json({ detail: [{ type: "value_error", loc: ["body", "email"], msg: "value is not a valid email address: The part after the @-sign is not valid. It should have a period.", input: "owner@fawaz" }] }, 422));
+    const alert = await submit();
+    expect(alert.textContent).toBe(`${ar.login.failed} — \u2066email: value is not a valid email address: The part after the @-sign is not valid. It should have a period.\u2069`);
   });
 });
 

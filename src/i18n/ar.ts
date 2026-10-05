@@ -14,6 +14,8 @@ const ar: Translations = {
     showPassword: "إظهار كلمة المرور",
     hidePassword: "إخفاء كلمة المرور",
     failed: "فشل تسجيل الدخول",
+    invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    accountDisabled: "هذا الحساب معطَّل",
     tooManyAttempts: "محاولات كثيرة جداً. حاول مجدداً لاحقاً.",
   },
 

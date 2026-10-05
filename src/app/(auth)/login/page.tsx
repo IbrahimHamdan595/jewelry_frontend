@@ -34,10 +34,20 @@ export default function LoginPage() {
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       router.push(next && canAccess(user.role, next.split("?")[0]) ? next : home);
     } catch (err) {
-      // 429 is "too many attempts" from either backend: the per-IP rate limit
-      // (a body with no `detail`) or a locked account (a `detail` in English).
-      // Both get the same translated sentence.
-      setError(errorStatus(err) === 429 ? t.login.tooManyAttempts : errorMessage(err, t.login.failed));
+      // The sign-in endpoint refuses in three fixed ways, each the same sentence
+      // every time, so each is translated by its status rather than shown in
+      // the server's English:
+      //   401  wrong email or password
+      //   403  the account is disabled
+      //   429  too many attempts — the per-IP rate limit (a body with no
+      //        `detail`) or, on the newer backend, a locked account
+      // Anything else goes through errorMessage like every other screen.
+      const fixed: Record<number, string> = {
+        401: t.login.invalidCredentials,
+        403: t.login.accountDisabled,
+        429: t.login.tooManyAttempts,
+      };
+      setError(fixed[errorStatus(err) ?? 0] ?? errorMessage(err, t.login.failed));
     } finally {
       setLoading(false);
     }

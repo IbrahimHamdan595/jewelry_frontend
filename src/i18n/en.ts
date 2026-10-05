@@ -11,6 +11,10 @@ export interface Translations {
     showPassword: string;
     hidePassword: string;
     failed: string;
+    /** HTTP 401 on sign-in: wrong email or password (the server never says which). */
+    invalidCredentials: string;
+    /** HTTP 403 on sign-in: the account exists and is switched off. */
+    accountDisabled: string;
     /** HTTP 429 on sign-in: the per-IP rate limit, or a locked account. */
     tooManyAttempts: string;
   };
@@ -1288,6 +1292,8 @@ const en: Translations = {
     showPassword: "Show password",
     hidePassword: "Hide password",
     failed: "Login failed",
+    invalidCredentials: "Invalid credentials",
+    accountDisabled: "Account disabled",
     tooManyAttempts: "Too many attempts. Try again later.",
   },
 
