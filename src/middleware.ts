@@ -162,7 +162,17 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Every HTML route (for the CSP), but not the /api proxy, Next's static
-  // assets, the image optimizer, or files with an extension.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: [
+    // The gated sections, whatever the URL looks like. A dot does not make a
+    // path a file: /admin/products/a.b is the product page for id "a.b", and
+    // nothing static is served from under /admin or /pos. Matching these
+    // outright means no spelling of a path can skip the session gate, the
+    // role gate or the CSP (NEX-64).
+    "/admin/:path*",
+    "/pos/:path*",
+    // Every other HTML route (for the CSP), but not the /api proxy, Next's
+    // static assets, the image optimizer, or a real static file — one whose
+    // path ENDS in a known static extension, not merely contains a dot.
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|avif|css|js|map|txt|xml|webmanifest|woff|woff2|ttf|otf|eot)$).*)",
+  ],
 };

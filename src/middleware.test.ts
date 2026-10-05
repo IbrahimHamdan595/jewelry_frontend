@@ -514,3 +514,88 @@ describe("security headers (NEX-55)", () => {
     for (const p of ["/api/settings", "/api/auth/login", "/_next/static/chunks/a.js", "/_next/image", "/favicon.ico", "/robots.txt"]) expect(matches(p), p).toBe(false);
   });
 });
+
+// The matcher used to skip ANY path with a dot in it (`.*\..*`), on the idea that
+// a dot means a static file. `/admin/products/a.b` is not a file: it is the
+// product page for id "a.b", and it was served with no session gate, no role
+// gate and no CSP header.
+describe("route gating by matcher (NEX-64)", () => {
+  // Compiled the way Next compiles a middleware matcher (build/analysis/
+  // get-page-static-info.js + shared/lib/router/utils/middleware-route-matcher.js):
+  // wrapped for data requests, reduced to its source, and used case-sensitively.
+  let matches: (path: string) => boolean;
+  beforeAll(async () => {
+    const { config } = await import("@/middleware");
+    const { parse, tokensToRegexp } = await import("next/dist/compiled/path-to-regexp");
+    const patterns = config.matcher.map((m: string) => new RegExp(tokensToRegexp(parse(`/:nextData(_next/data/[^/]{1,})?${m}(.json)?`)).source));
+    matches = (path) => patterns.some((re: RegExp) => re.test(path));
+  });
+
+  // Dots in ids and references, and names that merely look like files.
+  const DOTTED_GATED = [
+    "/admin/products/a.b",
+    "/pos/receipt/x.pdf",
+    "/admin/products/8f3a.2",
+    "/admin/suppliers/purchases/1.2.3/receipt",
+    "/pos/buyback-receipt/bb-1.json",
+    "/pos/confirmation/logo.png",
+    "/admin/app.js",
+    "/admin/.env",
+  ];
+
+  it.each(DOTTED_GATED)("%s reaches the middleware", (path) => {
+    expect(matches(path)).toBe(true);
+  });
+
+  it.each(DOTTED_GATED)("%s without a session goes to /login, keeps the deep link, and carries the CSP", async (path) => {
+    const res = await middleware(new NextRequest(new URL(path, "http://till.test")));
+    const to = new URL(res.headers.get("location")!);
+    expect(to.pathname).toBe("/login");
+    expect(to.searchParams.get("next")).toBe(path);
+    expect(res.headers.get("content-security-policy-report-only")).toContain("script-src");
+  });
+
+  it("the role gate applies to dotted paths too", async () => {
+    const cashier = await tokenFor("CASHIER");
+    expect((await run("/admin/products/a.b", cashier)).to?.pathname).toBe("/pos");
+    expect(pass(await run("/pos/receipt/x.pdf", cashier))).toBe(true);
+    const accountant = await tokenFor("ACCOUNTANT");
+    expect((await run("/admin/products/a.b", accountant)).to?.pathname).toBe("/admin/accounting");
+    expect(pass(await run("/admin/accounting/journal/JE-2026.09", accountant))).toBe(true);
+    const admin = await tokenFor("ADMIN");
+    for (const path of DOTTED_GATED) expect(pass(await run(path, admin)), path).toBe(true);
+  });
+
+  it("a forged or expired session on a dotted path fails closed like any other", async () => {
+    const forged = await tokenFor("ADMIN", { key: "not-the-secret-not-the-secret-not" });
+    const r = await run("/admin/products/a.b", forged);
+    expect(r.to?.pathname).toBe("/login");
+    expect(r.setCookie).toMatch(/mz_token=;/);
+  });
+
+  it("a public page with a dot in its path still gets the CSP", async () => {
+    for (const path of ["/login.html", "/release-1.2", "/no.such.page"]) {
+      expect(matches(path), path).toBe(true);
+      const res = await middleware(new NextRequest(new URL(path, "http://till.test")));
+      expect(res.headers.get("location"), path).toBeNull();
+      expect(res.headers.get("content-security-policy-report-only"), path).toContain("script-src");
+    }
+  });
+
+  it.each([
+    // the API proxy: the backend does its own auth, and JSON needs no CSP nonce
+    "/api/settings", "/api/auth/login", "/api/orders/o1/receipt", "/api/reports/orders.xlsx", "/api/products/lookup/FN-21K-0001.2",
+    // Next's own assets and the image optimizer
+    "/_next/static/chunks/main-app.js", "/_next/static/css/app.css", "/_next/static/media/cairo.woff2", "/_next/image",
+    // real static files, by extension
+    "/favicon.ico", "/robots.txt", "/sitemap.xml", "/manifest.webmanifest", "/logo.png", "/icons/till.svg", "/fonts/cairo.woff2", "/img/hero.jpg",
+  ])("%s is still skipped", (path) => {
+    expect(matches(path)).toBe(false);
+  });
+
+  it("every ordinary route is still matched", () => {
+    for (const path of ["/", "/login", "/pos", "/pos/buyback", "/admin", "/admin/dashboard", "/admin/products/8f3a", "/csp-report", "/no-such-page"]) {
+      expect(matches(path), path).toBe(true);
+    }
+  });
+});
