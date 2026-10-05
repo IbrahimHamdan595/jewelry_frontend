@@ -407,6 +407,9 @@ export interface Translations {
     refundFailed: string;
     refunding: string;
     confirmRefund: string;
+    voidReasonRequired: string;
+    voidFailed: string;
+    voiding: string;
   };
 
   deleteDialog: {
@@ -1028,6 +1031,9 @@ const en: Translations = {
     refundFailed: "Refund failed",
     refunding: "Refunding…",
     confirmRefund: "Confirm Refund",
+    voidReasonRequired: "Enter a reason for voiding this order.",
+    voidFailed: "Void failed",
+    voiding: "Voiding…",
   },
 
   deleteDialog: {

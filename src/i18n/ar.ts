@@ -403,6 +403,9 @@ const ar: Translations = {
     refundFailed: "تعذّر الاسترداد",
     refunding: "جارٍ الاسترداد…",
     confirmRefund: "تأكيد الاسترداد",
+    voidReasonRequired: "أدخل سبب إلغاء هذا الطلب.",
+    voidFailed: "تعذّر الإلغاء",
+    voiding: "جارٍ الإلغاء…",
   },
 
   deleteDialog: {

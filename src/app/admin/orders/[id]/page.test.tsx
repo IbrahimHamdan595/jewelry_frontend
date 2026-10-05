@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor, act } from "@testing-library/react";
 import OrderDetailPage from "@/app/admin/orders/[id]/page";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ar from "@/i18n/ar";
@@ -7,7 +7,7 @@ import ar from "@/i18n/ar";
 const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "o1" }) }));
-const api = vi.hoisted(() => ({ post: vi.fn(() => Promise.resolve({})) }));
+const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
 
 const item = (over: Record<string, unknown>) => ({
@@ -113,6 +113,26 @@ describe("order detail in Arabic (NEX-64)", () => {
     expect(api.post).toHaveBeenCalledWith("/orders/o1/items/i1/refund", { quantity: 1 });
   });
 
+  it("refund quantity is always a whole number between 1 and what is left to refund", () => {
+    renderPage("ar");
+    fireEvent.click(screen.getAllByRole("button", { name: ar.orders.refund })[0]);
+    const qty = screen.getByLabelText(ar.orders.refundQty(2));
+    expect(qty).toHaveAttribute("step", "1");
+    const cases: [typed: string, kept: number][] = [["1.5", 1], ["2.9", 2], ["0.4", 1], ["-3", 1], ["9", 2], ["2.0", 2], ["", 1]];
+    for (const [typed, kept] of cases) {
+      fireEvent.change(qty, { target: { value: typed } });
+      expect(qty, `typed "${typed}"`).toHaveValue(kept);
+    }
+  });
+
+  it("a typed 1.5 reaches the API as a whole unit, never as 1.5", () => {
+    renderPage("ar");
+    fireEvent.click(screen.getAllByRole("button", { name: ar.orders.refund })[0]);
+    fireEvent.change(screen.getByLabelText(ar.orders.refundQty(2)), { target: { value: "1.5" } });
+    fireEvent.click(screen.getByRole("button", { name: ar.orders.confirmRefund }));
+    expect(api.post).toHaveBeenCalledWith("/orders/o1/items/i1/refund", { quantity: 1 });
+  });
+
   it("translates the voided stamp and the refunded-totals note", () => {
     const { container, unmount } = renderPage("ar", order({ status: "VOIDED" }));
     expect(screen.getByText(ar.orders.voidedStamp)).toBeInTheDocument();
@@ -121,6 +141,77 @@ describe("order detail in Arabic (NEX-64)", () => {
     unmount();
     renderPage("ar", order({ status: "PARTIALLY_REFUNDED" }));
     expect(screen.getByText(ar.orders.refundTotalsNote)).toBeInTheDocument();
+  });
+});
+
+describe("order detail: voiding an order", () => {
+  beforeEach(() => api.post.mockReset().mockResolvedValue({}));
+
+  function openVoidPanel(reason?: string) {
+    renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.orders.voidOrder }));
+    if (reason !== undefined) fireEvent.change(screen.getByLabelText(ar.orders.voidReason), { target: { value: reason } });
+  }
+  const confirm = () => fireEvent.click(screen.getByRole("button", { name: ar.orders.confirmVoid }));
+
+  it("says a reason is needed instead of silently doing nothing", () => {
+    openVoidPanel();
+    confirm();
+    expect(screen.getByRole("alert")).toHaveTextContent(ar.orders.voidReasonRequired);
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("does not take blank space for a reason", () => {
+    openVoidPanel("   ");
+    confirm();
+    expect(screen.getByRole("alert")).toHaveTextContent(ar.orders.voidReasonRequired);
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("locks the panel while the request is out, then closes it", async () => {
+    let finish: (value: unknown) => void = () => {};
+    api.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    openVoidPanel("duplicate sale");
+    confirm();
+    expect(screen.getByRole("button", { name: ar.orders.voiding })).toBeDisabled();
+    expect(screen.getByRole("button", { name: ar.orders.dismiss })).toBeDisabled();
+    expect(screen.getByLabelText(ar.orders.voidReason)).toBeDisabled();
+    expect(api.post).toHaveBeenCalledWith("/orders/o1/void", { reason: "duplicate sale" });
+    await act(async () => finish({}));
+    await waitFor(() => expect(screen.queryByLabelText(ar.orders.voidReason)).toBeNull());
+  });
+
+  it("stays open and shows the server's reason when the void fails", async () => {
+    api.post.mockRejectedValueOnce(new Error("Order already voided"));
+    openVoidPanel("duplicate sale");
+    confirm();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Order already voided");
+    expect(screen.getByRole("button", { name: ar.orders.confirmVoid })).toBeEnabled();
+    expect(screen.getByLabelText(ar.orders.voidReason)).toHaveValue("duplicate sale");
+  });
+
+  it("falls back to a translated message when the failure carries none", async () => {
+    api.post.mockRejectedValueOnce({});
+    openVoidPanel("duplicate sale");
+    confirm();
+    expect(await screen.findByRole("alert")).toHaveTextContent(ar.orders.voidFailed);
+  });
+
+  it("does not carry an old error into a reopened panel", async () => {
+    api.post.mockRejectedValueOnce({});
+    openVoidPanel("duplicate sale");
+    confirm();
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: ar.orders.dismiss }));
+    fireEvent.click(screen.getByRole("button", { name: ar.orders.voidOrder }));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("reads in English too", () => {
+    renderPage("en");
+    fireEvent.click(screen.getByRole("button", { name: "Void Order" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Void" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter a reason for voiding this order.");
   });
 });
 

@@ -14,6 +14,13 @@ import { KaratBadge } from "@/components/shared/KaratBadge";
 import { Dialog } from "@/components/ui/dialog";
 import type { Order, OrderItem, OrderItemKind } from "@/types/api";
 
+/** A whole number of units, at least 1 and at most what is still refundable. */
+function clampRefundQty(raw: string, max: number): number {
+  const whole = Math.floor(Number(raw));
+  if (!Number.isFinite(whole)) return 1;
+  return Math.max(1, Math.min(max, whole));
+}
+
 function KindPill({ kind }: { kind: OrderItemKind }) {
   const { t } = useLang();
   const map: Record<OrderItemKind, string> = {
@@ -36,6 +43,8 @@ export default function OrderDetailPage() {
   const { data: order, error: loadError, isValidating, mutate } = useSWR<Order>(`/orders/${id}`, apiFetcher);
   const [voidReason, setVoidReason] = useState("");
   const [showVoid, setShowVoid] = useState(false);
+  const [voiding, setVoiding] = useState(false);
+  const [voidError, setVoidError] = useState<string | null>(null);
   const [refundItem, setRefundItem] = useState<OrderItem | null>(null);
   const [refundQty, setRefundQty] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -63,11 +72,29 @@ export default function OrderDetailPage() {
   const cashFactor = 1 + Number(order.vat_percent) / 100 - Number(order.discount_percent) / 100;
   const refundCash = (lineSubtotal: number) => lineSubtotal * cashFactor;
 
+  function openVoid() {
+    setVoidError(null);
+    setShowVoid(true);
+  }
+
+  // Same shape as confirmRefund below: say why nothing happened, lock the
+  // panel while the request is out, and keep it open with the reason on failure.
   async function handleVoid() {
-    if (!voidReason.trim()) return;
-    await api.post(`/orders/${id}/void`, { reason: voidReason });
-    mutate();
-    setShowVoid(false);
+    if (!voidReason.trim()) {
+      setVoidError(o.voidReasonRequired);
+      return;
+    }
+    setVoiding(true);
+    setVoidError(null);
+    try {
+      await api.post(`/orders/${id}/void`, { reason: voidReason });
+      await mutate();
+      setShowVoid(false);
+    } catch (e) {
+      setVoidError(e instanceof Error ? e.message : o.voidFailed);
+    } finally {
+      setVoiding(false);
+    }
   }
 
   function openRefund(item: OrderItem) {
@@ -117,7 +144,7 @@ export default function OrderDetailPage() {
             {o.printReceipt}
           </a>
           {canModify && (
-            <button onClick={() => setShowVoid(true)} className="px-3 py-2 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors">{o.voidOrder}</button>
+            <button onClick={openVoid} className="px-3 py-2 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors">{o.voidOrder}</button>
           )}
         </div>
       </div>
@@ -129,13 +156,21 @@ export default function OrderDetailPage() {
           <input
             value={voidReason}
             onChange={(e) => setVoidReason(e.target.value)}
+            disabled={voiding}
             placeholder={o.voidReason}
             aria-label={o.voidReason}
             className="w-full border border-red-200 rounded px-3 py-2 text-sm focus:outline-none"
           />
+          {voidError && <p role="alert" className="text-xs text-red-600">{voidError}</p>}
           <div className="flex gap-2">
-            <button onClick={handleVoid} className="px-4 py-2 bg-red-600 text-white text-xs rounded hover:bg-red-700">{o.confirmVoid}</button>
-            <button onClick={() => setShowVoid(false)} className="px-4 py-2 border rounded text-xs">{o.dismiss}</button>
+            <button
+              onClick={handleVoid}
+              disabled={voiding}
+              className="px-4 py-2 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              {voiding ? o.voiding : o.confirmVoid}
+            </button>
+            <button onClick={() => setShowVoid(false)} disabled={voiding} className="px-4 py-2 border rounded text-xs disabled:opacity-50">{o.dismiss}</button>
           </div>
         </div>
       )}
@@ -245,8 +280,9 @@ export default function OrderDetailPage() {
                         type="number"
                         min={1}
                         max={maxQty}
+                        step={1}
                         value={refundQty}
-                        onChange={(e) => setRefundQty(Math.max(1, Math.min(maxQty, Number(e.target.value))))}
+                        onChange={(e) => setRefundQty(clampRefundQty(e.target.value, maxQty))}
                         className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gold"
                       />
                     </label>
