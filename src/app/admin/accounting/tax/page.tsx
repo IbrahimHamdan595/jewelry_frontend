@@ -21,6 +21,7 @@ export default function Tax() {
   const { t } = useLang();
   const a = t.accounting.tax;
   const c = t.accounting.common;
+  const x = t.accounting.extra;
 
   const [codes, setCodes] = useState<TaxCodeT[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,13 +71,14 @@ export default function Tax() {
           type="number"
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
+          aria-label={t.accounting.periods.year}
           className="w-28"
         />
-        <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))} className={SELECT}>
-          <option value={1}>Q1</option>
-          <option value={2}>Q2</option>
-          <option value={3}>Q3</option>
-          <option value={4}>Q4</option>
+        <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))} aria-label={x.quarterLabel} className={SELECT}>
+          <option value={1}>{x.quarter(1)}</option>
+          <option value={2}>{x.quarter(2)}</option>
+          <option value={3}>{x.quarter(3)}</option>
+          <option value={4}>{x.quarter(4)}</option>
         </select>
         <Button onClick={runReturn}>{a.runBtn}</Button>
         {ret && (
@@ -91,12 +93,12 @@ export default function Tax() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatTile label={a.outputVat} value={<Money value={ret.output_vat} dash />} />
             <StatTile label={a.inputVat} value={<Money value={ret.input_vat} dash />} />
-            <StatTile label={`${a.netLabel} ${ret.direction}`} value={<Money value={ret.net_payable} dash />} />
+            <StatTile label={`${a.netLabel} ${x.vatDirection[ret.direction as keyof typeof x.vatDirection] ?? ret.direction}`} value={<Money value={ret.net_payable} dash />} />
           </div>
 
           {ret.cash_split && (
             <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 text-sm text-gold-dark">
-              <Money value={ret.cash_split.cash_75} /> ({a.cashSplitHint}) +{" "}
+              <Money value={ret.cash_split.cash_75} /> ({a.cashSplitHint}){" + "}
               <Money value={ret.cash_split.transfer_25} /> — {ret.cash_split.bdl_account}
               <div className="text-xs mt-1 text-gold-dark/70">{ret.cash_split.note}</div>
             </div>

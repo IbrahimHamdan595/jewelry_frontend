@@ -254,6 +254,8 @@ export interface Translations {
     snapIntegrityBad: string;
     noSnapshotsYet: string;
     rateUnavailable: string;
+    saveFailed: string;
+    dueFormula: (label: string) => string;
   };
 
   dashboard: {
@@ -326,6 +328,9 @@ export interface Translations {
     orderVoids: string;
     rateOverrides: string;
     excessDiscounts: string;
+    recentPurchases: string;
+    cashDue: string;
+    receiptLink: string;
   };
 
   pos: {
@@ -423,6 +428,173 @@ export interface Translations {
     fetchingRate: string;
   };
 
+  stockTake: {
+    // list
+    intro: string;
+    introStrong: string;
+    starting: string;
+    startNew: string;
+    startFailed: string;
+    emptyTitle: string;
+    emptyHint: string;
+    colStarted: string;
+    colClosed: string;
+    colLines: string;
+    colVariances: string;
+    colApproved: string;
+    colRejected: string;
+    statusDraft: string;
+    statusSubmitted: string;
+    statusClosed: string;
+    statusClosedRejected: string;
+    // detail: header
+    backToHistory: string;
+    startedAt: (when: string) => string;
+    closedAt: (when: string) => string;
+    rejectedExplain: (n: number) => string;
+    // detail: counting (draft)
+    stepsTitle: string;
+    saveCount: string;
+    step1Body: string;
+    step2Title: string;
+    step2Body: string;
+    step3Title: string;
+    step3Body: string;
+    ounceBars: string;
+    linesCounted: (n: number) => string;
+    submitNote: string;
+    submitNoteStrong: string;
+    submitting: string;
+    submitForReview: string;
+    colSystemSays: string;
+    colCounted: string;
+    countFor: (name: string) => string;
+    savedCount: (n: number) => string;
+    notCounted: string;
+    remove: string;
+    countInvalid: string;
+    saveFailed: string;
+    removeFailed: string;
+    needOneLine: string;
+    submitFailed: string;
+    // detail: review (submitted)
+    awaitingTitle: string;
+    awaitingBody: string;
+    pendingTitle: (n: number) => string;
+    resolvedTitle: string;
+    approveConfirm: (sentence: string, effect: string) => string;
+    approveFailed: string;
+    reasonRequired: string;
+    rejectFailed: string;
+    varianceMatch: string;
+    varianceShort: (by: number) => string;
+    varianceOver: (by: number) => string;
+    sentenceMatch: (name: string, expected: number) => string;
+    sentenceShort: (name: string, expected: number, counted: number, by: number) => string;
+    sentenceOver: (name: string, expected: number, counted: number, by: number) => string;
+    effectNone: string;
+    effectDecrease: (expected: number, counted: number, by: number) => string;
+    effectIncrease: (expected: number, counted: number, by: number) => string;
+    colItem: string;
+    colSystemSaid: string;
+    colVariance: string;
+    colVariancePlain: string;
+    colAction: string;
+    colRejectReason: string;
+    approve: string;
+    reject: string;
+    resPending: string;
+    resApproved: string;
+    resRejected: string;
+    resNoVariance: string;
+    kindCoin: string;
+    kindOunce: string;
+    // detail: closed
+    rejectedTitle: (n: number) => string;
+    rejectedBody: string;
+    approvedTitle: (n: number) => string;
+    matchedTitle: (n: number) => string;
+    matchedBody: (n: number) => string;
+    // detail: reject dialog
+    rejectVariance: string;
+    rejectEffect: (expected: number, counted: number) => string;
+    reasonLabel: string;
+    reasonPlaceholder: string;
+    rejecting: string;
+  };
+
+  orders: {
+    // list
+    title: string;
+    exportCsv: string;
+    tabSell: string;
+    tabPurchases: string;
+    tabBuybacks: string;
+    showing: (from: number, to: number, total: number) => string;
+    prev: string;
+    statTotalOrders: string;
+    statRevenue: string;
+    statAvgOrder: string;
+    filterAll: string;
+    status: { COMPLETED: string; PARTIALLY_REFUNDED: string; REFUNDED: string; VOIDED: string };
+    colItems: string;
+    emptySell: string;
+    view: string;
+    receipt: string;
+    colMode: string;
+    colCashDue: string;
+    colGoldDue: string;
+    purchaseMode: { CASH: string; GOLD: string; MIXED: string };
+    emptyPurchases: string;
+    colSeller: string;
+    colKind: string;
+    colKaratWeight: string;
+    colQty: string;
+    colPaid: string;
+    buybackKind: { PURE_GOLD: string; COIN: string; OUNCE: string; USED_PRODUCT: string };
+    emptyBuybacks: string;
+    // detail
+    cashierLine: (name: string) => string;
+    customerLine: (name: string) => string;
+    printReceipt: string;
+    voidOrder: string;
+    voidReason: string;
+    confirmVoid: string;
+    dismiss: string;
+    voidedStamp: string;
+    colItem: string;
+    colRateAtSale: string;
+    itemKind: { PRODUCT: string; COIN: string; OUNCE: string };
+    refundedLine: (refunded: number, quantity: number, amount: string) => string;
+    refund: string;
+    discountPct: (pct: number) => string;
+    lbpEquivalent: string;
+    paymentMethod: string;
+    payment: { CASH: string; CARD: string; MIXED: string };
+    refundTotalsNote: string;
+    refundItem: string;
+    refundQty: (max: number) => string;
+    unitReturnsToStock: string;
+    lineWillRefund: string;
+    returnedToCustomer: string;
+    refundIncl: (vatPct: number, discountPct: number) => string;
+    returnsUnits: (n: number) => string;
+    refundFailed: string;
+    refunding: string;
+    confirmRefund: string;
+    voidReasonRequired: string;
+    voidFailed: string;
+    voiding: string;
+  };
+
+  deleteDialog: {
+    title: string;
+    irreversible: (word: string) => string;
+    irreversibleWord: string;
+    deleting: string;
+    confirm: string;
+  };
+
   products: {
     stones: string;
     carats: string;
@@ -468,6 +640,42 @@ export interface Translations {
     retailPrice: string;
     previewHint: string;
     perGram: string;
+    addProduct: string;
+    newProduct: string;
+    searchPlaceholder: string;
+    allCategories: string;
+    colImage: string;
+    colWeight: string;
+    colStock: string;
+    colLivePrice: string;
+    usedBadge: string;
+    status: { AVAILABLE: string; SOLD: string; MELTED: string; RESERVED: string; INACTIVE: string };
+    lowStock: string;
+    activate: string;
+    deactivate: string;
+    deleteFailed: string;
+    product: string;
+    usedProduct: string;
+    used: string;
+    costBasis: string;
+    sourceFrom: (ref: string) => string;
+    caratUnit: string;
+    certificateLabel: string;
+    stoneValueLabel: string;
+    noteLabel: string;
+    meltTitle: string;
+    meltHint: (karat: string, weight: string) => string;
+    meltOnlyWhen: (status: string) => string;
+    melt: string;
+    meltFailed: string;
+    meltHeading: (code: string) => string;
+    meltCurrent: (karat: string, weight: string) => string;
+    meltStatusNote: (status: string) => string;
+    overrideWeight: string;
+    overrideKarat: string;
+    keep: (value: string) => string;
+    melting: string;
+    confirmMelt: string;
   };
 
   accounting: {
@@ -577,6 +785,22 @@ export interface Translations {
       colYear: string; colMonth: string; colStatus: string;
       yearEndClose: string; preview: string; closeYear: string; netIncome: string; alreadyClosed: string;
       colAccount: string; colDebit: string; colCredit: string;
+    };
+    // Strings for the tax, KPI, journal and period screens and the action bar
+    // (NEX-64). Appended as one block rather than inside those blocks.
+    extra: {
+      hintArrow: string;
+      quarter: (n: number) => string;
+      quarterLabel: string;
+      vatDirection: { PAYABLE: string; REFUNDABLE: string; NIL: string };
+      notAvailable: string;
+      daysSuffix: string;
+      kpiWindow: (start: string, end: string, days: number) => string;
+      moneyBalance: (debit: string, credit: string) => string;
+      posted: (entryNo: string) => string;
+      months: readonly string[];
+      periodStatus: { OPEN: string; CLOSED: string };
+      yearClosed: (year: number, entryNo: string, opened: number, nextYear: number) => string;
     };
   };
 }
@@ -847,6 +1071,8 @@ const en: Translations = {
     snapIntegrityBad: "TAMPERED",
     noSnapshotsYet: "No snapshots yet.",
     rateUnavailable: "Gold rate is unavailable. The poller may be down or no rate has ever been recorded.",
+    saveFailed: "Failed to save snapshot",
+    dueFormula: (label) => `2.5% × ${label}`,
   },
 
   dashboard: {
@@ -919,6 +1145,9 @@ const en: Translations = {
     orderVoids: "Voided orders",
     rateOverrides: "Rate overrides",
     excessDiscounts: "Excess-discount orders",
+    recentPurchases: "Recent supplier purchases",
+    cashDue: "Cash due",
+    receiptLink: "Receipt →",
   },
 
   pos: {
@@ -1016,6 +1245,165 @@ const en: Translations = {
     fetchingRate: "Fetching rate…",
   },
 
+  stockTake: {
+    intro: "Physically count coin and ounce stock; submit for review; approve or reject each variance.",
+    introStrong: "Nothing touches inventory until you click Approve on a specific line.",
+    starting: "Starting…",
+    startNew: "Start new count",
+    startFailed: "Failed to start stock-take",
+    emptyTitle: "No stock-takes yet",
+    emptyHint: "Click \"Start new count\" to begin a physical count.",
+    colStarted: "Started",
+    colClosed: "Closed",
+    colLines: "Lines",
+    colVariances: "Variances",
+    colApproved: "Approved",
+    colRejected: "Rejected",
+    statusDraft: "Draft",
+    statusSubmitted: "Awaiting review",
+    statusClosed: "Closed",
+    statusClosedRejected: "Closed with rejection",
+    backToHistory: "Back to history",
+    startedAt: (when) => `Started ${when}`,
+    closedAt: (when) => `Closed ${when}`,
+    rejectedExplain: (n) => `${n} variance${n !== 1 ? "s" : ""} were rejected — system stays knowingly different from physical count on those lines.`,
+    stepsTitle: "Two distinct steps",
+    saveCount: "Save count",
+    step1Body: "per row — records what you physically counted. Does NOT change inventory.",
+    step2Title: "Submit for review",
+    step2Body: "— freezes the count and computes variances. Still does NOT change inventory.",
+    step3Title: "Approve each variance",
+    step3Body: "on the next screen — this is the ONLY step that mutates on-hand quantity. Each approval is recorded as a fully-audited adjustment.",
+    ounceBars: "Ounce bars",
+    linesCounted: (n) => `${n} ${n === 1 ? "line" : "lines"} counted so far`,
+    submitNote: "Submitting will freeze these counts and compute variances. You'll then review each variance on the next screen and approve or reject individually.",
+    submitNoteStrong: "Inventory is NOT changed by submit — only by approving variances afterwards.",
+    submitting: "Submitting…",
+    submitForReview: "Submit count for review",
+    colSystemSays: "System says",
+    colCounted: "Counted",
+    countFor: (name) => `Counted quantity for ${name}`,
+    savedCount: (n) => `Saved (count = ${n})`,
+    notCounted: "Not yet counted",
+    remove: "Remove",
+    countInvalid: "Counted quantity must be a non-negative integer.",
+    saveFailed: "Failed to save count",
+    removeFailed: "Failed to remove line",
+    needOneLine: "Add at least one counted line before submitting.",
+    submitFailed: "Failed to submit",
+    awaitingTitle: "Variances awaiting decision",
+    awaitingBody: "Each variance is described in plain words below (e.g. \"short by 2\", \"over by 1\"). Approving applies the adjustment to inventory; rejecting leaves the system knowingly different from your physical count and records the reason. Both actions are permanent and audited.",
+    pendingTitle: (n) => `${n} pending variance${n !== 1 ? "s" : ""}`,
+    resolvedTitle: "Already resolved",
+    approveConfirm: (sentence, effect) => `Approve this variance?\n\n${sentence}\n\n${effect}\n\nThis writes a permanent adjustment to the audit ledger.`,
+    approveFailed: "Approve failed",
+    reasonRequired: "Reason is required (min 3 characters).",
+    rejectFailed: "Reject failed",
+    varianceMatch: "matches",
+    varianceShort: (by) => `short by ${by}`,
+    varianceOver: (by) => `over by ${by}`,
+    sentenceMatch: (name, expected) => `${name}: physical count matches system (${expected}).`,
+    sentenceShort: (name, expected, counted, by) => `${name}: system says ${expected}, you counted ${counted} — short by ${by}.`,
+    sentenceOver: (name, expected, counted, by) => `${name}: system says ${expected}, you counted ${counted} — over by ${by}.`,
+    effectNone: "No change (already matches).",
+    effectDecrease: (expected, counted, by) => `Approving will decrease on-hand quantity from ${expected} to ${counted} (−${by}). A "lost / shrinkage" adjustment will be recorded.`,
+    effectIncrease: (expected, counted, by) => `Approving will increase on-hand quantity from ${expected} to ${counted} (+${by}). A "found / correction" adjustment will be recorded.`,
+    colItem: "Item",
+    colSystemSaid: "System said",
+    colVariance: "Variance",
+    colVariancePlain: "Variance (plain)",
+    colAction: "Action",
+    colRejectReason: "Reason for rejecting",
+    approve: "Approve",
+    reject: "Reject",
+    resPending: "Pending",
+    resApproved: "Approved",
+    resRejected: "Rejected",
+    resNoVariance: "No variance",
+    kindCoin: "Coin",
+    kindOunce: "Ounce",
+    rejectedTitle: (n) => `${n} variance${n !== 1 ? "s" : ""} were rejected — inventory stays knowingly different from physical count`,
+    rejectedBody: "These differences were physically observed but not corrected in the system. They will continue to surface in Inventory → Reconcile as drift until a future stock-take approves an adjustment or the underlying issue is fixed.",
+    approvedTitle: (n) => `${n} approved adjustment${n !== 1 ? "s" : ""}`,
+    matchedTitle: (n) => `${n} matched (no variance)`,
+    matchedBody: (n) => `Physical count matched system on these ${n} items — no action needed.`,
+    rejectVariance: "Reject variance",
+    rejectEffect: (expected, counted) => `Rejecting leaves the system at ${expected} (not ${counted}). This drift will continue to show up on Inventory → Reconcile until resolved.`,
+    reasonLabel: "Reason (required, recorded in audit log)",
+    reasonPlaceholder: "e.g. acceptable shrinkage, suspected miscount — investigating",
+    rejecting: "Rejecting…",
+  },
+
+  orders: {
+    title: "Transactions",
+    exportCsv: "Export CSV",
+    tabSell: "Sell",
+    tabPurchases: "Supplier Purchases",
+    tabBuybacks: "Buybacks",
+    showing: (from, to, total) => `Showing ${from}–${to} of ${total}`,
+    prev: "Prev",
+    statTotalOrders: "Total Orders",
+    statRevenue: "Revenue",
+    statAvgOrder: "Avg Order Value",
+    filterAll: "All",
+    status: { COMPLETED: "completed", PARTIALLY_REFUNDED: "partially refunded", REFUNDED: "refunded", VOIDED: "voided" },
+    colItems: "Items",
+    emptySell: "No orders for this period",
+    view: "View",
+    receipt: "Receipt",
+    colMode: "Mode",
+    colCashDue: "Cash Due",
+    colGoldDue: "Gold Due",
+    purchaseMode: { CASH: "CASH", GOLD: "GOLD", MIXED: "MIXED" },
+    emptyPurchases: "No supplier purchases for this period",
+    colSeller: "Seller",
+    colKind: "Kind",
+    colKaratWeight: "Karat / Weight",
+    colQty: "Qty",
+    colPaid: "Paid",
+    buybackKind: { PURE_GOLD: "PURE GOLD", COIN: "COIN", OUNCE: "OUNCE", USED_PRODUCT: "USED PRODUCT" },
+    emptyBuybacks: "No buybacks for this period",
+    cashierLine: (name) => `Cashier: ${name}`,
+    customerLine: (name) => `Customer: ${name}`,
+    printReceipt: "Print Receipt",
+    voidOrder: "Void Order",
+    voidReason: "Reason for voiding…",
+    confirmVoid: "Confirm Void",
+    dismiss: "Cancel",
+    voidedStamp: "VOIDED",
+    colItem: "Item",
+    colRateAtSale: "Rate at Sale",
+    itemKind: { PRODUCT: "PRODUCT", COIN: "COIN", OUNCE: "OUNCE" },
+    refundedLine: (refunded, quantity, amount) => `Refunded ${refunded}/${quantity} · −${amount} to customer`,
+    refund: "Refund",
+    discountPct: (pct) => `Discount ${pct}%`,
+    lbpEquivalent: "LBP Equivalent",
+    paymentMethod: "Payment Method",
+    payment: { CASH: "CASH", CARD: "CARD", MIXED: "MIXED" },
+    refundTotalsNote: "Totals reflect remaining (un-refunded) items. VAT recalculated on the new subtotal.",
+    refundItem: "Refund item",
+    refundQty: (max) => `Quantity to refund (max ${max})`,
+    unitReturnsToStock: "This unit will be returned to stock.",
+    lineWillRefund: "This line will be refunded.",
+    returnedToCustomer: "Returned to customer ≈",
+    refundIncl: (vatPct, discountPct) => `(incl. ${vatPct}% VAT${discountPct > 0 ? `, less ${discountPct}% discount` : ""})`,
+    returnsUnits: (n) => `returns ${n} unit(s) to stock.`,
+    refundFailed: "Refund failed",
+    refunding: "Refunding…",
+    confirmRefund: "Confirm Refund",
+    voidReasonRequired: "Enter a reason for voiding this order.",
+    voidFailed: "Void failed",
+    voiding: "Voiding…",
+  },
+
+  deleteDialog: {
+    title: "Permanently delete?",
+    irreversible: (word) => `This action is ${word}. The record will be permanently removed from the database.`,
+    irreversibleWord: "irreversible",
+    deleting: "Deleting…",
+    confirm: "Delete permanently",
+  },
+
   products: {
     stones: "Stones",
     carats: "Carats",
@@ -1061,6 +1449,42 @@ const en: Translations = {
     retailPrice: "Retail Price",
     previewHint: "Enter weight and rates to see price",
     perGram: "/g",
+    addProduct: "Add Product",
+    newProduct: "New Product",
+    searchPlaceholder: "Search by name or code…",
+    allCategories: "All categories",
+    colImage: "Image",
+    colWeight: "Weight",
+    colStock: "Stock",
+    colLivePrice: "Live Price",
+    usedBadge: "USED",
+    status: { AVAILABLE: "AVAILABLE", SOLD: "SOLD", MELTED: "MELTED", RESERVED: "RESERVED", INACTIVE: "INACTIVE" },
+    lowStock: "low",
+    activate: "Activate",
+    deactivate: "Deactivate",
+    deleteFailed: "Delete failed",
+    product: "Product",
+    usedProduct: "Used Product",
+    used: "Used",
+    costBasis: "Cost basis",
+    sourceFrom: (ref) => `from ${ref}`,
+    caratUnit: "ct",
+    certificateLabel: "Certificate",
+    stoneValueLabel: "Stone value",
+    noteLabel: "Note",
+    meltTitle: "Melt this piece into a pure-gold lot",
+    meltHint: (karat, weight) => `Reduces the piece to ${karat} weight ${weight}g and creates a new lot.`,
+    meltOnlyWhen: (status) => `Only AVAILABLE or INACTIVE products can be melted (status: ${status}).`,
+    melt: "Melt",
+    meltFailed: "Melt failed",
+    meltHeading: (code) => `Melt ${code}`,
+    meltCurrent: (karat, weight) => `Current: ${karat} · ${weight}g.`,
+    meltStatusNote: (status) => `Product status will flip to ${status}; a new lot is created.`,
+    overrideWeight: "Override weight (g)",
+    overrideKarat: "Override karat",
+    keep: (value) => `(keep ${value})`,
+    melting: "Melting…",
+    confirmMelt: "Confirm melt",
   },
 
   accounting: {
@@ -1248,6 +1672,20 @@ const en: Translations = {
       yearEndClose: "Year-End Close", preview: "Preview", closeYear: "Close Year",
       netIncome: "Net income", alreadyClosed: "already closed",
       colAccount: "Account", colDebit: "Debit", colCredit: "Credit",
+    },
+    extra: {
+      hintArrow: "↳",
+      quarter: (n) => `Q${n}`,
+      quarterLabel: "Quarter",
+      vatDirection: { PAYABLE: "PAYABLE", REFUNDABLE: "REFUNDABLE", NIL: "NIL" },
+      notAvailable: "n/a",
+      daysSuffix: " d",
+      kpiWindow: (start, end, days) => `Window: ${start} → ${end} (${days} days)`,
+      moneyBalance: (debit, credit) => `Balance (USD): DR ${debit} / CR ${credit}`,
+      posted: (entryNo) => `Posted ${entryNo}`,
+      months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      periodStatus: { OPEN: "OPEN", CLOSED: "CLOSED" },
+      yearClosed: (year, entryNo, opened, nextYear) => `Year ${year} closed — entry ${entryNo}. Opened ${opened} periods for ${nextYear}.`,
     },
   },
 };

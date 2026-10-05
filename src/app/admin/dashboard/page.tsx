@@ -180,7 +180,7 @@ export default function DashboardPage() {
                       <div className="text-end">
                         <div className="text-sm font-semibold text-gray-800">
                           {row.grams_remaining.toFixed(3)}
-                          <span className="text-xs text-gray-400 ms-1">g</span>
+                          <span className="text-xs text-gray-400 ms-1">{t.dashboard.grams}</span>
                         </div>
                         <div className="text-[10px] text-gray-400">
                           {t.dashboard.lotCount(row.lot_count)}
@@ -293,7 +293,7 @@ export default function DashboardPage() {
             <div className="mt-2 space-y-0.5">
               <div className="text-[10px] text-gray-400 uppercase">{t.dashboard.metalOwed}</div>
               {Object.entries(data.payables_aging.metal_owed_by_karat).map(([k, g]) => (
-                <div key={k} className="flex justify-between text-xs"><span className="text-gold">{k}</span><span className="font-mono">{Number(g).toFixed(3)}g</span></div>
+                <div key={k} className="flex justify-between text-xs"><span className="text-gold">{k}</span><span className="ltr:font-mono"><span className="font-mono">{Number(g).toFixed(3)}</span>{t.dashboard.grams}</span></div>
               ))}
             </div>
           )}
@@ -383,13 +383,13 @@ export default function DashboardPage() {
       {data.recent_purchases && data.recent_purchases.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
           <div className="p-5 border-b border-gray-100">
-            <div className="text-sm font-semibold text-gray-700">Recent supplier purchases</div>
+            <div className="text-sm font-semibold text-gray-700">{t.dashboard.recentPurchases}</div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Supplier", "Items", "Cash due", "Date", "Receipt"].map((h) => (
+                  {[t.accounting.common.supplier, t.orders.colItems, t.dashboard.cashDue, t.dashboard.date, t.orders.receipt].map((h) => (
                     <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-5 py-3 font-medium">{h}</th>
                   ))}
                 </tr>
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                         rel="noopener noreferrer"
                         className="text-xs text-gold hover:text-gold-dark"
                       >
-                        Receipt →
+                        {t.dashboard.receiptLink}
                       </a>
                     </td>
                   </tr>

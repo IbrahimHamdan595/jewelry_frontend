@@ -1,4 +1,6 @@
+"use client";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
 
 interface ActionBarProps {
   /** inline hint shown after the controls (e.g. "pays off oldest invoices first") */
@@ -12,6 +14,7 @@ interface ActionBarProps {
  * primary Button), with an optional inline hint explaining what it does.
  */
 export function ActionBar({ hint, children, className }: ActionBarProps) {
+  const { t } = useLang();
   return (
     <div
       className={cn(
@@ -20,7 +23,7 @@ export function ActionBar({ hint, children, className }: ActionBarProps) {
       )}
     >
       {children}
-      {hint && <span className="text-xs text-gold-dark/70 ms-1">↳ {hint}</span>}
+      {hint && <span className="text-xs text-gold-dark/70 ms-1">{t.accounting.extra.hintArrow} {hint}</span>}
     </div>
   );
 }

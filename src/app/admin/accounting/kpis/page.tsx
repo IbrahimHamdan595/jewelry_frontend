@@ -16,6 +16,7 @@ export default function Kpis() {
   const { t } = useLang();
   const a = t.accounting.kpis;
   const c = t.accounting.common;
+  const x = t.accounting.extra;
 
   const [start, setStart] = useState(firstOfMonth());
   const [end, setEnd] = useState(today());
@@ -29,11 +30,11 @@ export default function Kpis() {
   useEffect(() => { run(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const cards: { key: keyof NonNullable<typeof data>; label: string; suffix?: string }[] = [
-    { key: "dsi", label: a.dsi, suffix: " d" },
+    { key: "dsi", label: a.dsi, suffix: x.daysSuffix },
     { key: "inventory_turnover", label: a.turnover, suffix: "×" },
-    { key: "dpo", label: a.dpo, suffix: " d" },
-    { key: "dso", label: a.dso, suffix: " d" },
-    { key: "ccc", label: a.ccc, suffix: " d" },
+    { key: "dpo", label: a.dpo, suffix: x.daysSuffix },
+    { key: "dso", label: a.dso, suffix: x.daysSuffix },
+    { key: "ccc", label: a.ccc, suffix: x.daysSuffix },
     { key: "gross_margin", label: a.grossMargin, suffix: "%" },
     { key: "net_margin", label: a.netMargin, suffix: "%" },
     { key: "metal_turnover", label: a.metalTurnover, suffix: "×" },
@@ -47,8 +48,8 @@ export default function Kpis() {
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       <ActionBar>
-        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-40" />
-        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-40" />
+        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} aria-label={c.from} className="w-40" />
+        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} aria-label={c.until} className="w-40" />
         <Button onClick={run}>{c.run}</Button>
         <Button
           variant="outline"
@@ -76,7 +77,7 @@ export default function Kpis() {
                 label={card.label}
                 value={
                   k.value === null
-                    ? <span className="text-gray-400 text-base">n/a</span>
+                    ? <span className="text-gray-400 text-base">{x.notAvailable}</span>
                     : <>{k.value}{card.suffix}</>
                 }
               />
@@ -86,7 +87,7 @@ export default function Kpis() {
       )}
 
       {data && (
-        <div className="text-xs text-gray-400">Window: {data.start} → {data.end} ({data.days} days)</div>
+        <div className="text-xs text-gray-400">{x.kpiWindow(data.start, data.end, data.days)}</div>
       )}
     </div>
   );
