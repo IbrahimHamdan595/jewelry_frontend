@@ -3,12 +3,13 @@
  *
  * Three rule families, two severities:
  *   - next/core-web-vitals   errors, as shipped
- *   - jsx-a11y recommended   WARNINGS for now — 96 unlabelled <label>s etc. exist today
- *   - i18next/no-literal-string  WARNINGS — ~376 hardcoded JSX strings exist today
+ *   - jsx-a11y recommended   WARNINGS — none left since NEX-64 (there were 96 unlabelled <label>s etc.)
+ *   - i18next/no-literal-string  WARNINGS — none left since NEX-64 (there were ~376 hardcoded JSX strings)
  *
  * Warnings are not free: `npm run lint` runs with --max-warnings pinned to the
  * current baseline, so the count can only go down. Ratchet the number in
- * package.json as warnings are fixed; never up.
+ * package.json as warnings are fixed; never up. What remains (11) is
+ * react-hooks/exhaustive-deps and @next/next/no-img-element.
  */
 const a11yRecommended = require("eslint-plugin-jsx-a11y").configs.recommended.rules;
 // The plugin shallow-merges options, so passing `words` would drop its own
