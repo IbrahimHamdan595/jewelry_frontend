@@ -26,6 +26,9 @@ function todayISO(): string {
 export default function ZakatPage() {
   const { t } = useLang();
   const z = t.zakat;
+  // "live" or "override" (the gold-rate source enum), in the wording the rate
+  // cards use. Anything else — an older snapshot's value — prints as stored.
+  const rateSource = (source: string) => t.goldRate.sources[source as keyof typeof t.goldRate.sources] ?? source;
   const { formatDateTime } = useFormat();
 
   const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary, isValidating: validatingSummary } =
@@ -161,7 +164,7 @@ export default function ZakatPage() {
               {formatUSD(summary.gold_rate_24k)}{t.products.perGram}
               <span className="ms-1.5 inline-flex items-center gap-1 text-[10px]">
                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                  {summary.gold_rate_source}
+                  {rateSource(summary.gold_rate_source)}
                 </span>
                 {summary.gold_rate_is_stale && (
                   <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded uppercase">
@@ -323,7 +326,7 @@ export default function ZakatPage() {
                     <td className="px-3 py-2.5 text-end text-gray-600">{formatUSD(s.gold_rate_24k_usd_per_gram)}</td>
                     <td className="px-3 py-2.5 text-xs">
                       <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                        {s.gold_rate_source}
+                        {rateSource(s.gold_rate_source)}
                       </span>
                     </td>
                     <td className="px-5 py-2.5 text-gray-600">
