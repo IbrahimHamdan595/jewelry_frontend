@@ -118,3 +118,16 @@ describe("products list — live price from a string or a number rate (NEX-54)",
     expect(livePrices()).toEqual(["—", "—"]);
   });
 });
+
+// Product.stone_value_usd is a Decimal: a string on the wire.
+describe("products list — the stones badge reads the stone value as a number", () => {
+  afterEach(() => { list.items[0] = product({}); });
+
+  it.each([
+    ["120.00", 1], [120, 1], ["0.00", 0], [0, 0], [null, 0], ["n/a", 0],
+  ])("stone_value_usd=%j shows %i badge(s)", (stone_value_usd, count) => {
+    list.items[0] = product({ stone_value_usd });
+    renderPage("en");
+    expect(screen.queryAllByText("💎 Stones")).toHaveLength(count);
+  });
+});

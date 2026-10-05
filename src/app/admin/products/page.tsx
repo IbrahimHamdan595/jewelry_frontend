@@ -206,7 +206,7 @@ function ProductsTab() {
                         {p.is_used && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">{pr.usedBadge}</span>
                         )}
-                        {p.stone_value_usd != null && p.stone_value_usd > 0 && (
+                        {(toFiniteNumber(p.stone_value_usd) ?? 0) > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">💎 {pr.stones}</span>
                         )}
                         {p.status !== "AVAILABLE" && (
