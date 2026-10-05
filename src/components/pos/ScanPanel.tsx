@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ScanLine, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLang } from "@/context/LanguageContext";
 
 interface Props {
   onScan: (code: string) => Promise<void>;
@@ -11,6 +12,7 @@ interface Props {
 
 export function ScanPanel({ onScan, scanError }: Props) {
   const [manual, setManual] = useState("");
+  const { t } = useLang();
 
   async function handleManual() {
     const code = manual.trim();
@@ -24,10 +26,10 @@ export function ScanPanel({ onScan, scanError }: Props) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="text-pos-gray text-[10px] uppercase tracking-widest">
-            Capture
+            {t.pos.capture}
           </p>
           <p className="text-pos-gray/60 text-[10px] uppercase tracking-widest">
-            Step 01
+            {t.pos.step01}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
           {scanError ? (
             <>
               <p className="text-red-400 text-xs uppercase tracking-widest mb-2">
-                Item not found
+                {t.pos.itemNotFound}
               </p>
               <p className="text-red-300/70 text-sm font-mono break-all">
                 {scanError}
@@ -51,10 +53,10 @@ export function ScanPanel({ onScan, scanError }: Props) {
             <>
               <ScanLine className="w-10 h-10 mx-auto text-gold/60 mb-3" />
               <p className="text-pos-cream text-sm tracking-widest uppercase">
-                Ready to scan
+                {t.pos.readyToScan}
               </p>
               <p className="text-pos-gray text-xs mt-1.5">
-                Point scanner at barcode or enter code below
+                {t.pos.scanHint}
               </p>
             </>
           )}
@@ -63,7 +65,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
 
       <div>
         <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
-          Manual entry
+          {t.pos.manualEntry}
         </p>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -73,7 +75,8 @@ export function ScanPanel({ onScan, scanError }: Props) {
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleManual()}
-              placeholder="Product code…"
+              placeholder={t.pos.productCodePlaceholder}
+              aria-label={t.pos.manualEntry}
               className="pl-9"
             />
           </div>
@@ -82,7 +85,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
             disabled={!manual.trim()}
             className="shrink-0 px-5"
           >
-            Find
+            {t.pos.find}
           </Button>
         </div>
       </div>
