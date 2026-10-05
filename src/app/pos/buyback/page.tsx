@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
+import { useLang } from "@/context/LanguageContext";
 import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
 import type {
   BuybackKind,
@@ -34,15 +35,17 @@ interface QuoteOut {
   buy_price: string | number;
 }
 
-const KIND_OPTIONS: { value: BuybackKind; label: string; icon: typeof Recycle }[] = [
-  { value: "PURE_GOLD", label: "Pure gold", icon: Scale },
-  { value: "COIN", label: "Coin", icon: Coins },
-  { value: "OUNCE", label: "Ounce bar", icon: Layers },
-  { value: "USED_PRODUCT", label: "Used piece", icon: Sparkles },
+// Labels live in the dictionary (t.posBuyback.kinds), keyed by the enum value.
+const KIND_OPTIONS: { value: BuybackKind; icon: typeof Recycle }[] = [
+  { value: "PURE_GOLD", icon: Scale },
+  { value: "COIN", icon: Coins },
+  { value: "OUNCE", icon: Layers },
+  { value: "USED_PRODUCT", icon: Sparkles },
 ];
 
 export default function BuybackPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -59,9 +62,9 @@ export default function BuybackPage() {
     <div className="flex flex-col flex-1 min-h-0 bg-pos-bg">
       <header className="h-16 border-b border-white/10 flex items-center px-6 shrink-0 gap-6">
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-serif text-gold text-xl tracking-widest">Fawaz El Namel</span>
+          <span className="font-serif text-gold text-xl tracking-widest">{t.appName}</span>
           <span className="text-pos-gray/40 text-xs">·</span>
-          <span className="text-pos-gray text-xs uppercase tracking-widest">Point of Sale</span>
+          <span className="text-pos-gray text-xs uppercase tracking-widest">{t.pos.pointOfSale}</span>
         </div>
         <PosModeTabs />
         <div className="hidden lg:flex flex-1 justify-center">
@@ -82,7 +85,7 @@ export default function BuybackPage() {
             className="flex items-center gap-1.5 text-pos-gray hover:text-pos-cream text-xs transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign out</span>
+            <span className="hidden sm:inline">{t.pos.signOut}</span>
           </button>
         </div>
       </header>
@@ -90,13 +93,13 @@ export default function BuybackPage() {
       <div className="flex-1 overflow-y-auto p-8 text-pos-cream">
         <div className="max-w-3xl mx-auto space-y-6">
           <div>
-            <p className="text-pos-gray text-[10px] uppercase tracking-widest">Buy back</p>
-            <h2 className="font-serif text-2xl text-gold mt-1">Customer is selling gold</h2>
+            <p className="text-pos-gray text-[10px] uppercase tracking-widest">{t.posBuyback.eyebrow}</p>
+            <h2 className="font-serif text-2xl text-gold mt-1">{t.posBuyback.title}</h2>
           </div>
 
           {/* Kind selector */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {KIND_OPTIONS.map(({ value, label, icon: Icon }) => (
+            {KIND_OPTIONS.map(({ value, icon: Icon }) => (
               <button
                 key={value}
                 onClick={() => setKind(value)}
@@ -108,7 +111,7 @@ export default function BuybackPage() {
               >
                 <Icon className={`w-5 h-5 mb-2 ${kind === value ? "text-gold" : "text-pos-gray"}`} />
                 <div className={`text-sm ${kind === value ? "text-gold" : "text-pos-cream"}`}>
-                  {label}
+                  {t.posBuyback.kinds[value]}
                 </div>
               </button>
             ))}
@@ -140,36 +143,36 @@ function useSellerFields(): SellerFields {
 }
 
 function SellerBlock({ seller }: { seller: SellerFields }) {
+  const { t } = useLang();
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className="block text-[10px] uppercase tracking-widest text-pos-gray mb-1">
-          Seller name
-        </label>
+      <Field label={t.posBuyback.sellerName}>
         <input
           value={seller.sellerName}
           onChange={(e) => seller.setSellerName(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
-      <div>
-        <label className="block text-[10px] uppercase tracking-widest text-pos-gray mb-1">
-          Phone
-        </label>
+      </Field>
+      <Field label={t.posBuyback.phone}>
         <input
           value={seller.sellerPhone}
           onChange={(e) => seller.setSellerPhone(e.target.value)}
           placeholder="+961…"
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-gold"
         />
-      </div>
+      </Field>
     </div>
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+/**
+ * The control sits inside its label (NEX-64): no ids to keep in sync, a click
+ * on the text focuses the field, and a screen reader announces it by name.
+ */
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-[10px] uppercase tracking-widest text-pos-gray mb-1">
+    <label className="block">
+      <span className="block text-[10px] uppercase tracking-widest text-pos-gray mb-1">{label}</span>
       {children}
     </label>
   );
@@ -179,6 +182,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 function PureGoldForm() {
   const router = useRouter();
+  const { t } = useLang();
   const seller = useSellerFields();
   const [karat, setKarat] = useState<Karat>("K21");
   const [weight, setWeight] = useState("");
@@ -197,7 +201,7 @@ function PureGoldForm() {
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
-      setError("Seller name and phone are required.");
+      setError(t.posBuyback.sellerRequired);
       return;
     }
     setError(null);
@@ -236,8 +240,7 @@ function PureGoldForm() {
       <SellerBlock seller={seller} />
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <FieldLabel>Karat</FieldLabel>
+        <Field label={t.products.karat}>
           <select
             value={karat}
             onChange={(e) => setKarat(e.target.value as Karat)}
@@ -245,9 +248,8 @@ function PureGoldForm() {
           >
             {KARATS.map((k) => <option key={k} value={k}>{k}</option>)}
           </select>
-        </div>
-        <div>
-          <FieldLabel>Weight (g)</FieldLabel>
+        </Field>
+        <Field label={t.products.weightGrams}>
           <input
             type="number"
             step="0.001"
@@ -255,7 +257,7 @@ function PureGoldForm() {
             onChange={(e) => setWeight(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </Field>
       </div>
 
       <PriceModeToggle priceMode={priceMode} setPriceMode={setPriceMode} />
@@ -266,11 +268,10 @@ function PureGoldForm() {
         <ErrorState variant="dark" className="p-4" error={quoteError} onRetry={() => mutateQuote()} retrying={quoteValidating} />
       ) : priceMode === "FORMULA" ? (
         <div className="text-xs text-pos-gray italic">
-          Enter weight to see the live quote.
+          {t.posBuyback.enterWeightHint}
         </div>
       ) : (
-        <div>
-          <FieldLabel>Manual price (USD)</FieldLabel>
+        <Field label={t.posBuyback.manualPriceUsd}>
           <input
             type="number"
             step="0.01"
@@ -278,17 +279,16 @@ function PureGoldForm() {
             onChange={(e) => setManualPrice(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </Field>
       )}
 
-      <div>
-        <FieldLabel>Notes (optional)</FieldLabel>
+      <Field label={t.posBuyback.notesOptional}>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
+      </Field>
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
@@ -301,7 +301,7 @@ function PureGoldForm() {
       />
 
       <SubmitButton
-        label="Record buy back"
+        label={t.posBuyback.record}
         onClick={submit}
         disabled={submitting || !weight || (priceMode === "MANUAL" && !manualPrice) || guard.blocked}
         submitting={submitting}
@@ -314,6 +314,7 @@ function PureGoldForm() {
 
 function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
   const router = useRouter();
+  const { t } = useLang();
   const seller = useSellerFields();
   const resource = kind === "COIN" ? "coins" : "ounces";
   const [typeId, setTypeId] = useState("");
@@ -329,7 +330,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
     `/${resource}?is_active=true&page_size=200`,
     apiFetcher,
   );
-  const selected: UnitType | undefined = types?.items.find((t) => t.id === typeId);
+  const selected: UnitType | undefined = types?.items.find((u) => u.id === typeId);
 
   const quoteKey =
     priceMode === "FORMULA" && selected
@@ -343,7 +344,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
-      setError("Seller name and phone are required.");
+      setError(t.posBuyback.sellerRequired);
       return;
     }
     if (!typeId) {
@@ -384,24 +385,23 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
     <div className="bg-white/5 border border-white/10 rounded-lg p-5 space-y-4">
       <SellerBlock seller={seller} />
 
-      <div>
-        <FieldLabel>{kind === "COIN" ? "Coin type" : "Ounce bar type"}</FieldLabel>
+      <Field label={kind === "COIN" ? t.posBuyback.coinType : t.posBuyback.ounceType}>
         <select
           value={typeId}
           onChange={(e) => setTypeId(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         >
-          <option value="">— select —</option>
-          {types?.items.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.code} · {t.karat} · {Number(t.weight_grams).toFixed(3)}g · {t.name_en}
+          <option value="">{t.posBuyback.selectPlaceholder}</option>
+          {types?.items.map((u) => (
+            <option key={u.id} value={u.id}>
+              {/* A data line — code, karat, weight, name: the unit symbol stays with its number */}
+              {u.code} · {u.karat} · {`${Number(u.weight_grams).toFixed(3)}g`} · {u.name_en}
             </option>
           ))}
         </select>
-      </div>
+      </Field>
 
-      <div>
-        <FieldLabel>Quantity</FieldLabel>
+      <Field label={t.common.quantity}>
         <input
           type="number"
           min={1}
@@ -410,7 +410,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
           onChange={(e) => setQty(e.target.value)}
           className="w-32 bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
+      </Field>
 
       <PriceModeToggle priceMode={priceMode} setPriceMode={setPriceMode} />
 
@@ -419,10 +419,10 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
       )}
       {priceMode === "FORMULA" && perUnitQuote && (
         <div className="bg-white/5 border border-white/10 rounded p-4 space-y-1.5 text-xs">
-          <Row label="Per unit (formula)" value={formatUSD(perUnitQuote.buy_price)} />
-          <Row label="Quantity" value={`× ${quantity}`} />
+          <Row label={t.posBuyback.perUnitFormula} value={formatUSD(perUnitQuote.buy_price)} />
+          <Row label={t.common.quantity} value={`× ${quantity}`} />
           <Row
-            label="Total buy price"
+            label={t.posBuyback.totalBuyPrice}
             value={
               <span className="text-gold font-semibold text-base">
                 {formatUSD(totalQuote ?? 0)}
@@ -430,15 +430,14 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
             }
           />
           <Row
-            label="Rate"
-            value={`$${Number(perUnitQuote.rate_24k).toFixed(2)}/g (24K) · ${perUnitQuote.rate_source}${perUnitQuote.rate_is_stale ? " (stale)" : ""}`}
+            label={t.posBuyback.rate}
+            value={t.posBuyback.rateLine(Number(perUnitQuote.rate_24k).toFixed(2), perUnitQuote.rate_source, perUnitQuote.rate_is_stale)}
           />
         </div>
       )}
 
       {priceMode === "MANUAL" && (
-        <div>
-          <FieldLabel>Manual price (USD, total)</FieldLabel>
+        <Field label={t.posBuyback.manualPriceUsdTotal}>
           <input
             type="number"
             step="0.01"
@@ -446,17 +445,16 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
             onChange={(e) => setManualPrice(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </Field>
       )}
 
-      <div>
-        <FieldLabel>Notes (optional)</FieldLabel>
+      <Field label={t.posBuyback.notesOptional}>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
+      </Field>
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
@@ -469,7 +467,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
       />
 
       <SubmitButton
-        label="Record buy back"
+        label={t.posBuyback.record}
         onClick={submit}
         disabled={submitting || !typeId || (priceMode === "MANUAL" && !manualPrice) || guard.blocked}
         submitting={submitting}
@@ -482,6 +480,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
 
 function UsedProductForm() {
   const router = useRouter();
+  const { t } = useLang();
   const seller = useSellerFields();
   const [karat, setKarat] = useState<Karat>("K21");
   const [weight, setWeight] = useState("");
@@ -493,7 +492,7 @@ function UsedProductForm() {
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
-      setError("Seller name and phone are required.");
+      setError(t.posBuyback.sellerRequired);
       return;
     }
     setError(null);
@@ -525,15 +524,13 @@ function UsedProductForm() {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-5 space-y-4">
       <div className="text-xs text-pos-gray italic">
-        Used pieces are priced by hand. Admin can later <span className="text-gold">polish</span> them
-        into the catalog or <span className="text-gold">melt</span> them into a pure-gold lot.
+        {t.posBuyback.usedPieceHint((word) => <span key={word} className="text-gold">{word}</span>)}
       </div>
 
       <SellerBlock seller={seller} />
 
       <div className="grid grid-cols-3 gap-3">
-        <div>
-          <FieldLabel>Karat</FieldLabel>
+        <Field label={t.products.karat}>
           <select
             value={karat}
             onChange={(e) => setKarat(e.target.value as Karat)}
@@ -541,9 +538,8 @@ function UsedProductForm() {
           >
             {KARATS.map((k) => <option key={k} value={k}>{k}</option>)}
           </select>
-        </div>
-        <div>
-          <FieldLabel>Weight (g)</FieldLabel>
+        </Field>
+        <Field label={t.products.weightGrams}>
           <input
             type="number"
             step="0.001"
@@ -551,9 +547,8 @@ function UsedProductForm() {
             onChange={(e) => setWeight(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <FieldLabel>Price paid (USD)</FieldLabel>
+        </Field>
+        <Field label={t.posBuyback.pricePaidUsd}>
           <input
             type="number"
             step="0.01"
@@ -561,17 +556,16 @@ function UsedProductForm() {
             onChange={(e) => setManualPrice(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </Field>
       </div>
 
-      <div>
-        <FieldLabel>Notes</FieldLabel>
+      <Field label={t.posBuyback.notes}>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
-      </div>
+      </Field>
 
       {error && <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">{error}</div>}
 
@@ -584,7 +578,7 @@ function UsedProductForm() {
       />
 
       <SubmitButton
-        label="Record buy back"
+        label={t.posBuyback.record}
         onClick={submit}
         disabled={submitting || !weight || !manualPrice || guard.blocked}
         submitting={submitting}
@@ -601,6 +595,7 @@ function PriceModeToggle({
   priceMode: "FORMULA" | "MANUAL";
   setPriceMode: (m: "FORMULA" | "MANUAL") => void;
 }) {
+  const { t } = useLang();
   return (
     <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 w-fit">
       {(["FORMULA", "MANUAL"] as const).map((m) => (
@@ -611,7 +606,7 @@ function PriceModeToggle({
             priceMode === m ? "bg-gold text-black font-semibold" : "text-pos-gray hover:text-pos-cream"
           }`}
         >
-          {m === "FORMULA" ? "Auto (spot − margin)" : "Manual price"}
+          {m === "FORMULA" ? t.posBuyback.priceModeAuto : t.posBuyback.priceModeManual}
         </button>
       ))}
     </div>
@@ -619,14 +614,16 @@ function PriceModeToggle({
 }
 
 function QuoteCard({ quote }: { quote: QuoteOut }) {
+  const { t } = useLang();
+  const perGram = t.products.perGram;
   return (
     <div className="bg-white/5 border border-white/10 rounded p-4 space-y-1.5 text-xs">
-      <Row label="Spot 24K" value={`$${Number(quote.rate_24k).toFixed(2)}/g`} />
-      <Row label="Purity rate" value={`$${Number(quote.purity_rate).toFixed(2)}/g (${quote.karat})`} />
-      <Row label="Buyback margin" value={`${quote.margin_mode === "USD_PER_GRAM" ? "−$" : ""}${Number(quote.margin_value).toFixed(2)}${quote.margin_mode === "PERCENT" ? "%" : "/g"}`} />
-      <Row label="Effective" value={`$${Number(quote.effective_rate_per_gram).toFixed(2)}/g`} />
+      <Row label={t.posBuyback.spot24k} value={`$${Number(quote.rate_24k).toFixed(2)}${perGram}`} />
+      <Row label={t.products.purityRate} value={`$${Number(quote.purity_rate).toFixed(2)}${perGram} (${quote.karat})`} />
+      <Row label={t.posBuyback.buybackMargin} value={`${quote.margin_mode === "USD_PER_GRAM" ? "−$" : ""}${Number(quote.margin_value).toFixed(2)}${quote.margin_mode === "PERCENT" ? "%" : perGram}`} />
+      <Row label={t.posBuyback.effective} value={`$${Number(quote.effective_rate_per_gram).toFixed(2)}${perGram}`} />
       <Row
-        label="Pay seller"
+        label={t.posBuyback.paySeller}
         value={
           <span className="text-gold font-semibold text-base">
             {formatUSD(quote.buy_price)}
@@ -635,7 +632,7 @@ function QuoteCard({ quote }: { quote: QuoteOut }) {
       />
       {quote.rate_is_stale && (
         <div className="text-[10px] text-amber-400 mt-1">
-          ⚠️ This quote is based on an out-of-date rate.
+          {t.posBuyback.staleQuote}
         </div>
       )}
     </div>
@@ -659,13 +656,14 @@ function SubmitButton({
   disabled: boolean;
   submitting: boolean;
 }) {
+  const { t } = useLang();
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className="w-full px-5 py-3 bg-gold hover:bg-gold-dark text-black text-sm font-semibold rounded disabled:opacity-50 transition-colors"
     >
-      {submitting ? "Recording…" : label}
+      {submitting ? t.posBuyback.recording : label}
     </button>
   );
 }
