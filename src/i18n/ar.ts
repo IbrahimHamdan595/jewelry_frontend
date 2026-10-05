@@ -78,7 +78,9 @@ const ar: Translations = {
   },
 
   // المخزون › إعادة الشراء. Arrows point left: in RTL "←" is the forward direction.
+  // \u2068…\u2069 (FSI/PDI) lets a seller's name take its own direction inside a label.
   buybacks: {
+    tab: "إعادة الشراء",
     filterByKind: "تصفية حسب النوع",
     allKinds: "كل الأنواع",
     kinds: { PURE_GOLD: "ذهب خالص", COIN: "عملة", OUNCE: "أوقية", USED_PRODUCT: "منتج مستعمل" },
@@ -99,6 +101,9 @@ const ar: Translations = {
     polish: "تلميع",
     melt: "صهر",
     receipt: "الإيصال ←",
+    polishRow: (seller, when) => `تلميع: \u2068${seller}\u2069، ${when}`,
+    meltRow: (seller, when) => `صهر: \u2068${seller}\u2069، ${when}`,
+    receiptRow: (seller, when) => `إيصال: \u2068${seller}\u2069، ${when}`,
     polishTitle: "تلميع قطعة مستعملة وتحويلها إلى منتج",
     original: "الأصل:",
     paid: "المدفوع",

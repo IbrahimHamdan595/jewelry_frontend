@@ -71,12 +71,12 @@ export default function BuybacksTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.when}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.kind}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.seller}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.detail}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.pricePaid}</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.outcome}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.when}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.kind}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.seller}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.detail}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.pricePaid}</th>
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{b.outcome}</th>
               <th className="px-4 py-3" aria-label={t.common.actions} />
             </tr>
           </thead>
@@ -136,20 +136,22 @@ function BuybackRow({
   onPolish: () => void;
   onMelt: () => void;
 }) {
-  const { t, isRTL } = useLang();
+  const { t } = useLang();
   const b = t.buybacks;
   const { formatDateTime } = useFormat();
+  const when = formatDateTime(buyback.occurred_at);
   const isPendingUsed =
     buyback.kind === "USED_PRODUCT" && !buyback.product_id && !buyback.result_lot_id;
 
   // Lot ids and signed quantities stay left-to-right inside the translated
-  // phrase. The first outcome sits in a font-mono box, which RTL lays out
-  // left-to-right (globals.css), so its phrase carries the UI direction itself.
+  // phrase. The first outcome is monospace in LTR only: .font-mono is laid out
+  // left-to-right in RTL (globals.css), which would reverse the phrase, so in
+  // Arabic only the id keeps it.
   let outcome: React.ReactNode = <span className="text-gray-400">—</span>;
   if (buyback.kind === "PURE_GOLD" && buyback.result_lot_id) {
     outcome = (
-      <span className="text-xs text-gray-600 font-mono">
-        <span dir={isRTL ? "rtl" : "ltr"}>{b.toLot} <Ltr>{buyback.result_lot_id.slice(0, 8)}…</Ltr></span>
+      <span className="text-xs text-gray-600 ltr:font-mono">
+        {b.toLot} <Ltr className="font-mono">{buyback.result_lot_id.slice(0, 8)}…</Ltr>
       </span>
     );
   } else if (buyback.kind === "COIN" || buyback.kind === "OUNCE") {
@@ -166,16 +168,16 @@ function BuybackRow({
 
   return (
     <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3 text-xs text-gray-500">{formatDateTime(buyback.occurred_at)}</td>
+      <td className="px-4 py-3 text-xs text-gray-500">{when}</td>
       <td className="px-4 py-3">
         <KindPill kind={buyback.kind} />
       </td>
       <td className="px-4 py-3">
         <div className="text-sm text-gray-800">{buyback.seller_name}</div>
-        <div className="text-xs text-gray-400 font-mono">{buyback.seller_phone}</div>
+        <div className="text-xs text-gray-400 font-mono"><Ltr>{buyback.seller_phone}</Ltr></div>
       </td>
       <td className="px-4 py-3 text-xs text-gray-700">
-        {buyback.karat && <span className="inline-block px-2 py-0.5 rounded bg-gold/10 text-gold font-medium mr-1">{buyback.karat}</span>}
+        {buyback.karat && <span className="inline-block px-2 py-0.5 rounded bg-gold/10 text-gold font-medium me-1">{buyback.karat}</span>}
         {buyback.weight_grams && <span>{Number(buyback.weight_grams).toFixed(3)}g</span>}
         {buyback.quantity && <span> × {buyback.quantity}</span>}
       </td>
@@ -185,8 +187,10 @@ function BuybackRow({
         <div className="flex justify-end items-center gap-2">
           {isPendingUsed && (
             <>
+              {/* One Polish / Melt / Receipt per row: each is named after its row. */}
               <button
                 onClick={onPolish}
+                aria-label={b.polishRow(buyback.seller_name, when)}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100"
               >
                 <Sparkles className="w-3.5 h-3.5" aria-hidden />
@@ -194,6 +198,7 @@ function BuybackRow({
               </button>
               <button
                 onClick={onMelt}
+                aria-label={b.meltRow(buyback.seller_name, when)}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100"
               >
                 <Flame className="w-3.5 h-3.5" aria-hidden />
@@ -205,6 +210,7 @@ function BuybackRow({
             href={`/pos/buyback-receipt/${buyback.id}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={b.receiptRow(buyback.seller_name, when)}
             className="text-xs text-gold hover:text-gold-dark"
           >
             {b.receipt}
@@ -223,7 +229,8 @@ function KindPill({ kind }: { kind: BuybackKind }) {
     OUNCE: "bg-blue-50 text-blue-700",
     USED_PRODUCT: "bg-violet-50 text-violet-700",
   };
-  return <span className={`text-[11px] px-2 py-0.5 rounded font-mono ${colors[kind]}`}>{t.buybacks.kindPills[kind] ?? kind}</span>;
+  // Monospace in LTR only: the Arabic label is a word, not a code.
+  return <span className={`text-[11px] px-2 py-0.5 rounded ltr:font-mono ${colors[kind]}`}>{t.buybacks.kindPills[kind]}</span>;
 }
 
 // ── Polish dialog ──────────────────────────────────────────────────────────────
@@ -319,7 +326,7 @@ function PolishDialog({
 
         <Field label={b.notesOptional} value={notes} onChange={setNotes} className="col-span-2" />
 
-        {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
+        {error && <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">{t.common.cancel}</button>
@@ -412,7 +419,7 @@ function MeltBuybackDialog({
 
         <Field label={b.notesOptional} value={notes} onChange={setNotes} />
 
-        {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
+        {error && <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">{t.common.cancel}</button>
@@ -452,7 +459,7 @@ function Field({
         dir={dir}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold ${dir === "rtl" ? "text-right" : ""}`}
+        className={`w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold ${dir === "rtl" ? "text-start" : ""}`}
       />
     </label>
   );

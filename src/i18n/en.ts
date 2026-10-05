@@ -76,6 +76,7 @@ export interface Translations {
   // Inventory › Buybacks. `kinds` labels the filter; `kindPills` labels the
   // table pill and the empty state, where English shows the raw code.
   buybacks: {
+    tab: string;
     filterByKind: string;
     allKinds: string;
     kinds: { PURE_GOLD: string; COIN: string; OUNCE: string; USED_PRODUCT: string };
@@ -96,6 +97,9 @@ export interface Translations {
     polish: string;
     melt: string;
     receipt: string;
+    polishRow: (seller: string, when: string) => string;
+    meltRow: (seller: string, when: string) => string;
+    receiptRow: (seller: string, when: string) => string;
     polishTitle: string;
     original: string;
     paid: string;
@@ -682,6 +686,7 @@ const en: Translations = {
   },
 
   buybacks: {
+    tab: "Buybacks",
     filterByKind: "Filter by kind",
     allKinds: "All kinds",
     kinds: { PURE_GOLD: "Pure gold", COIN: "Coin", OUNCE: "Ounce", USED_PRODUCT: "Used product" },
@@ -702,6 +707,9 @@ const en: Translations = {
     polish: "Polish",
     melt: "Melt",
     receipt: "Receipt →",
+    polishRow: (seller, when) => `Polish: ${seller}, ${when}`,
+    meltRow: (seller, when) => `Melt: ${seller}, ${when}`,
+    receiptRow: (seller, when) => `Receipt: ${seller}, ${when}`,
     polishTitle: "Polish used buyback into a product",
     original: "Original:",
     paid: "paid",
