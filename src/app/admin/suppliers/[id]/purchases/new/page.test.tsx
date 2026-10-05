@@ -152,6 +152,7 @@ describe("new supplier purchase labels and i18n (NEX-64)", () => {
     expect(screen.getByText(ar.supplierPurchase.pickedVsDue, { exact: false })).toBeInTheDocument();
     expect(physicalClasses(container)).toEqual([]);
     expect(container.querySelector("svg.lucide-arrow-left")).toHaveClass("rtl:rotate-180");
+    container.querySelectorAll("svg[class*='lucide-arrow-'], svg[class*='lucide-chevron-left'], svg[class*='lucide-chevron-right'], svg[class*='lucide-toggle-']").forEach((icon) => expect(icon).toHaveClass("rtl:rotate-180"));
     expect(screen.getByRole("button", { name: new RegExp(`^${ar.supplierPurchase.mode.CASH}`) })).toHaveClass("text-start");
     // The Arabic-name field is right-to-left in both languages; "start" is its right edge.
     const nameAr = screen.getByLabelText(ar.common.nameAr);

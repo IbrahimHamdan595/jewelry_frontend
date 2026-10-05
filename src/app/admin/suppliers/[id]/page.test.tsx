@@ -159,6 +159,7 @@ describe("supplier detail labels and i18n (NEX-64)", () => {
     fireEvent.click(screen.getByRole("button", { name: ar.suppliers.recordGoldPaymentLink }));
     expect(physicalClasses(container)).toEqual([]);
     expect(container.querySelector("svg.lucide-arrow-left")).toHaveClass("rtl:rotate-180");
+    container.querySelectorAll("svg[class*='lucide-arrow-'], svg[class*='lucide-chevron-left'], svg[class*='lucide-chevron-right'], svg[class*='lucide-toggle-']").forEach((icon) => expect(icon).toHaveClass("rtl:rotate-180"));
     // The label and its value keep a gap on the label's reading-end side.
     expect(screen.getByText(ar.suppliers.phone)).toHaveClass("me-1");
     // Headers align with the start of the line; the receipt column with its end.

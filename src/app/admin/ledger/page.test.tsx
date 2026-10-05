@@ -236,6 +236,7 @@ describe("inventory ledger labels and i18n (NEX-64)", () => {
     expect(physicalClasses(container)).toEqual([]);
     expect(screen.getByRole("columnheader", { name: ar.inventoryLedger.colEvent })).toHaveClass("text-start");
     expect(container.querySelector("svg.lucide-chevron-right")).toHaveClass("rtl:rotate-180");
+    container.querySelectorAll("svg[class*='lucide-arrow-'], svg[class*='lucide-chevron-left'], svg[class*='lucide-chevron-right'], svg[class*='lucide-toggle-']").forEach((icon) => expect(icon).toHaveClass("rtl:rotate-180"));
     // Expanded, the chevron points down in either direction.
     fireEvent.click(screen.getByText("SUPPLIER_PAYMENT_CASH"));
     expect(container.querySelector("svg.lucide-chevron-down")).not.toHaveClass("rtl:rotate-180");

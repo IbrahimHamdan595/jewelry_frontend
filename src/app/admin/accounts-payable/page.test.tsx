@@ -91,6 +91,8 @@ describe("accounts payable i18n (NEX-64)", () => {
   it("follows the reading direction: logical utilities only", () => {
     const { container } = renderPage("ar");
     expect(physicalClasses(container)).toEqual([]);
+    // No arrow, chevron or toggle on this screen: nothing to mirror.
+    expect(container.querySelector("svg[class*='lucide-arrow-'], svg[class*='lucide-chevron-left'], svg[class*='lucide-chevron-right'], svg[class*='lucide-toggle-']")).toBeNull();
     expect(screen.getByRole("columnheader", { name: ar.payables.colSupplier })).toHaveClass("text-start");
     expect(screen.getByRole("link", { name: ar.payables.settle }).closest("td")).toHaveClass("text-end");
     // A weight and its unit are one left-to-right run, so the gap stays between them.

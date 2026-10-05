@@ -138,7 +138,8 @@ export default function SuppliersPage() {
                         title={s.is_active ? su.deactivate : su.reactivate}
                         aria-label={s.is_active ? su.deactivate : su.reactivate}
                       >
-                        {s.is_active ? <ToggleRight className="w-5 h-5 text-green-500" aria-hidden /> : <ToggleLeft className="w-5 h-5" aria-hidden />}
+                        {/* Mirrored in RTL like the shared Switch: "on" sits at the reading end. */}
+                        {s.is_active ? <ToggleRight className="w-5 h-5 text-green-500 rtl:rotate-180" aria-hidden /> : <ToggleLeft className="w-5 h-5 rtl:rotate-180" aria-hidden />}
                       </button>
                       <Link
                         href={`/admin/suppliers/${s.id}`}

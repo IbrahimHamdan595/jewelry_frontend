@@ -6,7 +6,9 @@ import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
 const supplier = { id: "s1", name: "Abu Ali", contact_name: null, phone: "+961-00-555555", email: null, payment_terms: "net 30, gold-for-gold preferred", is_active: true };
-vi.mock("swr", () => ({ default: (key: string) => ({ data: key?.startsWith("/suppliers") ? { items: [supplier], total: 1 } : undefined, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
+const inactiveSupplier = { id: "s2", name: "Dar Al Dahab", contact_name: null, phone: null, email: null, payment_terms: null, is_active: false };
+// The inactive supplier is only listed when the "include inactive" filter drops is_active=true from the request.
+vi.mock("swr", () => ({ default: (key: string) => ({ data: key?.startsWith("/suppliers") ? { items: key.includes("is_active=true") ? [supplier] : [supplier, inactiveSupplier], total: 1 } : undefined, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 describe("suppliers list in Arabic (NEX-63)", () => {
@@ -48,7 +50,7 @@ function leaves(node: unknown, path: string): [string, string][] {
 }
 
 // Values that come from the database: they cannot be translated client-side.
-const DATA = [supplier.name, supplier.payment_terms];
+const DATA = [supplier.name, supplier.payment_terms, inactiveSupplier.name];
 
 const FORM_FIELDS = ["name", "contactName", "phone", "email", "address", "paymentTerms", "notes"] as const;
 const fieldLabel = (dict: typeof en, key: (typeof FORM_FIELDS)[number]) => (key === "name" ? dict.common.name : dict.suppliers[key]);
@@ -98,6 +100,20 @@ describe("suppliers list labels and i18n (NEX-64)", () => {
     expect(physicalClasses(container)).toEqual([]);
     expect(screen.getByRole("columnheader", { name: ar.suppliers.phone })).toHaveClass("text-start");
     expect(container.querySelector("svg.lucide-chevron-right")).toHaveClass("rtl:rotate-180");
+  });
+
+  it("every directional icon flips in RTL, the on / off toggles included", () => {
+    const { container } = renderPage("ar");
+    fireEvent.click(screen.getByLabelText(ar.suppliers.includeInactive));
+    expect(screen.getByRole("button", { name: ar.suppliers.reactivate })).toBeInTheDocument();
+    expect(screen.getByText(ar.suppliers.inactive)).toBeInTheDocument();
+    const directional = container.querySelectorAll("svg[class*='lucide-chevron-'], svg[class*='lucide-arrow-'], svg[class*='lucide-toggle-']");
+    // Two rows: a chevron link each, one "on" toggle and one "off" toggle.
+    expect(Array.from(directional).map((icon) => icon.getAttribute("class")?.match(/lucide-[a-z-]+/)?.[0]).sort()).toEqual(
+      ["lucide-chevron-right", "lucide-chevron-right", "lucide-toggle-left", "lucide-toggle-right"],
+    );
+    directional.forEach((icon) => expect(icon).toHaveClass("rtl:rotate-180"));
+    expect(englishLeft(container, DATA)).toEqual([]);
   });
 
   it("every new-supplier field is reachable by its label, and the label's control is the input", () => {
