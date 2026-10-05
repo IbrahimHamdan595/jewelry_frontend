@@ -26,11 +26,7 @@ const order = (over: Record<string, unknown>) => ({
 
 // Database values: names, codes, the order number.
 const DATA = ["ORD-20260905-002", "Ibrahim", "Rana Haddad", "RNG-0042", "Twisted Ring", "LIRA-8G", "Gold Lira"];
-// StatusBadge is a shared component outside this slice; it still prints the
-// order-status enum lowercased in English.
-const SHARED = ["completed", "partially refunded", "refunded", "voided"];
-
-/** Text a user reads or a screen reader announces, minus data and shared-component text. */
+/** Text a user reads or a screen reader announces, minus data — the status badge included. */
 function englishLeft(root: HTMLElement): string[] {
   const found: string[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -40,7 +36,7 @@ function englishLeft(root: HTMLElement): string[] {
   });
   return found
     .map((text) => DATA.reduce((rest, value) => rest.split(value).join(""), text).trim())
-    .filter((text) => !SHARED.includes(text) && /[A-Za-z]{2,}/.test(text));
+    .filter((text) => /[A-Za-z]{2,}/.test(text));
 }
 
 /** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
@@ -73,6 +69,7 @@ describe("order detail in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.orders.payment.CASH)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.discountPct(5))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.refundedLine(1, 3, "$106.00"))).toBeInTheDocument();
+    expect(screen.getByText(ar.orders.status.COMPLETED)).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
     expect(arabicInMono(container)).toEqual([]);
   });
@@ -142,8 +139,11 @@ describe("order detail in Arabic (NEX-64)", () => {
 
   it("translates the voided stamp and the refunded-totals note", () => {
     const { container, unmount } = renderPage("ar", order({ status: "VOIDED" }));
-    expect(screen.getByText(ar.orders.voidedStamp)).toBeInTheDocument();
+    // The watermark across the table, and — the same word in Arabic — the status badge in the header.
+    expect(screen.getByText(ar.orders.voidedStamp, { selector: ".rotate-\\[-30deg\\]" })).toBeInTheDocument();
+    expect(screen.getByText(ar.orders.status.VOIDED, { selector: ".rounded-full" })).toBeInTheDocument();
     expect(screen.queryByText("VOIDED")).toBeNull();
+    expect(screen.queryByText("voided")).toBeNull();
     expect(englishLeft(container)).toEqual([]);
     unmount();
     renderPage("ar", order({ status: "PARTIALLY_REFUNDED" }));

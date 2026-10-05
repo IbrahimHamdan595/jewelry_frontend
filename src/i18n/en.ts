@@ -740,6 +740,12 @@ export interface Translations {
     moreCopies: (product: string) => string;
   };
 
+  /** The day / month / year filter above the orders lists and the rate history. */
+  calendar: {
+    allTime: string;
+    granularity: { day: string; month: string; year: string };
+  };
+
   common: {
     save: string;
     cancel: string;
@@ -1983,6 +1989,11 @@ const en: Translations = {
     formatHelp: "Compatible with any standard 1D barcode scanner. The cashier scans the bars; the product code below is a fallback for manual entry.",
     fewerCopies: (product) => `Fewer copies of ${product}`,
     moreCopies: (product) => `More copies of ${product}`,
+  },
+
+  calendar: {
+    allTime: "All time",
+    granularity: { day: "day", month: "month", year: "year" },
   },
 
   common: {

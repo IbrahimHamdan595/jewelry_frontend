@@ -24,11 +24,7 @@ vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), apiUrl: (p: string) =>
 
 // Database values and format names: not interface copy.
 const DATA = ["ORD-20260905-002", "Ibrahim", "Abu Ali", "Rana Haddad", "CSV"];
-// Shared components outside this screen's slice that still print English:
-// StatusBadge lowercases the order-status enum, CalendarFilter names its ranges.
-const SHARED = ["completed", "All time", "day", "month", "year"];
-
-/** Text a user reads or a screen reader announces, minus data and shared-component text. */
+/** Text a user reads or a screen reader announces, minus data — the status badge and the calendar filter included. */
 function englishLeft(root: HTMLElement): string[] {
   const found: string[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -38,7 +34,7 @@ function englishLeft(root: HTMLElement): string[] {
   });
   return found
     .map((text) => DATA.reduce((rest, value) => rest.split(value).join(""), text).trim())
-    .filter((text) => !SHARED.includes(text) && /[A-Za-z]{2,}/.test(text));
+    .filter((text) => /[A-Za-z]{2,}/.test(text));
 }
 
 /** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
@@ -81,6 +77,12 @@ describe("orders list in Arabic (NEX-64)", () => {
     expect(screen.getByRole("columnheader", { name: ar.dashboard.orderNum })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: ar.orders.status.PARTIALLY_REFUNDED })).toBeInTheDocument();
     expect(screen.getByText(ar.orders.showing(1, 20, 45))).toBeInTheDocument();
+    // The shared pieces on this screen speak Arabic too: the row's status badge
+    // and the calendar filter above the tabs' lists.
+    expect(screen.getByRole("row", { name: /ORD-20260905-002/ })).toHaveTextContent(ar.orders.status.COMPLETED);
+    for (const name of [ar.calendar.allTime, ar.calendar.granularity.day, ar.calendar.granularity.month, ar.calendar.granularity.year]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
     expect(englishLeft(container)).toEqual([]);
   });
 

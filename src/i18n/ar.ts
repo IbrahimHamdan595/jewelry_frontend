@@ -756,6 +756,12 @@ const ar: Translations = {
     moreCopies: (product) => `نسخ أكثر من \u2068${product}\u2069`,
   },
 
+  // فلتر اليوم / الشهر / السنة أعلى قوائم الطلبات وسجل الأسعار
+  calendar: {
+    allTime: "كل الفترات",
+    granularity: { day: "يوم", month: "شهر", year: "سنة" },
+  },
+
   common: {
     save: "حفظ",
     cancel: "إلغاء",

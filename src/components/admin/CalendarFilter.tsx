@@ -9,6 +9,7 @@
  */
 import { useMemo } from "react";
 import { today } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
 
 export type Granularity = "" | "day" | "month" | "year";
 
@@ -30,6 +31,8 @@ export function CalendarFilter({
   value: CalendarValue;
   onChange: (v: CalendarValue) => void;
 }) {
+  const { t } = useLang();
+  const c = t.calendar;
   const anchor = value.date || defaultAnchor();
 
   const monthValue = useMemo(() => anchor.slice(0, 7), [anchor]); // YYYY-MM
@@ -56,7 +59,7 @@ export function CalendarFilter({
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            {g === "" ? "All time" : g}
+            {g === "" ? c.allTime : c.granularity[g]}
           </button>
         ))}
       </div>
@@ -64,6 +67,7 @@ export function CalendarFilter({
       {value.granularity === "day" && (
         <input
           type="date"
+          aria-label={c.granularity.day}
           value={anchor}
           onChange={(e) => onChange({ granularity: "day", date: e.target.value })}
           className="border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gold"
@@ -72,6 +76,7 @@ export function CalendarFilter({
       {value.granularity === "month" && (
         <input
           type="month"
+          aria-label={c.granularity.month}
           value={monthValue}
           onChange={(e) => onChange({ granularity: "month", date: `${e.target.value}-01` })}
           className="border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gold"
@@ -80,6 +85,7 @@ export function CalendarFilter({
       {value.granularity === "year" && (
         <input
           type="number"
+          aria-label={c.granularity.year}
           min="2020"
           max="2100"
           value={yearValue}

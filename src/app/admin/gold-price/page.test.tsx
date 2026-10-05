@@ -20,10 +20,8 @@ const api = vi.hoisted(() => ({
   delete: vi.fn<(path: string) => Promise<unknown>>(() => Promise.resolve({})),
 }));
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api, apiFetcher: vi.fn() }));
-// The TradingView widget loads a third-party iframe and the calendar filter belongs to
-// another slice; neither is what this file tests.
+// The TradingView widget loads a third-party iframe; it is not what this file tests.
 vi.mock("@/components/admin/TradingViewChart", () => ({ TradingViewChart: () => null }));
-vi.mock("@/components/admin/CalendarFilter", () => ({ CalendarFilter: () => null, calendarParams: () => ({}) }));
 // recharts needs a measured canvas. These stand-ins keep the part this page owns — the
 // formatters it hands to the axis and the tooltip — and print what they return for the
 // first point, so the chart's dates and labels can be asserted like any other text.
@@ -113,6 +111,10 @@ describe("gold price — i18n (NEX-64)", () => {
       expect(screen.getByText(text), text).toBeInTheDocument();
     }
     for (const range of ["24h", "7d", "30d"] as const) expect(screen.getByRole("button", { name: g.ranges[range] })).toBeInTheDocument();
+    // The calendar filter under the range buttons is shared with the orders page.
+    for (const name of [ar.calendar.allTime, ar.calendar.granularity.day, ar.calendar.granularity.month, ar.calendar.granularity.year]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
     expect(screen.getByRole("button", { name: g.setOverride })).toBeDisabled();
     // The hero's timestamp is the shop's (Beirut) time in Arabic; the source ("live") is translated above.
     expect(screen.getByText(arTime)).toBeInTheDocument();
