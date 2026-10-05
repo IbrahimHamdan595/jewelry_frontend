@@ -59,6 +59,11 @@ export default function EditProductPage() {
 
   const meltable =
     product.status === "AVAILABLE" || product.status === "INACTIVE";
+  // globals.css lays every .font-mono run out left-to-right in RTL, which is
+  // right for a machine reference and wrong for the Arabic words around it.
+  // So the sentence is split where the reference goes: only the reference is
+  // .font-mono, and the wrapper is monospace in LTR alone (ltr:font-mono).
+  const [beforeSource, afterSource = ""] = pr.sourceFrom("\u0000").split("\u0000");
 
   return (
     <div className="space-y-6">
@@ -77,8 +82,8 @@ export default function EditProductPage() {
             </span>
           )}
           {product.source_ref_type && (
-            <span className="text-xs text-gray-400 font-mono">
-              {pr.sourceFrom(`${product.source_ref_type}:${(product.source_ref_id ?? "").slice(0, 8)}…`)}
+            <span className="text-xs text-gray-400 ltr:font-mono">
+              {beforeSource}<span className="font-mono">{product.source_ref_type}:{(product.source_ref_id ?? "").slice(0, 8)}…</span>{afterSource}
             </span>
           )}
         </div>
@@ -121,7 +126,7 @@ export default function EditProductPage() {
           <div className="text-xs text-gray-500 mt-1">
             {pr.meltHint(product.karat, Number(product.weight_grams).toFixed(3))}
             {!meltable && (
-              <span className="text-amber-600 ml-2 inline-flex items-center gap-1">
+              <span className="text-amber-600 ms-2 inline-flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 {pr.meltOnlyWhen(pr.status[product.status] ?? product.status)}
               </span>
@@ -180,7 +185,8 @@ function MeltProductDialog({
   const { t } = useLang();
   const pr = t.products;
   // The sentence decides where the status goes; split it there so the status
-  // keeps its monospace styling wherever the language puts it.
+  // keeps its monospace styling wherever the language puts it. A translated
+  // status is a word, not a machine value: monospace in LTR only.
   const [beforeStatus, afterStatus = ""] = pr.meltStatusNote("\u0000").split("\u0000");
   const [overrideWeight, setOverrideWeight] = useState("");
   const [overrideKarat, setOverrideKarat] = useState<Karat | "">("");
@@ -216,7 +222,7 @@ function MeltProductDialog({
           </div>
           <div className="text-xs text-gray-500 mt-1">
             {pr.meltCurrent(product.karat, Number(product.weight_grams).toFixed(3))}{" "}
-            {beforeStatus}<span className="font-mono">{pr.status.MELTED}</span>{afterStatus}
+            {beforeStatus}<span className="ltr:font-mono">{pr.status.MELTED}</span>{afterStatus}
           </div>
         </div>
 

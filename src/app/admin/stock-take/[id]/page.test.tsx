@@ -51,6 +51,11 @@ function englishLeft(root: HTMLElement, data: string[] = DATA): string[] {
     .filter((text) => /[A-Za-z]{2,}/.test(text));
 }
 
+/** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
+function arabicInMono(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
+}
+
 function renderPage(lang: "en" | "ar", data: unknown) {
   swr.byKey = {
     [`/stock-takes/${TAKE_ID}`]: data,
@@ -114,6 +119,7 @@ describe("stock-take detail: review screen in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.stockTake.varianceMatch)).toBeInTheDocument();
     expect(screen.getByText(ar.stockTake.pendingTitle(2))).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("asks for approval in Arabic, and still approves only on confirm", () => {

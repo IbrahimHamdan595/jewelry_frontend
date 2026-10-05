@@ -138,7 +138,7 @@ export default function ZakatPage() {
             <span>{z.rateLabel}</span>
             <span>
               ${rate(summary.gold_rate_24k)}{t.products.perGram}
-              <span className="ml-1.5 inline-flex items-center gap-1 text-[10px]">
+              <span className="ms-1.5 inline-flex items-center gap-1 text-[10px]">
                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
                   {summary.gold_rate_source}
                 </span>
@@ -201,25 +201,25 @@ export default function ZakatPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                <th className="text-left font-normal px-5 py-2">{z.karat}</th>
-                <th className="text-right font-normal px-3 py-2">{z.products}</th>
-                <th className="text-right font-normal px-3 py-2">{z.coins}</th>
-                <th className="text-right font-normal px-3 py-2">{z.ounces}</th>
-                <th className="text-right font-normal px-3 py-2">{z.lots}</th>
-                <th className="text-right font-normal px-3 py-2">{z.totalWeight}</th>
-                <th className="text-right font-normal px-5 py-2">{z.auGrams}</th>
+                <th className="text-start font-normal px-5 py-2">{z.karat}</th>
+                <th className="text-end font-normal px-3 py-2">{z.products}</th>
+                <th className="text-end font-normal px-3 py-2">{z.coins}</th>
+                <th className="text-end font-normal px-3 py-2">{z.ounces}</th>
+                <th className="text-end font-normal px-3 py-2">{z.lots}</th>
+                <th className="text-end font-normal px-3 py-2">{z.totalWeight}</th>
+                <th className="text-end font-normal px-5 py-2">{z.auGrams}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {summary.holdings.by_karat.map((b) => (
                 <tr key={b.karat} className="hover:bg-gray-50/50">
                   <td className="px-5 py-2.5 font-medium text-gray-800">{b.karat}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.products)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.coins)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.ounces)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.lots)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-800 font-medium">{grams(b.total_weight_grams)}</td>
-                  <td className="px-5 py-2.5 text-right text-gold font-semibold">{grams(b.au_grams)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.products)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.coins)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.ounces)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.lots)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-800 font-medium">{grams(b.total_weight_grams)}</td>
+                  <td className="px-5 py-2.5 text-end text-gold font-semibold">{grams(b.au_grams)}</td>
                 </tr>
               ))}
             </tbody>
@@ -227,7 +227,7 @@ export default function ZakatPage() {
               <tr className="border-t border-gray-200 text-sm font-semibold">
                 <td className="px-5 py-3 text-gray-800">{z.grandTotal}</td>
                 <td colSpan={5} aria-hidden="true" />
-                <td className="px-5 py-3 text-right text-gold">{grams(summary.holdings.total_au_grams)}</td>
+                <td className="px-5 py-3 text-end text-gold">{grams(summary.holdings.total_au_grams)}</td>
               </tr>
             </tfoot>
           </table>
@@ -278,14 +278,14 @@ export default function ZakatPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                  <th className="text-left font-normal px-5 py-2">{z.snapAssessment}</th>
-                  <th className="text-left font-normal px-3 py-2">{z.snapTaken}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapTotalAu}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapZakatGrams}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapZakatCash}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapRate}</th>
-                  <th className="text-left font-normal px-3 py-2">{z.snapSource}</th>
-                  <th className="text-left font-normal px-5 py-2">{z.nisabCardTitle}</th>
+                  <th className="text-start font-normal px-5 py-2">{z.snapAssessment}</th>
+                  <th className="text-start font-normal px-3 py-2">{z.snapTaken}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapTotalAu}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapZakatGrams}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapZakatCash}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapRate}</th>
+                  <th className="text-start font-normal px-3 py-2">{z.snapSource}</th>
+                  <th className="text-start font-normal px-5 py-2">{z.nisabCardTitle}</th>
                   <th className="text-center font-normal px-3 py-2">{z.snapIntegrityOk}</th>
                 </tr>
               </thead>
@@ -296,10 +296,10 @@ export default function ZakatPage() {
                     <td className="px-3 py-2.5 text-gray-500 text-xs">
                       {new Date(s.taken_at).toLocaleString()}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-gray-700">{grams(s.total_au_grams)}</td>
-                    <td className="px-3 py-2.5 text-right text-gold font-medium">{grams(s.zakat_au_grams)}</td>
-                    <td className="px-3 py-2.5 text-right text-gold font-medium">{usd(s.zakat_value_usd)}</td>
-                    <td className="px-3 py-2.5 text-right text-gray-600">${rate(s.gold_rate_24k_usd_per_gram)}</td>
+                    <td className="px-3 py-2.5 text-end text-gray-700">{grams(s.total_au_grams)}</td>
+                    <td className="px-3 py-2.5 text-end text-gold font-medium">{grams(s.zakat_au_grams)}</td>
+                    <td className="px-3 py-2.5 text-end text-gold font-medium">{usd(s.zakat_value_usd)}</td>
+                    <td className="px-3 py-2.5 text-end text-gray-600">${rate(s.gold_rate_24k_usd_per_gram)}</td>
                     <td className="px-3 py-2.5 text-xs">
                       <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
                         {s.gold_rate_source}

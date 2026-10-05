@@ -293,7 +293,7 @@ export default function DashboardPage() {
             <div className="mt-2 space-y-0.5">
               <div className="text-[10px] text-gray-400 uppercase">{t.dashboard.metalOwed}</div>
               {Object.entries(data.payables_aging.metal_owed_by_karat).map(([k, g]) => (
-                <div key={k} className="flex justify-between text-xs"><span className="text-gold">{k}</span><span className="font-mono">{Number(g).toFixed(3)}g</span></div>
+                <div key={k} className="flex justify-between text-xs"><span className="text-gold">{k}</span><span className="ltr:font-mono"><span className="font-mono">{Number(g).toFixed(3)}</span>{t.dashboard.grams}</span></div>
               ))}
             </div>
           )}

@@ -122,7 +122,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 {[t.dashboard.orderNum, t.dashboard.date, t.dashboard.cashier, t.common.customer, o.colItems, t.common.total, t.common.status, ""].map((h) => (
-                  <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h.includes("#") ? <Ltr>{h}</Ltr> : h}</th>
+                  <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h.includes("#") ? <Ltr>{h}</Ltr> : h}</th>
                 ))}
               </tr>
             </thead>
@@ -140,7 +140,7 @@ function SellTab({ cal }: { cal: CalendarValue }) {
                   <td className="px-4 py-3 font-semibold">{formatUSD(order.total_usd)}</td>
                   <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Link href={`/admin/orders/${order.id}`} className="text-gray-400 hover:text-gold text-xs underline mr-3">{o.view}</Link>
+                    <Link href={`/admin/orders/${order.id}`} className="text-gray-400 hover:text-gold text-xs underline me-3">{o.view}</Link>
                     <a href={`/pos/receipt/${order.id}`} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-dark text-xs">{o.receipt}</a>
                   </td>
                 </tr>
@@ -170,7 +170,7 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
               {[t.dashboard.date, t.accounting.common.supplier, o.colMode, o.colItems, o.colCashDue, o.colGoldDue, ""].map((h) => (
-                <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
               ))}
             </tr>
           </thead>
@@ -185,13 +185,21 @@ function PurchasesTab({ cal }: { cal: CalendarValue }) {
                 <td className="px-4 py-3 text-gray-500 text-xs">{o.purchaseMode[p.payment_mode] ?? p.payment_mode}</td>
                 <td className="px-4 py-3 text-gray-500">{p.item_count}</td>
                 <td className="px-4 py-3 font-semibold">{formatUSD(p.total_cash_due)}</td>
-                <td className="px-4 py-3 text-xs font-mono text-gray-600">
+                {/* Only the karat code and the number are .font-mono (laid out
+                    left-to-right in RTL by globals.css); the unit is a
+                    translated word and follows them in reading order. */}
+                <td className="px-4 py-3 text-xs ltr:font-mono text-gray-600">
                   {Object.keys(p.total_grams_due_by_karat).length === 0
                     ? "—"
-                    : Object.entries(p.total_grams_due_by_karat).map(([k, g]) => `${k} ${Number(g).toFixed(2)}${t.dashboard.grams}`).join(", ")}
+                    : Object.entries(p.total_grams_due_by_karat).map(([k, g], i) => (
+                        <span key={k}>
+                          {i > 0 && ", "}
+                          <span className="font-mono">{k} {Number(g).toFixed(2)}</span>{t.dashboard.grams}
+                        </span>
+                      ))}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <Link href={`/admin/suppliers/${p.supplier_id}`} className="text-gray-400 hover:text-gold text-xs underline mr-3">{t.accounting.common.supplier}</Link>
+                  <Link href={`/admin/suppliers/${p.supplier_id}`} className="text-gray-400 hover:text-gold text-xs underline me-3">{t.accounting.common.supplier}</Link>
                   <a href={`/admin/suppliers/purchases/${p.id}/receipt`} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-dark text-xs">{o.receipt}</a>
                 </td>
               </tr>
@@ -220,7 +228,7 @@ function BuybacksTab({ cal }: { cal: CalendarValue }) {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
               {[t.dashboard.date, o.colSeller, o.colKind, o.colKaratWeight, o.colQty, o.colPaid, ""].map((h) => (
-                <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
               ))}
             </tr>
           </thead>
@@ -237,7 +245,7 @@ function BuybacksTab({ cal }: { cal: CalendarValue }) {
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">{o.buybackKind[b.kind] ?? b.kind.replace(/_/g, " ")}</td>
                 <td className="px-4 py-3 text-xs text-gray-600">
-                  {b.karat ? <span className="px-1.5 py-0.5 rounded bg-gold/10 text-gold mr-1">{b.karat}</span> : null}
+                  {b.karat ? <span className="px-1.5 py-0.5 rounded bg-gold/10 text-gold me-1">{b.karat}</span> : null}
                   {b.weight_grams != null ? `${Number(b.weight_grams).toFixed(3)}${t.dashboard.grams}` : ""}
                 </td>
                 <td className="px-4 py-3 text-gray-500">{b.quantity ?? "—"}</td>

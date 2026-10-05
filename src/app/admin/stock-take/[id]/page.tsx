@@ -82,7 +82,7 @@ export default function StockTakeDetailPage({ params }: Props) {
           href="/admin/stock-take"
           className="text-gray-400 hover:text-gray-700 inline-flex items-center gap-1 text-xs"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> {t.stockTake.backToHistory}
+          <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" /> {t.stockTake.backToHistory}
         </Link>
       </div>
 
@@ -145,7 +145,7 @@ function StatusBadgeLarge({
   const s = t.stockTake;
   if (status === "CLOSED" && rejectedCount > 0) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-right">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-end">
         <div className="text-xs uppercase tracking-widest text-red-700 font-semibold flex items-center gap-1.5 justify-end">
           <ShieldAlert className="w-3.5 h-3.5" />
           {s.statusClosedRejected}
@@ -379,11 +379,11 @@ function CountTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50/50">
             <tr className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-              <th className="text-left px-4 py-2">{t.accounting.common.code}</th>
-              <th className="text-left px-4 py-2">{t.common.name}</th>
-              <th className="text-right px-4 py-2">{s.colSystemSays}</th>
-              <th className="text-left px-4 py-2 w-32">{s.colCounted}</th>
-              <th className="text-left px-4 py-2 w-40">{t.common.status}</th>
+              <th className="text-start px-4 py-2">{t.accounting.common.code}</th>
+              <th className="text-start px-4 py-2">{t.common.name}</th>
+              <th className="text-end px-4 py-2">{s.colSystemSays}</th>
+              <th className="text-start px-4 py-2 w-32">{s.colCounted}</th>
+              <th className="text-start px-4 py-2 w-40">{t.common.status}</th>
               <th className="px-4 py-2 w-32"><span className="sr-only">{t.common.actions}</span></th>
             </tr>
           </thead>
@@ -400,7 +400,7 @@ function CountTable({
                 <tr key={unit.id}>
                   <td className="px-4 py-2 font-mono text-xs">{unit.code}</td>
                   <td className="px-4 py-2 text-gray-700">{unit.name_en}</td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">
                     {unit.on_hand_qty}
                   </td>
                   <td className="px-4 py-2">
@@ -427,7 +427,7 @@ function CountTable({
                       <span className="text-gray-400">{s.notCounted}</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-end">
                     {dirty && (
                       <button
                         onClick={() => onSave(refType, unit.id)}
@@ -609,11 +609,11 @@ function ClosedView({ take }: { take: StockTake }) {
             <table className="w-full text-sm">
               <thead className="bg-red-50/50">
                 <tr className="text-xs text-red-700 uppercase tracking-widest font-medium">
-                  <th className="text-left px-4 py-2">{s.colItem}</th>
-                  <th className="text-right px-4 py-2">{s.colSystemSaid}</th>
-                  <th className="text-right px-4 py-2">{s.colCounted}</th>
-                  <th className="text-left px-4 py-2">{s.colVariance}</th>
-                  <th className="text-left px-4 py-2">{s.colRejectReason}</th>
+                  <th className="text-start px-4 py-2">{s.colItem}</th>
+                  <th className="text-end px-4 py-2">{s.colSystemSaid}</th>
+                  <th className="text-end px-4 py-2">{s.colCounted}</th>
+                  <th className="text-start px-4 py-2">{s.colVariance}</th>
+                  <th className="text-start px-4 py-2">{s.colRejectReason}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-red-100">
@@ -623,10 +623,10 @@ function ClosedView({ take }: { take: StockTake }) {
                     <tr key={l.id}>
                       <td className="px-4 py-2 text-xs">
                         <KindBadge ref_type={l.ref_type} />
-                        <span className="ml-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
+                        <span className="ms-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
                       </td>
-                      <td className="px-4 py-2 text-right text-gray-800">{l.expected_qty_at_submit}</td>
-                      <td className="px-4 py-2 text-right text-gray-800">{l.counted_qty}</td>
+                      <td className="px-4 py-2 text-end text-gray-800">{l.expected_qty_at_submit}</td>
+                      <td className="px-4 py-2 text-end text-gray-800">{l.counted_qty}</td>
                       <td className="px-4 py-2 text-red-800 font-medium">{varianceLabel(s, v)}</td>
                       <td className="px-4 py-2 text-xs text-red-900 italic">
                         &quot;{l.rejection_reason}&quot;
@@ -690,12 +690,12 @@ function VarianceTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50/50">
             <tr className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-              <th className="text-left px-4 py-2">{s.colItem}</th>
-              <th className="text-right px-4 py-2">{s.colSystemSaid}</th>
-              <th className="text-right px-4 py-2">{s.colCounted}</th>
-              <th className="text-left px-4 py-2">{s.colVariancePlain}</th>
-              <th className="text-left px-4 py-2">{t.common.status}</th>
-              {isPending && <th className="text-right px-4 py-2 w-48">{s.colAction}</th>}
+              <th className="text-start px-4 py-2">{s.colItem}</th>
+              <th className="text-end px-4 py-2">{s.colSystemSaid}</th>
+              <th className="text-end px-4 py-2">{s.colCounted}</th>
+              <th className="text-start px-4 py-2">{s.colVariancePlain}</th>
+              <th className="text-start px-4 py-2">{t.common.status}</th>
+              {isPending && <th className="text-end px-4 py-2 w-48">{s.colAction}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -706,10 +706,10 @@ function VarianceTable({
                 <tr key={l.id} className={v.tone === "shortage" ? "bg-red-50/30" : ""}>
                   <td className="px-4 py-2 text-xs">
                     <KindBadge ref_type={l.ref_type} />
-                    <span className="ml-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
+                    <span className="ms-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
                   </td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">{expected}</td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">{l.counted_qty}</td>
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">{expected}</td>
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">{l.counted_qty}</td>
                   <td className="px-4 py-2">
                     <VarianceLabel counted={l.counted_qty} expected={expected} />
                   </td>
@@ -722,7 +722,7 @@ function VarianceTable({
                     )}
                   </td>
                   {isPending && (
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2 text-end">
                       <div role="group" aria-label={s.colAction} className="flex justify-end gap-1.5">
                         <button
                           onClick={() => onApprove(l)}

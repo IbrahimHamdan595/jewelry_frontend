@@ -175,7 +175,7 @@ function ProductsTab() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 {[pr.colImage, t.accounting.common.code, t.common.name, pr.category, pr.karat, pr.colWeight, pr.colStock, pr.colLivePrice, t.common.status, t.common.actions].map((h) => (
-                  <th key={h} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                  <th key={h} className="text-start text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -233,7 +233,7 @@ function ProductsTab() {
                         {p.on_hand_qty}
                       </span>
                       {p.min_stock_qty != null && p.on_hand_qty <= p.min_stock_qty && p.on_hand_qty > 0 && (
-                        <span className="ml-1 text-[10px] text-amber-600">{pr.lowStock}</span>
+                        <span className="ms-1 text-[10px] text-amber-600">{pr.lowStock}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-800">{priced ? formatUSD(priced.finalPrice) : "—"}</td>

@@ -22,7 +22,7 @@ function KindPill({ kind }: { kind: OrderItemKind }) {
     OUNCE: "bg-blue-50 text-blue-700",
   };
   return (
-    <span className={`text-[11px] px-2 py-0.5 rounded font-mono ${map[kind]}`}>
+    <span className={`text-[11px] px-2 py-0.5 rounded ltr:font-mono ${map[kind]}`}>
       {t.orders.itemKind[kind] ?? kind}
     </span>
   );
@@ -151,7 +151,7 @@ export default function OrderDetailPage() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
               {[o.colItem, o.colKind, o.colQty, t.products.karat, t.products.colWeight, o.colRateAtSale, t.common.price, ""].map((h, i) => (
-                <th key={i} className="text-left text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                <th key={i} className="text-start text-xs text-gray-400 uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
               ))}
             </tr>
           </thead>
@@ -175,7 +175,7 @@ export default function OrderDetailPage() {
                   <td className="px-4 py-3 text-gray-600">{Number(item.weight_grams).toFixed(3)}{t.dashboard.grams}</td>
                   <td className="px-4 py-3 text-gray-600">${Number(item.gold_rate_at_sale).toFixed(2)}{t.products.perGram}</td>
                   <td className="px-4 py-3 font-semibold">{formatUSD(item.final_price)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-end">
                     {canRefundItems && remaining > 0 ? (
                       <button
                         onClick={() => openRefund(item)}

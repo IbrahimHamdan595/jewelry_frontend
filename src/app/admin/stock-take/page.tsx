@@ -92,13 +92,13 @@ export default function StockTakeIndexPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-                <th className="text-left px-4 py-3">{t.common.status}</th>
-                <th className="text-left px-4 py-3">{s.colStarted}</th>
-                <th className="text-left px-4 py-3">{s.colClosed}</th>
-                <th className="text-right px-4 py-3">{s.colLines}</th>
-                <th className="text-right px-4 py-3">{s.colVariances}</th>
-                <th className="text-right px-4 py-3">{s.colApproved}</th>
-                <th className="text-right px-4 py-3">{s.colRejected}</th>
+                <th className="text-start px-4 py-3">{t.common.status}</th>
+                <th className="text-start px-4 py-3">{s.colStarted}</th>
+                <th className="text-start px-4 py-3">{s.colClosed}</th>
+                <th className="text-end px-4 py-3">{s.colLines}</th>
+                <th className="text-end px-4 py-3">{s.colVariances}</th>
+                <th className="text-end px-4 py-3">{s.colApproved}</th>
+                <th className="text-end px-4 py-3">{s.colRejected}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -123,16 +123,16 @@ export default function StockTakeIndexPage() {
                     <td className="px-4 py-3 text-gray-600 text-xs">
                       {take.closed_at ? new Date(take.closed_at).toLocaleString() : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-700">{take.line_count}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{take.variance_line_count}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end text-gray-700">{take.line_count}</td>
+                    <td className="px-4 py-3 text-end text-gray-700">{take.variance_line_count}</td>
+                    <td className="px-4 py-3 text-end">
                       {take.approved_count > 0 ? (
                         <span className="text-emerald-700">{take.approved_count}</span>
                       ) : (
                         <span className="text-gray-300">0</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                       {/* Rejected count rendered prominently — these are
                          the "knowingly wrong" decisions and the operator
                          must be able to spot them in the list at a glance. */}

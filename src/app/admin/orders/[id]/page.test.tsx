@@ -43,6 +43,11 @@ function englishLeft(root: HTMLElement): string[] {
     .filter((text) => !SHARED.includes(text) && /[A-Za-z]{2,}/.test(text));
 }
 
+/** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
+function arabicInMono(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
+}
+
 function renderPage(lang: "en" | "ar", data: unknown = order({})) {
   swr.data = data;
   return render(<LanguageProvider initialLang={lang}><OrderDetailPage /></LanguageProvider>);
@@ -64,6 +69,7 @@ describe("order detail in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.orders.discountPct(5))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.refundedLine(1, 3, "$106.00"))).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("keeps the order number isolated left-to-right", () => {
@@ -129,7 +135,7 @@ describe("order detail in English is unchanged", () => {
     expect(screen.getByText("VAT 11%")).toBeInTheDocument();
     expect(screen.getByText("Discount 5%")).toBeInTheDocument();
     expect(screen.getByText("CASH")).toBeInTheDocument();
-    expect(screen.getByText("PRODUCT")).toBeInTheDocument();
+    expect(screen.getByText("PRODUCT")).toHaveClass("ltr:font-mono");
     for (const header of ["Item", "Kind", "Qty", "Karat", "Weight", "Rate at Sale", "Price"]) {
       expect(screen.getByRole("columnheader", { name: header })).toBeInTheDocument();
     }

@@ -23,7 +23,7 @@ const product = (over: Record<string, unknown>) => ({
 
 // Database values: the product code, the backend's source reference, the
 // certificate number and the note a member of staff typed.
-const DATA = ["RNG-0042", "BUYBACK:3f2a9c1b", "GIA-123456", "VS1 clarity"];
+const DATA = ["RNG-0042", "BUYBACK", "3f2a9c1b", "GIA-123456", "VS1 clarity"];
 
 /** Text a user reads or a screen reader announces, minus the given data values. */
 function englishLeft(root: HTMLElement): string[] {
@@ -36,6 +36,11 @@ function englishLeft(root: HTMLElement): string[] {
   return found
     .map((text) => DATA.reduce((rest, value) => rest.split(value).join(""), text).trim())
     .filter((text) => /[A-Za-z]{2,}/.test(text));
+}
+
+/** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
+function arabicInMono(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
 }
 
 function renderPage(lang: "en" | "ar", data: unknown = product({})) {
@@ -55,6 +60,17 @@ describe("product detail in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.products.status.AVAILABLE)).toBeInTheDocument();
     expect(screen.getByText(ar.products.meltHint("K21", "4.250"))).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+  });
+
+  it("keeps Arabic out of left-to-right monospace runs: only the source reference is isolated", () => {
+    const { container } = renderPage("ar");
+    const reference = screen.getByText("BUYBACK:3f2a9c1b…");
+    expect(reference).toHaveClass("font-mono");
+    const sentence = reference.parentElement as HTMLElement;
+    expect(sentence).not.toHaveClass("font-mono");
+    expect(sentence).toHaveTextContent(ar.products.sourceFrom("BUYBACK:3f2a9c1b…"));
+    fireEvent.click(screen.getByRole("button", { name: ar.products.melt }));
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("explains in Arabic why a sold piece cannot be melted, with the status translated", () => {
@@ -79,11 +95,11 @@ describe("product detail in Arabic (NEX-64)", () => {
     expect(englishLeft(container)).toEqual([]);
   });
 
-  it("melt dialog: the new status keeps its monospace styling inside the Arabic sentence", () => {
+  it("melt dialog: the new status stays a styled word inside the Arabic sentence (monospace in LTR only)", () => {
     renderPage("ar");
     fireEvent.click(screen.getByRole("button", { name: ar.products.melt }));
     const status = screen.getByText(ar.products.status.MELTED);
-    expect(status).toHaveClass("font-mono");
+    expect(status).toHaveClass("ltr:font-mono");
     expect(status.parentElement).toHaveTextContent(ar.products.meltStatusNote(ar.products.status.MELTED));
   });
 
@@ -104,7 +120,8 @@ describe("product detail in English is unchanged", () => {
     expect(screen.getByRole("heading", { name: "Used Product — RNG-0042" })).toBeInTheDocument();
     expect(screen.getByText("SOLD")).toBeInTheDocument();
     expect(screen.getByText("Cost basis:")).toHaveTextContent("Cost basis: $250.00");
-    expect(screen.getByText("from BUYBACK:3f2a9c1b…")).toBeInTheDocument();
+    expect(screen.getByText("BUYBACK:3f2a9c1b…").parentElement).toHaveTextContent("from BUYBACK:3f2a9c1b…");
+    expect(screen.getByText("BUYBACK:3f2a9c1b…").parentElement).toHaveClass("ltr:font-mono");
     expect(screen.getByText("Carats:").parentElement).toHaveTextContent("Carats: 0.5 ct");
     expect(screen.getByText("Reduces the piece to K21 weight 4.250g and creates a new lot.", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Only AVAILABLE or INACTIVE products can be melted (status: SOLD).")).toBeInTheDocument();

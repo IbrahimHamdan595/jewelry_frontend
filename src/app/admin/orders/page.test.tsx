@@ -41,6 +41,11 @@ function englishLeft(root: HTMLElement): string[] {
     .filter((text) => !SHARED.includes(text) && /[A-Za-z]{2,}/.test(text));
 }
 
+/** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
+function arabicInMono(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
+}
+
 function renderPage(lang: "en" | "ar") {
   return render(<LanguageProvider initialLang={lang}><OrdersPage /></LanguageProvider>);
 }
@@ -86,8 +91,18 @@ describe("orders list in Arabic (NEX-64)", () => {
       expect(screen.queryByText(english), english).toBeNull();
     }
     expect(screen.getByText(ar.orders.purchaseMode.MIXED)).toBeInTheDocument();
-    expect(screen.getByText(`K21 12.50${ar.dashboard.grams}`)).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+  });
+
+  it("supplier purchases tab: the gram unit follows the number in reading order, outside the left-to-right run", () => {
+    const { container } = renderPage("ar");
+    fireEvent.click(screen.getByRole("button", { name: ar.orders.tabPurchases }));
+    const amount = screen.getByText("K21 12.50");
+    expect(amount).toHaveClass("font-mono");
+    const cell = amount.closest("td") as HTMLElement;
+    expect(cell).not.toHaveClass("font-mono");
+    expect(cell).toHaveTextContent(`K21 12.50${ar.dashboard.grams}`);
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("buybacks tab: headers and the buyback kind are Arabic", () => {
@@ -98,6 +113,7 @@ describe("orders list in Arabic (NEX-64)", () => {
     }
     expect(screen.getByText(ar.orders.buybackKind.USED_PRODUCT)).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("translates each tab's empty state", () => {
@@ -125,7 +141,8 @@ describe("orders list in English is unchanged", () => {
     }
     fireEvent.click(screen.getByRole("button", { name: "Supplier Purchases" }));
     expect(screen.getByText("MIXED")).toBeInTheDocument();
-    expect(screen.getByText("K21 12.50g")).toBeInTheDocument();
+    expect(screen.getByText("K21 12.50").closest("td")).toHaveTextContent("K21 12.50g");
+    expect(screen.getByText("K21 12.50").closest("td")).toHaveClass("ltr:font-mono");
     fireEvent.click(screen.getByRole("button", { name: "Buybacks" }));
     expect(screen.getByText("USED PRODUCT")).toBeInTheDocument();
     expect(screen.getByText("4.200g")).toBeInTheDocument();

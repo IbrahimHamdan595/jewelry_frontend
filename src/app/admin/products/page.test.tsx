@@ -35,6 +35,11 @@ function englishLeft(root: HTMLElement): string[] {
     .filter((text) => /[A-Za-z]{2,}/.test(text));
 }
 
+/** globals.css lays .font-mono out left-to-right in RTL: fine for codes, wrong for Arabic words. */
+function arabicInMono(root: HTMLElement): string[] {
+  return Array.from(root.querySelectorAll(".font-mono")).map((el) => el.textContent ?? "").filter((text) => /[\u0600-\u06FF]/.test(text));
+}
+
 function renderPage(lang: "en" | "ar") {
   return render(<LanguageProvider initialLang={lang}><ProductsPage /></LanguageProvider>);
 }
@@ -49,6 +54,7 @@ describe("products list in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.products.usedBadge)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.showing(1, 20, 45))).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+    expect(arabicInMono(container)).toEqual([]);
   });
 
   it("names the filters and the icon-only row controls", () => {
