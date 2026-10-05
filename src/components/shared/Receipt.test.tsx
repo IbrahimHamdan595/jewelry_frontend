@@ -194,6 +194,40 @@ describe("Receipt — printed in the active language (NEX-64)", () => {
     expect(valueOf(ar.checkout.payment)).toBe(ar.checkout.paymentMethods[method]);
   });
 
+  // The discount row follows the amount; the percentage is shown only when there is one.
+  describe.each([
+    ["en", en] as const,
+    ["ar", ar] as const,
+  ])("discount row (%s)", (lang, dict) => {
+    const withPercent = (discount_percent: unknown) =>
+      ({ ...sale, totals: { ...sale.totals, discount_percent } }) as unknown as ReceiptData;
+    const rowLabels = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll("#receipt .text-status-refunded > span:first-child")).map((el) => el.textContent);
+
+    it.each([null, 0, "0", "0.00"])("an amount with a percentage of %s prints the bare label, never 0%%", (pct) => {
+      const { container } = renderReceipt(lang, withPercent(pct));
+      expect(rowLabels(container)).toEqual([dict.checkout.discount]);
+      expect(valueOf(dict.checkout.discount)).toBe("−$70.00");
+      expect(container.querySelector("#receipt")).not.toHaveTextContent("0%");
+    });
+
+    it.each([[5, 5], ["5.00", 5], ["7.5", 7.5]] as const)("a percentage of %s is printed with the label", (pct, shown) => {
+      const { container } = renderReceipt(lang, withPercent(pct));
+      expect(rowLabels(container)).toEqual([dict.checkout.discountLine(shown)]);
+      expect(valueOf(dict.checkout.discountLine(shown))).toBe("−$70.00");
+    });
+
+    it("no discount amount, no row", () => {
+      const { container } = renderReceipt(lang, { ...sale, totals: { ...sale.totals, discount_percent: null, discount_amount: null } } as unknown as ReceiptData);
+      expect(rowLabels(container)).toEqual([]);
+    });
+  });
+
+  it("the bare discount label is translated", () => {
+    expect(en.checkout.discount).toBe("Discount");
+    expect(ar.checkout.discount).toBe("خصم");
+  });
+
   it("the shop's own footer replaces the thank-you line and prints as stored", () => {
     renderReceipt("ar", { ...sale, store: { ...sale.store, footer: "No refunds after 7 days" } });
     expect(screen.getByText("No refunds after 7 days")).toBeInTheDocument();

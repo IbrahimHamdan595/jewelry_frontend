@@ -239,6 +239,8 @@ export interface Translations {
     discountPctMax: (max: number) => string;
     vatLine: (pct: number) => string;
     discountLine: (pct: number) => string;
+    /** The receipt's discount row when the order carries an amount but no percentage. */
+    discount: string;
     processing: string;
     addItemsToCheckout: string;
     checkoutTotal: (total: string) => string;
@@ -874,6 +876,7 @@ const en: Translations = {
     discountPctMax: (max) => `Discount % (max ${max}%)`,
     vatLine: (pct) => `VAT ${pct}%`,
     discountLine: (pct) => `Discount ${pct}%`,
+    discount: "Discount",
     processing: "PROCESSING…",
     addItemsToCheckout: "ADD ITEMS TO CHECKOUT",
     checkoutTotal: (total) => `CHECKOUT · ${total}`,

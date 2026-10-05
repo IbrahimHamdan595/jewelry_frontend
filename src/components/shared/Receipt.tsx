@@ -170,7 +170,9 @@ export function Receipt({ data }: { data: ReceiptData }) {
         )}
         {hasDiscount && (
           <div className="flex justify-between text-status-refunded">
-            <span>{tr.checkout.discountLine(num(t.discount_percent))}</span>
+            {/* The percentage is printed only when there is one: a null or zero
+                discount_percent leaves the bare label, never "0%". */}
+            <span>{num(t.discount_percent) ? tr.checkout.discountLine(num(t.discount_percent)) : tr.checkout.discount}</span>
             <span>−{formatUSD(t.discount_amount!)}</span>
           </div>
         )}

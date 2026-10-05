@@ -248,6 +248,7 @@ const ar: Translations = {
     discountPctMax: (max) => `الخصم % (الحد الأقصى ${max}%)`,
     vatLine: (pct) => `ضريبة القيمة المضافة \u2066${pct}%\u2069`,
     discountLine: (pct) => `خصم \u2066${pct}%\u2069`,
+    discount: "خصم",
     processing: "جارٍ التنفيذ…",
     addItemsToCheckout: "أضف أصنافاً لإتمام الشراء",
     checkoutTotal: (total) => `إتمام الشراء · \u2066${total}\u2069`,
