@@ -6,6 +6,8 @@ import useSWR from "swr";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
+import { Ltr } from "@/components/shared/Ltr";
 import type {
   Karat,
   Lot,
@@ -64,6 +66,8 @@ interface GoldPaymentDraft {
 export default function NewPurchasePage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
+  const { t } = useLang();
+  const sp = t.supplierPurchase;
   const { data: supplier } = useSWR<{ supplier: Supplier }>(`/suppliers/${id}`, apiFetcher);
 
   const [mode, setMode] = useState<SupplierPurchaseMode>("CASH");
@@ -81,6 +85,10 @@ export default function NewPurchasePage() {
   const { data: lotData } = useSWR<LotListResponse>("/lots?page_size=200", apiFetcher);
   const { data: coinData } = useSWR<UnitTypeListResponse>("/coins?is_active=true&page_size=200", apiFetcher);
   const { data: ounceData } = useSWR<UnitTypeListResponse>("/ounces?is_active=true&page_size=200", apiFetcher);
+
+  // The sentence carries an "{amount}" token so each language can place the
+  // amount where its word order needs it; <Ltr> keeps "$1,234.56" intact in RTL.
+  const [differenceBefore, differenceAfter = ""] = sp.cashDifference.split("{amount}");
 
   const goldUsesCash = mode === "MIXED" || mode === "CASH";
   const goldUsesGold = mode === "MIXED" || mode === "GOLD";
@@ -164,7 +172,7 @@ export default function NewPurchasePage() {
       await api.post(`/suppliers/${id}/purchases`, body);
       router.push(`/admin/suppliers/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : sp.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -176,32 +184,31 @@ export default function NewPurchasePage() {
         href={`/admin/suppliers/${id}`}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to {supplier?.supplier.name ?? "supplier"}
+        <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
+        {supplier ? sp.backTo(supplier.supplier.name) : sp.backToSupplier}
       </Link>
 
-      <h2 className="text-lg font-semibold text-gray-800">New supplier purchase</h2>
+      <h2 className="text-lg font-semibold text-gray-800">{sp.title}</h2>
 
       {/* Mode */}
       <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm space-y-4">
-        <div className="text-sm font-medium text-gray-700">Payment mode</div>
+        <div className="text-sm font-medium text-gray-700">{sp.paymentMode}</div>
         <div className="grid grid-cols-3 gap-3">
           {(["CASH", "GOLD", "MIXED"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className={`p-4 rounded border text-left transition-colors ${
+              aria-pressed={mode === m}
+              className={`p-4 rounded border text-start transition-colors ${
                 mode === m
                   ? "border-gold bg-gold/5 text-gold"
                   : "border-gray-200 text-gray-700 hover:border-gray-300"
               }`}
             >
-              <div className="font-semibold">{m}</div>
+              <div className="font-semibold">{sp.mode[m]}</div>
               <div className="text-xs text-gray-500 mt-1">
-                {m === "CASH" && "Pay supplier in USD only"}
-                {m === "GOLD" && "Pay supplier in gold (from your lots)"}
-                {m === "MIXED" && "Cash + gold combined"}
+                {sp.modeHint[m]}
               </div>
             </button>
           ))}
@@ -210,11 +217,14 @@ export default function NewPurchasePage() {
 
       {/* Deal totals */}
       <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm space-y-4">
-        <div className="text-sm font-medium text-gray-700">Deal split</div>
+        <div className="text-sm font-medium text-gray-700">{sp.dealSplit}</div>
+        {/* Inputs live inside their labels: a click on the text focuses the
+            field and a screen reader announces it by name, with no ids. A
+            label that names several controls is a fieldset legend instead. */}
         {goldUsesCash && (
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Total cash due (USD)</label>
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{sp.totalCashDue}</span>
               <input
                 type="number"
                 step="0.01"
@@ -222,18 +232,20 @@ export default function NewPurchasePage() {
                 onChange={(e) => setTotalCashDue(e.target.value)}
                 className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
               />
-            </div>
+            </label>
             <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Cash paid now</label>
-              <input
-                type="number"
-                step="0.01"
-                value={cashPaidNow}
-                onChange={(e) => setCashPaidNow(e.target.value)}
-                className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-              />
+              <label className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{sp.cashPaidNow}</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={cashPaidNow}
+                  onChange={(e) => setCashPaidNow(e.target.value)}
+                  className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                />
+              </label>
               <p className="text-[10px] text-gray-400 mt-1">
-                Difference ({formatUSD(Math.max(0, Number(totalCashDue) - Number(cashPaidNow)))}) becomes cash debt.
+                {differenceBefore}<Ltr>{formatUSD(Math.max(0, Number(totalCashDue) - Number(cashPaidNow)))}</Ltr>{differenceAfter}
               </p>
             </div>
           </div>
@@ -241,13 +253,13 @@ export default function NewPurchasePage() {
 
         {goldUsesGold && (
           <>
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-                Total gold due (grams per karat)
-              </label>
+            <fieldset className="m-0 min-w-0 border-0 p-0">
+              <legend className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+                {sp.totalGoldDue}
+              </legend>
               <div className="grid grid-cols-4 gap-2">
                 {KARATS.map((k) => (
-                  <div key={k} className="flex items-center gap-1.5">
+                  <label key={k} className="flex items-center gap-1.5">
                     <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium w-10 text-center">{k}</span>
                     <input
                       type="number"
@@ -263,15 +275,15 @@ export default function NewPurchasePage() {
                       }}
                       className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold"
                     />
-                  </div>
+                  </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-                Trade markup per gram (USD, audit info only — optional)
-              </label>
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+                {sp.tradeMarkup}
+              </span>
               <input
                 type="number"
                 step="0.0001"
@@ -279,16 +291,17 @@ export default function NewPurchasePage() {
                 onChange={(e) => setTradeMarkup(e.target.value)}
                 className="w-full max-w-xs border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Gold paid now (pick lots)</label>
+            <fieldset className="m-0 min-w-0 border-0 p-0">
+              <legend className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{sp.goldPaidNow}</legend>
               <div className="space-y-2">
                 {goldPaymentsNow.map((gp, idx) => {
                   const lot = lotData?.items.find((l) => l.id === gp.lot_id);
                   return (
-                    <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded p-2">
+                    <div key={idx} role="group" aria-label={sp.goldLineN(idx + 1)} className="flex items-center gap-2 bg-gray-50 rounded p-2">
                       <select
+                        aria-label={sp.karat}
                         value={gp.karat}
                         onChange={(e) => {
                           const next = [...goldPaymentsNow];
@@ -300,6 +313,7 @@ export default function NewPurchasePage() {
                         {KARATS.map((k) => <option key={k} value={k}>{k}</option>)}
                       </select>
                       <select
+                        aria-label={sp.lot}
                         value={gp.lot_id}
                         onChange={(e) => {
                           const next = [...goldPaymentsNow];
@@ -308,12 +322,12 @@ export default function NewPurchasePage() {
                         }}
                         className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-gold"
                       >
-                        <option value="">— pick lot —</option>
+                        <option value="">{sp.pickLot}</option>
                         {lotData?.items
                           .filter((l) => l.karat === gp.karat && !l.is_depleted)
                           .map((l) => (
                             <option key={l.id} value={l.id}>
-                              {l.id.slice(0, 8)}… · {Number(l.weight_remaining_grams).toFixed(3)}g
+                              {`${l.id.slice(0, 8)}… · ${Number(l.weight_remaining_grams).toFixed(3)}g`}
                             </option>
                           ))}
                       </select>
@@ -321,7 +335,8 @@ export default function NewPurchasePage() {
                         type="number"
                         step="0.001"
                         max={lot ? lot.weight_remaining_grams : undefined}
-                        placeholder="grams"
+                        placeholder={sp.grams}
+                        aria-label={sp.grams}
                         value={gp.grams}
                         onChange={(e) => {
                           const next = [...goldPaymentsNow];
@@ -332,9 +347,10 @@ export default function NewPurchasePage() {
                       />
                       <button
                         onClick={() => setGoldPaymentsNow(goldPaymentsNow.filter((_, i) => i !== idx))}
+                        aria-label={sp.removeGoldLine}
                         className="text-gray-400 hover:text-red-500 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden />
                       </button>
                     </div>
                   );
@@ -349,20 +365,20 @@ export default function NewPurchasePage() {
                   }
                   className="text-xs text-gold hover:text-gold-dark"
                 >
-                  + Add gold payment line
+                  {sp.addGoldLine}
                 </button>
               </div>
 
               {Object.keys(totalGramsDue).length > 0 && (
                 <div className="text-xs text-gray-500 mt-2">
-                  Picked vs due:{" "}
+                  {sp.pickedVsDue}{" "}
                   {KARATS.map((k) => {
                     const due = Number(totalGramsDue[k] ?? 0);
                     if (due === 0) return null;
                     const picked = totalPickedByKarat[k] ?? 0;
                     const over = picked > due;
                     return (
-                      <span key={k} className="mr-3">
+                      <span key={k} className="me-3">
                         {k}: <span className={`font-mono ${over ? "text-red-600" : ""}`}>{picked.toFixed(3)}</span>
                         <span className="text-gray-400"> / {due.toFixed(3)}g</span>
                       </span>
@@ -370,7 +386,7 @@ export default function NewPurchasePage() {
                   })}
                 </div>
               )}
-            </div>
+            </fieldset>
           </>
         )}
       </div>
@@ -378,19 +394,19 @@ export default function NewPurchasePage() {
       {/* Items */}
       <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium text-gray-700">Items received</div>
+          <div className="text-sm font-medium text-gray-700">{sp.itemsReceived}</div>
           <button
             type="button"
             onClick={addItem}
             className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-dark"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Add item
+            <Plus className="w-3.5 h-3.5" aria-hidden />
+            {sp.addItem}
           </button>
         </div>
         {items.length === 0 && (
           <div className="text-xs text-gray-400 text-center py-6">
-            No items yet. Add at least one item the supplier delivered.
+            {sp.noItems}
           </div>
         )}
         {items.map((it, idx) => (
@@ -408,26 +424,26 @@ export default function NewPurchasePage() {
 
       {/* Notes + submit */}
       <div className="bg-white border border-gray-100 rounded-lg p-5 shadow-sm space-y-4">
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Notes</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{sp.notes}</span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
+        </label>
+        {error && <div role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
         <div className="flex justify-end gap-2">
           <Link href={`/admin/suppliers/${id}`} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">
-            Cancel
+            {t.common.cancel}
           </Link>
           <button
             onClick={handleSubmit}
             disabled={saving || items.length === 0}
             className="px-5 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60"
           >
-            {saving ? "Recording…" : "Record Purchase"}
+            {saving ? sp.recording : sp.recordPurchase}
           </button>
         </div>
       </div>
@@ -445,39 +461,50 @@ function ItemEditor({
   coinData?: UnitTypeListResponse;
   ounceData?: UnitTypeListResponse;
 }) {
+  const { t } = useLang();
+  const sp = t.supplierPurchase;
+  // These controls have no visible label (the placeholder is the only hint),
+  // so each carries a translated aria-label; the group names the item.
   return (
-    <div className="border border-gray-200 rounded p-3 space-y-3 bg-gray-50/50">
+    <div role="group" aria-label={sp.itemN(idx + 1)} className="border border-gray-200 rounded p-3 space-y-3 bg-gray-50/50">
       <div className="flex items-center gap-3">
         <span className="text-xs text-gray-400">#{idx + 1}</span>
         <select
+          aria-label={sp.itemKind}
           value={item.item_kind}
           onChange={(e) => onChange({ item_kind: e.target.value as SupplierItemKind })}
           className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
         >
-          <option value="PURE_GOLD">PURE_GOLD (creates a new lot)</option>
-          <option value="COIN">COIN (increments coin stock)</option>
-          <option value="OUNCE">OUNCE (increments ounce stock)</option>
-          <option value="PRODUCT">PRODUCT (creates a new product)</option>
+          <option value="PURE_GOLD">{sp.kind.PURE_GOLD}</option>
+          <option value="COIN">{sp.kind.COIN}</option>
+          <option value="OUNCE">{sp.kind.OUNCE}</option>
+          <option value="PRODUCT">{sp.kind.PRODUCT}</option>
         </select>
         <div className="flex-1" />
         <div>
           <input
             type="number"
             step="0.01"
-            placeholder="Unit cost USD"
+            placeholder={sp.unitCost}
+            aria-label={sp.unitCost}
             value={item.unit_cost_usd}
             onChange={(e) => onChange({ unit_cost_usd: e.target.value })}
             className="w-36 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
           />
         </div>
-        <button onClick={onRemove} className="text-gray-400 hover:text-red-500 transition-colors">
-          <Trash2 className="w-4 h-4" />
+        <button
+          onClick={onRemove}
+          aria-label={sp.removeItem}
+          className="text-gray-400 hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" aria-hidden />
         </button>
       </div>
 
       {item.item_kind === "PURE_GOLD" && (
         <div className="grid grid-cols-3 gap-2">
           <select
+            aria-label={sp.karat}
             value={item.karat}
             onChange={(e) => onChange({ karat: e.target.value as Karat })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -487,13 +514,15 @@ function ItemEditor({
           <input
             type="number"
             step="0.001"
-            placeholder="weight g"
+            placeholder={sp.weight}
+            aria-label={sp.weight}
             value={item.weight_grams}
             onChange={(e) => onChange({ weight_grams: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
           />
           <input
-            placeholder="notes"
+            placeholder={sp.itemNotes}
+            aria-label={sp.itemNotes}
             value={item.notes}
             onChange={(e) => onChange({ notes: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -504,11 +533,12 @@ function ItemEditor({
       {item.item_kind === "COIN" && (
         <div className="grid grid-cols-3 gap-2">
           <select
+            aria-label={sp.coinType}
             value={item.type_id}
             onChange={(e) => onChange({ type_id: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2"
           >
-            <option value="">— pick coin type —</option>
+            <option value="">{sp.pickCoinType}</option>
             {coinData?.items.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code} · {c.karat} · {c.weight_grams}g
@@ -518,7 +548,8 @@ function ItemEditor({
           <input
             type="number"
             min="1"
-            placeholder="qty"
+            placeholder={sp.qty}
+            aria-label={sp.qty}
             value={item.quantity}
             onChange={(e) => onChange({ quantity: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -529,11 +560,12 @@ function ItemEditor({
       {item.item_kind === "OUNCE" && (
         <div className="grid grid-cols-3 gap-2">
           <select
+            aria-label={sp.ounceType}
             value={item.type_id}
             onChange={(e) => onChange({ type_id: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2"
           >
-            <option value="">— pick ounce type —</option>
+            <option value="">{sp.pickOunceType}</option>
             {ounceData?.items.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.code} · {o.karat} · {o.weight_grams}g
@@ -543,7 +575,8 @@ function ItemEditor({
           <input
             type="number"
             min="1"
-            placeholder="qty"
+            placeholder={sp.qty}
+            aria-label={sp.qty}
             value={item.quantity}
             onChange={(e) => onChange({ quantity: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -554,25 +587,29 @@ function ItemEditor({
       {item.item_kind === "PRODUCT" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <input
-            placeholder="Name (English)"
+            placeholder={t.common.nameEn}
+            aria-label={t.common.nameEn}
             value={item.product.name_en}
             onChange={(e) => onChange({ product: { ...item.product, name_en: e.target.value } })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2"
           />
           <input
             dir="rtl"
-            placeholder="الاسم"
+            placeholder={sp.nameArPlaceholder}
+            aria-label={t.common.nameAr}
             value={item.product.name_ar}
             onChange={(e) => onChange({ product: { ...item.product, name_ar: e.target.value } })}
-            className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2 text-right"
+            className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white col-span-2 text-start"
           />
           <input
-            placeholder="Category"
+            placeholder={sp.category}
+            aria-label={sp.category}
             value={item.product.category}
             onChange={(e) => onChange({ product: { ...item.product, category: e.target.value } })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
           />
           <select
+            aria-label={sp.karat}
             value={item.karat}
             onChange={(e) => onChange({ karat: e.target.value as Karat })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -582,7 +619,8 @@ function ItemEditor({
           <input
             type="number"
             step="0.001"
-            placeholder="weight g"
+            placeholder={sp.weight}
+            aria-label={sp.weight}
             value={item.weight_grams}
             onChange={(e) => onChange({ weight_grams: e.target.value })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -590,7 +628,8 @@ function ItemEditor({
           <input
             type="number"
             step="0.01"
-            placeholder="margin %"
+            placeholder={sp.margin}
+            aria-label={sp.margin}
             value={item.product.margin_percent}
             onChange={(e) => onChange({ product: { ...item.product, margin_percent: e.target.value } })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"
@@ -598,7 +637,8 @@ function ItemEditor({
           <input
             type="number"
             step="0.01"
-            placeholder="making charge"
+            placeholder={sp.makingCharge}
+            aria-label={sp.makingCharge}
             value={item.product.making_charge}
             onChange={(e) => onChange({ product: { ...item.product, making_charge: e.target.value } })}
             className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-gold bg-white"

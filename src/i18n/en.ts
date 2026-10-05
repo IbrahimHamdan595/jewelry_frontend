@@ -13,6 +13,181 @@ export interface Translations {
     failed: string;
   };
 
+  suppliers: {
+    title: string;
+    newSupplier: string;
+    searchPlaceholder: string;
+    includeInactive: string;
+    contact: string;
+    phone: string;
+    terms: string;
+    empty: string;
+    active: string;
+    inactive: string;
+    deactivate: string;
+    reactivate: string;
+    openSupplier: (name: string) => string;
+    toggleFailed: string;
+    saveFailed: string;
+    contactName: string;
+    email: string;
+    address: string;
+    paymentTerms: string;
+    paymentTermsPlaceholder: string;
+    notes: string;
+    saving: string;
+    createSupplier: string;
+    // Supplier detail
+    backToList: string;
+    cashOwed: string;
+    recordCashPayment: string;
+    recordCashPaymentLink: string;
+    goldOwedByKarat: string;
+    none: string;
+    recordGoldPayment: string;
+    recordGoldPaymentLink: string;
+    cannotDeactivate: string;
+    newPurchase: string;
+    purchaseHistory: string;
+    paymentHistory: string;
+    noPurchases: string;
+    noPayments: string;
+    colDate: string;
+    colMode: string;
+    colCashDuePaid: string;
+    colGoldDuePaid: string;
+    colItems: string;
+    colReceipt: string;
+    colUnit: string;
+    colAmount: string;
+    colSourceLots: string;
+    receiptLink: string;
+    itemCount: (n: number) => string;
+    mode: { CASH: string; GOLD: string; MIXED: string };
+    unitCash: string;
+    // Payment dialogs
+    paymentFailed: string;
+    outstanding: string;
+    amountUsd: string;
+    notesOptional: string;
+    recordPayment: string;
+    goldPaymentHint: string;
+    karat: string;
+    karatOwed: (karat: string, grams: string) => string;
+    karatNoneOwed: (karat: string) => string;
+    outstandingKarat: (karat: string) => string;
+    totalPicked: string;
+    pickLots: string;
+    noActiveLots: (karat: string) => string;
+    lotRemaining: (grams: string) => string;
+    lotSource: { BUYBACK: string; MELT: string; SUPPLIER: string; SEED: string; ADJUSTMENT: string };
+    gramsPlaceholder: string;
+    gramsFromLot: (lot: string) => string;
+    payGold: (grams: string, karat: string) => string;
+  };
+
+  supplierPurchase: {
+    backTo: (name: string) => string;
+    backToSupplier: string;
+    title: string;
+    paymentMode: string;
+    mode: { CASH: string; GOLD: string; MIXED: string };
+    modeHint: { CASH: string; GOLD: string; MIXED: string };
+    dealSplit: string;
+    totalCashDue: string;
+    cashPaidNow: string;
+    // "{amount}" marks where the page renders the formatted amount.
+    cashDifference: string;
+    totalGoldDue: string;
+    tradeMarkup: string;
+    goldPaidNow: string;
+    karat: string;
+    lot: string;
+    pickLot: string;
+    grams: string;
+    goldLineN: (n: number) => string;
+    removeGoldLine: string;
+    addGoldLine: string;
+    pickedVsDue: string;
+    itemsReceived: string;
+    addItem: string;
+    noItems: string;
+    itemN: (n: number) => string;
+    itemKind: string;
+    kind: { PURE_GOLD: string; COIN: string; OUNCE: string; PRODUCT: string };
+    unitCost: string;
+    removeItem: string;
+    weight: string;
+    itemNotes: string;
+    coinType: string;
+    pickCoinType: string;
+    ounceType: string;
+    pickOunceType: string;
+    qty: string;
+    // The Arabic-name field keeps an Arabic placeholder in both languages.
+    nameArPlaceholder: string;
+    category: string;
+    margin: string;
+    makingCharge: string;
+    notes: string;
+    saveFailed: string;
+    recording: string;
+    recordPurchase: string;
+    loadingReceipt: string;
+  };
+
+  payables: {
+    title: string;
+    cashOwedStoreWide: string;
+    goldOwed: string;
+    none: string;
+    suppliersWithDebt: string;
+    empty: string;
+    colSupplier: string;
+    colCash: string;
+    colGold: string;
+    settle: string;
+  };
+
+  inventoryLedger: {
+    reconcileTitle: string;
+    // "{table}" marks where the page renders the table name in monospace.
+    reconcileHelp: string;
+    alertToggleTitle: string;
+    alertOn: string;
+    alertOff: string;
+    running: string;
+    runReconcile: string;
+    reconcileFailed: string;
+    allReconciled: string;
+    noAlertNeeded: string;
+    driftsDetected: (n: number) => string;
+    discordAlerted: string;
+    colSupplier: string;
+    colUnit: string;
+    colStored: string;
+    colComputed: string;
+    colDrift: string;
+    unitCash: string;
+    unitGold: (karat: string | null) => string;
+    title: string;
+    resetFilters: string;
+    eventType: string;
+    refType: string;
+    refId: string;
+    any: string;
+    refIdPlaceholder: string;
+    colDetails: string;
+    colEvent: string;
+    colRef: string;
+    colActor: string;
+    colOccurred: string;
+    noEvents: string;
+    pageSummary: (page: number, pages: number, total: number) => string;
+    prev: string;
+    next: string;
+  };
+
   nav: {
     dashboard: string;
     products: string;
@@ -419,6 +594,191 @@ const en: Translations = {
     showPassword: "Show password",
     hidePassword: "Hide password",
     failed: "Login failed",
+  },
+
+  suppliers: {
+    title: "Suppliers",
+    newSupplier: "New Supplier",
+    searchPlaceholder: "Search suppliers…",
+    includeInactive: "Include inactive",
+    contact: "Contact",
+    phone: "Phone",
+    terms: "Terms",
+    empty: "No suppliers yet",
+    active: "Active",
+    inactive: "Inactive",
+    deactivate: "Deactivate",
+    reactivate: "Reactivate",
+    openSupplier: (name) => `Open ${name}`,
+    toggleFailed: "Toggle failed",
+    saveFailed: "Save failed",
+    contactName: "Contact name",
+    email: "Email",
+    address: "Address",
+    paymentTerms: "Payment terms",
+    paymentTermsPlaceholder: "e.g. \"net 30, gold-for-gold preferred\"",
+    notes: "Notes",
+    saving: "Saving…",
+    createSupplier: "Create Supplier",
+    // Supplier detail
+    backToList: "Back to suppliers",
+    cashOwed: "Cash owed",
+    recordCashPayment: "Record cash payment",
+    recordCashPaymentLink: "Record cash payment →",
+    goldOwedByKarat: "Gold owed (grams by karat)",
+    none: "None",
+    recordGoldPayment: "Record gold payment",
+    recordGoldPaymentLink: "Record gold payment →",
+    cannotDeactivate: "Cannot deactivate while debt is outstanding.",
+    newPurchase: "New Purchase",
+    purchaseHistory: "Purchase history",
+    paymentHistory: "Payment history",
+    noPurchases: "No purchases yet",
+    noPayments: "No payments yet",
+    colDate: "Date",
+    colMode: "Mode",
+    colCashDuePaid: "Cash due / paid",
+    colGoldDuePaid: "Gold due / paid",
+    colItems: "Items",
+    colReceipt: "Receipt",
+    colUnit: "Unit",
+    colAmount: "Amount",
+    colSourceLots: "Source lots",
+    receiptLink: "Receipt →",
+    itemCount: (n) => `${n} item${n !== 1 ? "s" : ""}`,
+    mode: { CASH: "CASH", GOLD: "GOLD", MIXED: "MIXED" },
+    unitCash: "CASH",
+    // Payment dialogs
+    paymentFailed: "Payment failed",
+    outstanding: "Outstanding:",
+    amountUsd: "Amount (USD)",
+    notesOptional: "Notes (optional)",
+    recordPayment: "Record Payment",
+    goldPaymentHint: "Choose which lot(s) the gold leaves from.",
+    karat: "Karat",
+    karatOwed: (karat, grams) => `${karat} (owe ${grams}g)`,
+    karatNoneOwed: (karat) => `${karat} (none owed)`,
+    outstandingKarat: (karat) => `Outstanding ${karat}:`,
+    totalPicked: "Total picked:",
+    pickLots: "Pick lot(s)",
+    noActiveLots: (karat) => `No active ${karat} lots`,
+    lotRemaining: (grams) => `remaining ${grams}g`,
+    lotSource: { BUYBACK: "BUYBACK", MELT: "MELT", SUPPLIER: "SUPPLIER", SEED: "SEED", ADJUSTMENT: "ADJUSTMENT" },
+    gramsPlaceholder: "grams",
+    gramsFromLot: (lot) => `Grams from lot ${lot}`,
+    payGold: (grams, karat) => `Pay ${grams}g ${karat}`,
+  },
+
+  supplierPurchase: {
+    backTo: (name) => `Back to ${name}`,
+    backToSupplier: "Back to supplier",
+    title: "New supplier purchase",
+    paymentMode: "Payment mode",
+    mode: { CASH: "CASH", GOLD: "GOLD", MIXED: "MIXED" },
+    modeHint: {
+      CASH: "Pay supplier in USD only",
+      GOLD: "Pay supplier in gold (from your lots)",
+      MIXED: "Cash + gold combined",
+    },
+    dealSplit: "Deal split",
+    totalCashDue: "Total cash due (USD)",
+    cashPaidNow: "Cash paid now",
+    // "{amount}" marks where the page renders the formatted amount.
+    cashDifference: "Difference ({amount}) becomes cash debt.",
+    totalGoldDue: "Total gold due (grams per karat)",
+    tradeMarkup: "Trade markup per gram (USD, audit info only — optional)",
+    goldPaidNow: "Gold paid now (pick lots)",
+    karat: "Karat",
+    lot: "Lot",
+    pickLot: "— pick lot —",
+    grams: "grams",
+    goldLineN: (n) => `Gold payment line ${n}`,
+    removeGoldLine: "Remove gold payment line",
+    addGoldLine: "+ Add gold payment line",
+    pickedVsDue: "Picked vs due:",
+    itemsReceived: "Items received",
+    addItem: "Add item",
+    noItems: "No items yet. Add at least one item the supplier delivered.",
+    itemN: (n) => `Item ${n}`,
+    itemKind: "Item type",
+    kind: {
+      PURE_GOLD: "PURE_GOLD (creates a new lot)",
+      COIN: "COIN (increments coin stock)",
+      OUNCE: "OUNCE (increments ounce stock)",
+      PRODUCT: "PRODUCT (creates a new product)",
+    },
+    unitCost: "Unit cost USD",
+    removeItem: "Remove item",
+    weight: "weight g",
+    itemNotes: "notes",
+    coinType: "Coin type",
+    pickCoinType: "— pick coin type —",
+    ounceType: "Ounce type",
+    pickOunceType: "— pick ounce type —",
+    qty: "qty",
+    // The Arabic-name field keeps an Arabic placeholder in both languages.
+    nameArPlaceholder: "الاسم",
+    category: "Category",
+    margin: "margin %",
+    makingCharge: "making charge",
+    notes: "Notes",
+    saveFailed: "Save failed",
+    recording: "Recording…",
+    recordPurchase: "Record Purchase",
+    loadingReceipt: "Loading receipt…",
+  },
+
+  payables: {
+    title: "Accounts Payable",
+    cashOwedStoreWide: "Cash owed (store-wide)",
+    goldOwed: "Gold owed",
+    none: "None",
+    suppliersWithDebt: "Suppliers with debt",
+    empty: "No outstanding supplier debt",
+    colSupplier: "Supplier",
+    colCash: "Cash",
+    colGold: "Gold",
+    settle: "Settle →",
+  },
+
+  inventoryLedger: {
+    reconcileTitle: "Supplier balance reconciliation",
+    // "{table}" marks where the page renders the table name in monospace.
+    reconcileHelp: "Replays purchases and payments to verify the running {table} projection. Mismatch indicates either a bug or out-of-band data edits.",
+    alertToggleTitle: "Toggle Discord alert on drift",
+    alertOn: "Alert on drift",
+    alertOff: "Silent",
+    running: "Running…",
+    runReconcile: "Run reconcile",
+    reconcileFailed: "Reconcile failed",
+    allReconciled: "All supplier balances reconcile against purchase + payment history.",
+    noAlertNeeded: "(no alert needed)",
+    driftsDetected: (n) => `${n} drift${n !== 1 ? "s" : ""} detected.`,
+    discordAlerted: "Discord alerted.",
+    colSupplier: "Supplier",
+    colUnit: "Unit",
+    colStored: "Stored",
+    colComputed: "Computed",
+    colDrift: "Drift",
+    unitCash: "CASH",
+    // The API sends the karat already prefixed ("K21").
+    unitGold: (karat) => (karat ? `GOLD ${karat}` : "GOLD"),
+    title: "Audit ledger",
+    resetFilters: "Reset filters",
+    eventType: "Event type",
+    refType: "Ref type",
+    refId: "Ref id",
+    any: "any",
+    refIdPlaceholder: "exact UUID",
+    colDetails: "Details",
+    colEvent: "Event",
+    colRef: "Ref",
+    colActor: "Actor",
+    colOccurred: "Occurred",
+    noEvents: "No events match these filters.",
+    pageSummary: (page, pages, total) => `Page ${page} of ${pages} · ${total} events`,
+    prev: "← Prev",
+    next: "Next →",
   },
 
   nav: {
