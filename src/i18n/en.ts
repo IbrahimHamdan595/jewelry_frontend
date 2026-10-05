@@ -34,6 +34,7 @@ export interface Translations {
   // Inventory › Pure Gold Lots (NEX-64, slice 3). Enum maps (sources, reasons)
   // are keyed by the API value; English keeps the raw code it always showed.
   lots: {
+    tab: string;
     poolTitle: (karat: string) => string;
     lotCount: (n: number) => string;
     filterByKarat: string;
@@ -50,6 +51,7 @@ export interface Translations {
     active: string;
     depleted: string;
     manualAdjustment: string;
+    adjustLot: (karat: string, lotId: string) => string;
     newLotTitle: string;
     weightG: string;
     costBasisUsd: string;
@@ -640,6 +642,7 @@ const en: Translations = {
   },
 
   lots: {
+    tab: "Pure Gold Lots",
     poolTitle: (karat) => `${karat} pool`,
     lotCount: (n) => `${n} lot${n !== 1 ? "s" : ""}`,
     filterByKarat: "Filter by karat",
@@ -656,6 +659,7 @@ const en: Translations = {
     active: "Active",
     depleted: "Depleted",
     manualAdjustment: "Manual adjustment",
+    adjustLot: (karat, lotId) => `Manual adjustment: ${karat} lot ${lotId}`,
     newLotTitle: "New Pure-Gold Lot",
     weightG: "Weight (g)",
     costBasisUsd: "Cost basis (USD)",

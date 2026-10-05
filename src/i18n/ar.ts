@@ -37,8 +37,10 @@ const ar: Translations = {
   // المخزون › دفعات الذهب الخالص. \u2066…\u2069 (LRI/PDI) keeps a signed number
   // like "-2.500" left-to-right inside an Arabic placeholder, where markup can't go.
   lots: {
+    tab: "دفعات الذهب الخالص",
     poolTitle: (karat) => `مخزون ${karat}`,
-    lotCount: (n) => `${n} ${n === 1 ? "دفعة" : "دفعات"}`,
+    // "Label: n" needs no number agreement (دفعة / دفعتان / دفعات / دفعةً).
+    lotCount: (n) => `الدفعات: ${n}`,
     filterByKarat: "تصفية حسب العيار",
     allKarats: "كل العيارات",
     includeDepleted: "تضمين المستنفدة",
@@ -53,6 +55,7 @@ const ar: Translations = {
     active: "نشطة",
     depleted: "مستنفدة",
     manualAdjustment: "تعديل يدوي",
+    adjustLot: (karat, lotId) => `تعديل يدوي: دفعة ${karat} \u2066${lotId}\u2069`,
     newLotTitle: "دفعة ذهب خالص جديدة",
     weightG: "الوزن (غ)",
     costBasisUsd: "أساس التكلفة (دولار)",

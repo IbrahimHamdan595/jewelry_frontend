@@ -5,6 +5,7 @@ import { Plus, Sliders, History } from "lucide-react";
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorRow, ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
+import { useFormat } from "@/hooks/useFormat";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
@@ -23,6 +24,7 @@ const REASONS: AdjustmentReason[] = ["LOSS", "THEFT", "GIFT", "SAMPLE", "CORRECT
 export default function LotsPage() {
   const { t } = useLang();
   const l = t.lots;
+  const { formatDate } = useFormat();
   const [karatFilter, setKaratFilter] = useState<string>("");
   const [includeDepleted, setIncludeDepleted] = useState(false);
 
@@ -64,8 +66,12 @@ export default function LotsPage() {
                 {l.poolTitle(k)}
               </div>
               <div className="text-2xl font-semibold text-gray-800">
-                {row ? Number(row.total_remaining_grams).toFixed(3) : "0.000"}
-                <span className="text-sm text-gray-400 ml-1">g</span>
+                {/* A number and its unit read left-to-right in both languages:
+                    isolated, so the gap stays between them. */}
+                <Ltr>
+                  {row ? Number(row.total_remaining_grams).toFixed(3) : "0.000"}
+                  <span className="text-sm text-gray-400 ms-1">g</span>
+                </Ltr>
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 {l.lotCount(row ? row.lot_count : 0)}
@@ -130,22 +136,22 @@ export default function LotsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {l.karat}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {l.remainingOriginal}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {l.source}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {l.costBasis}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {l.acquired}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {t.common.status}
               </th>
               <th className="px-4 py-3" aria-label={t.common.actions} />
@@ -178,12 +184,12 @@ export default function LotsPage() {
                       {" "}/ {Number(lot.weight_grams).toFixed(3)}g
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{l.sources[lot.source] ?? lot.source}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{l.sources[lot.source]}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">
                     {formatUSD(Number(lot.cost_basis_usd))}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">
-                    {new Date(lot.acquired_at).toLocaleDateString()}
+                    {formatDate(lot.acquired_at)}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -202,7 +208,7 @@ export default function LotsPage() {
                       disabled={lot.is_depleted}
                       className="text-gray-400 hover:text-gold disabled:opacity-40 transition-colors"
                       title={l.manualAdjustment}
-                      aria-label={l.manualAdjustment}
+                      aria-label={l.adjustLot(lot.karat, lot.id.slice(0, 8))}
                     >
                       <Sliders className="w-4 h-4" aria-hidden />
                     </button>
@@ -336,7 +342,7 @@ function NewLotForm({
           className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
         />
       </label>
-      {error && <div className="text-xs text-red-600">{error}</div>}
+      {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
@@ -368,7 +374,7 @@ function AdjustLotDialog({
   onClose: () => void;
   onAdjusted: () => void | Promise<void>;
 }) {
-  const { t, isRTL } = useLang();
+  const { t } = useLang();
   const l = t.lots;
   const [delta, setDelta] = useState("");
   const [reason, setReason] = useState<AdjustmentReason>("CORRECTION");
@@ -400,13 +406,11 @@ function AdjustLotDialog({
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-5 space-y-4">
         <div>
           <div className="text-sm font-medium text-gray-800">{l.adjustTitle}</div>
-          {/* font-mono is laid out left-to-right in RTL (globals.css) because it
-              marks identifiers. This line is a phrase with identifiers in it, so
-              the phrase follows the UI direction and only the identifiers stay LTR. */}
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">
-            <span dir={isRTL ? "rtl" : "ltr"}>
-              <Ltr>{lot.karat}</Ltr> · {l.remaining} <Ltr>{Number(lot.weight_remaining_grams).toFixed(3)}g</Ltr>
-            </span>
+          {/* Monospace in LTR only: .font-mono is laid out left-to-right in RTL
+              (globals.css), which would reverse a translated phrase. The karat
+              and the weight are the machine values, and they keep it. */}
+          <div className="text-xs text-gray-500 mt-0.5 ltr:font-mono">
+            <Ltr className="font-mono">{lot.karat}</Ltr> · {l.remaining} <Ltr className="font-mono">{Number(lot.weight_remaining_grams).toFixed(3)}g</Ltr>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -454,7 +458,7 @@ function AdjustLotDialog({
             placeholder={l.notesPlaceholder}
           />
         </label>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
         <div className="flex justify-end gap-2 pt-1">
           <button
             onClick={onClose}
