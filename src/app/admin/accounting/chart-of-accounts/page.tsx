@@ -8,7 +8,7 @@ import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
 import { Button } from "@/components/ui/button";
-import { errorMessage } from "@/lib/api-client";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
 
 /** An enum value's label in the UI language; a value with no label prints as the API sent it. */
 const named = (labels: Record<string, string>, value: string) => labels[value] ?? value;
@@ -20,28 +20,30 @@ export default function ChartOfAccounts() {
 
   const [accounts, setAccounts] = useState<GLAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
 
   async function load() {
     setLoading(true);
     try {
       const r = await accounting.listAccounts();
       setAccounts(r.items);
-    } catch (e) { setError(errorMessage(e, "")); }
+    } catch (e) { setFailure({ err: e, during: "load" }); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
   async function seed() {
-    await accounting.seedCoa();
-    await load();
+    setFailure(null);
+    try {
+      await accounting.seedCoa();
+      await load();
+    } catch (e) { setFailure({ err: e, during: "action" }); }
   }
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
-      {/* "" is a failed read that came back with no reason of its own. */}
-      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
+      <ErrorNote failure={failure} />
 
       {!loading && accounts.length === 0 && (
         <ActionBar>

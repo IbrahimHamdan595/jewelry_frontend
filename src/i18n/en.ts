@@ -1210,6 +1210,7 @@ export interface Translations {
       eyebrow: string; title: string; description: string; newCustomer: string;
       namePlaceholder: string; creditLimitPlaceholder: string; createBtn: string;
       recordReceipt: string; amountPlaceholder: string; recordBtn: string; receiptHint: string;
+      receiptRecorded: (receiptNo: string, unapplied: string) => string;
       colCustomer: string; colOpenBalance: string;
       agingCurrent: string; aging3160: string; aging6190: string; aging90: string; empty: string;
     };
@@ -1231,6 +1232,9 @@ export interface Translations {
       paidCash: string; paidBank: string; noVat: string; recordBtn: string; byCategory: string;
       colBill: string; colVendor: string; colDate: string; colTotal: string; colPaid: string;
       colStatus: string; empty: string;
+      billRecorded: (billNo: string, status: string, total: string) => string;
+      /** The backend's VendorBillStatus enum. */
+      billStatus: { OPEN: string; PARTIAL: string; PAID: string; VOID: string };
     };
     tax: {
       eyebrow: string; title: string; description: string; taxCodes: string; seedCodes: string;
@@ -2515,6 +2519,7 @@ const en: Translations = {
       namePlaceholder: "Name", creditLimitPlaceholder: "Credit limit (blank = unlimited)",
       createBtn: "Create", recordReceipt: "Record a receipt", amountPlaceholder: "Amount",
       recordBtn: "Record receipt", receiptHint: "pays off oldest invoices first",
+      receiptRecorded: (receiptNo, unapplied) => `Receipt ${receiptNo} (unapplied ${unapplied})`,
       colCustomer: "Customer", colOpenBalance: "Open balance",
       agingCurrent: "Current", aging3160: "31–60d", aging6190: "61–90d", aging90: "90d+",
       empty: "No customers with a balance.",
@@ -2549,6 +2554,8 @@ const en: Translations = {
       noVat: "No VAT", recordBtn: "Record", byCategory: "Expense by category",
       colBill: "Bill", colVendor: "Vendor", colDate: "Date", colTotal: "Total", colPaid: "Paid",
       colStatus: "Status", empty: "No bills recorded yet.",
+      billRecorded: (billNo, status, total) => `Bill ${billNo} (${status}, total ${total})`,
+      billStatus: { OPEN: "OPEN", PARTIAL: "PARTIAL", PAID: "PAID", VOID: "VOID" },
     },
     tax: {
       eyebrow: "Lebanon VAT (11%)",

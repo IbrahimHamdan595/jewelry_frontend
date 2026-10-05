@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import TaxPage from "@/app/admin/accounting/tax/page";
 import { LanguageProvider } from "@/context/LanguageContext";
+import en from "@/i18n/en";
 import ar from "@/i18n/ar";
+import { ApiError } from "@/lib/api-client";
+import { renderWithSwitch } from "@/test/language-shell";
 
-const lib = vi.hoisted(() => ({ listCodes: vi.fn(), vatReturn: vi.fn() }));
-vi.mock("@/lib/accounting", () => ({ tax: { listCodes: lib.listCodes, seedCodes: vi.fn(), vatReturn: lib.vatReturn } }));
+const lib = vi.hoisted(() => ({ listCodes: vi.fn(), vatReturn: vi.fn(), seedCodes: vi.fn() }));
+vi.mock("@/lib/accounting", () => ({ tax: { listCodes: lib.listCodes, seedCodes: lib.seedCodes, vatReturn: lib.vatReturn } }));
 vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), downloadFile: vi.fn() }));
 
 const vatReturn = { year: 2026, quarter: 3, output_vat: "110.00", input_vat: "40.00", net_payable: "70.00", direction: "PAYABLE", cash_split: null, transactions: [] };
@@ -50,5 +53,36 @@ describe("tax page i18n and labels (NEX-64)", () => {
     expect(within(screen.getByLabelText("Quarter")).getAllByRole("option").map((o) => o.textContent)).toEqual(["Q1", "Q2", "Q3", "Q4"]);
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
     expect(await screen.findByText("Net PAYABLE")).toBeInTheDocument();
+  });
+});
+
+describe("tax — seeding and the language of a failure (NEX-64)", () => {
+  const switchLanguage = () => fireEvent.click(screen.getByRole("button", { name: "switch language" }));
+  beforeEach(() => {
+    lib.listCodes.mockReset().mockResolvedValue({ items: [] });
+    lib.vatReturn.mockReset().mockResolvedValue(vatReturn);
+    lib.seedCodes.mockReset();
+    document.cookie = "mz_lang=; path=/; max-age=0";
+    localStorage.clear();
+  });
+
+  it("a failed 'seed tax codes' is no longer silent", async () => {
+    lib.seedCodes.mockRejectedValueOnce(new ApiError(409, "Seed the chart of accounts first")).mockRejectedValueOnce(new ApiError(500, undefined));
+    renderWithSwitch(<TaxPage />, "ar");
+    const seed = await screen.findByRole("button", { name: ar.accounting.tax.seedCodes });
+    fireEvent.click(seed);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Seed the chart of accounts first");
+    fireEvent.click(seed);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(ar.errors.actionFailed));
+  });
+
+  it("a failed VAT return is a failed read, and retranslates when the language changes", async () => {
+    lib.vatReturn.mockRejectedValue(new TypeError("Failed to fetch"));
+    renderWithSwitch(<TaxPage />, "ar");
+    await screen.findByText(ar.accounting.common.noData);
+    fireEvent.click(screen.getByRole("button", { name: ar.accounting.common.run }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(ar.errors.loadFailed);
+    switchLanguage();
+    expect(screen.getByRole("alert")).toHaveTextContent(en.errors.loadFailed);
   });
 });

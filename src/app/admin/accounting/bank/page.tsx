@@ -11,7 +11,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { errorMessage } from "@/lib/api-client";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -22,7 +22,7 @@ export default function BankPage() {
 
   const [accounts, setAccounts] = useState<BankAccountT[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [name, setName] = useState("");
   const [ccy, setCcy] = useState("USD");
   const [type, setType] = useState("BANK");
@@ -31,28 +31,33 @@ export default function BankPage() {
   const [amount, setAmount] = useState("");
   const [destAmount, setDestAmount] = useState("");
   const [tDate, setTDate] = useState(today());
-  const [ok, setOk] = useState<string | null>(null);
+  // The entry number of the last transfer; worded when it is shown.
+  const [postedEntry, setPostedEntry] = useState<string | null>(null);
 
   async function load() {
     try { setAccounts((await bank.cashPosition()).accounts); }
-    catch (e) { setError(errorMessage(e, "")); }
+    catch (e) { setFailure({ err: e, during: "load" }); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
-  async function adopt() { await bank.adoptSeeded(); await load(); }
+  async function adopt() {
+    setFailure(null);
+    try { await bank.adoptSeeded(); await load(); }
+    catch (e) { setFailure({ err: e, during: "action" }); }
+  }
   async function create() {
-    setError(null);
+    setFailure(null);
     try { await bank.createAccount({ name, account_type: type, currency: ccy }); setName(""); await load(); }
-    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
+    catch (e) { setFailure({ err: e, during: "action" }); }
   }
   async function doTransfer() {
-    setError(null); setOk(null);
+    setFailure(null); setPostedEntry(null);
     try {
       const r = await bank.transfer({ from_account_id: from, to_account_id: to, amount,
         dest_amount: destAmount || undefined, memo: "transfer", entry_date: tDate });
-      setOk(`Posted ${r.entry_no}`); await load();
-    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
+      setPostedEntry(r.entry_no); await load();
+    } catch (e) { setFailure({ err: e, during: "action" }); }
   }
 
   return (
@@ -63,8 +68,7 @@ export default function BankPage() {
         description={a.description}
         actions={<Button variant="outline" onClick={adopt}>{a.adoptSeeded}</Button>}
       />
-      {/* "" is a failed read that came back with no reason of its own. */}
-      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
+      <ErrorNote failure={failure} />
 
       <SectionCard title={a.title} flush>
         <DataTable
@@ -108,7 +112,7 @@ export default function BankPage() {
           <Input placeholder={a.destAmountPlaceholder} value={destAmount} onChange={(e) => setDestAmount(e.target.value)} className="w-48 text-end" />
           <Input type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} className="w-auto" />
           <Button onClick={doTransfer} disabled={!from || !to || !amount}>{a.transfer}</Button>
-          {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}
+          {postedEntry && <span role="status" className="text-sm text-green-700 ms-1">{t.accounting.extra.posted(postedEntry)}</span>}
         </ActionBar>
       </SectionCard>
     </div>

@@ -9,7 +9,7 @@ import { SectionCard } from "@/components/accounting/SectionCard";
 import { DataTable } from "@/components/accounting/DataTable";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
-import { errorMessage } from "@/lib/api-client";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
 
 type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
 
@@ -21,7 +21,7 @@ export default function Payables() {
   const [tie, setTie] = useState<Awaited<ReturnType<typeof ap.verify>> | null>(null);
   const [aging, setAging] = useState<Awaited<ReturnType<typeof ap.aging>> | null>(null);
   const [sups, setSups] = useState<Awaited<ReturnType<typeof ap.balances>>["suppliers"]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function Payables() {
         setTie(await ap.verify());
         setAging(await ap.aging(today()));
         setSups((await ap.balances()).suppliers);
-      } catch (e) { setError(errorMessage(e, "")); }
+      } catch (e) { setFailure({ err: e, during: "load" }); }
       finally { setLoading(false); }
     })();
   }, []);
@@ -58,8 +58,7 @@ export default function Payables() {
           </span>
         )}
       />
-      {/* "" is a failed read that came back with no reason of its own. */}
-      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
+      <ErrorNote failure={failure} />
 
       {loading && !aging && (
         <div className="space-y-6">

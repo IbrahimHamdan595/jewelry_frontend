@@ -1254,6 +1254,7 @@ const ar: Translations = {
       namePlaceholder: "الاسم", creditLimitPlaceholder: "حد الائتمان (فارغ = غير محدود)",
       createBtn: "إنشاء", recordReceipt: "تسجيل سند قبض", amountPlaceholder: "المبلغ",
       recordBtn: "تسجيل القبض", receiptHint: "يسدّد أقدم الفواتير أولاً",
+      receiptRecorded: (receiptNo, unapplied) => `سُجّل سند القبض \u2066${receiptNo}\u2069 (غير مطبَّق: \u2066${unapplied}\u2069)`,
       colCustomer: "العميل", colOpenBalance: "الرصيد المفتوح",
       agingCurrent: "حالي", aging3160: "31–60 يوم", aging6190: "61–90 يوم", aging90: "+90 يوم",
       empty: "لا يوجد عملاء لديهم رصيد.",
@@ -1288,6 +1289,8 @@ const ar: Translations = {
       noVat: "بدون ضريبة", recordBtn: "تسجيل", byCategory: "المصاريف حسب الفئة",
       colBill: "الفاتورة", colVendor: "المورّد", colDate: "التاريخ", colTotal: "الإجمالي", colPaid: "المدفوع",
       colStatus: "الحالة", empty: "لم تُسجَّل أي فواتير بعد.",
+      billRecorded: (billNo, status, total) => `سُجّلت الفاتورة \u2066${billNo}\u2069 (${status}، الإجمالي \u2066${total}\u2069)`,
+      billStatus: { OPEN: "مفتوحة", PARTIAL: "مدفوعة جزئياً", PAID: "مدفوعة", VOID: "ملغاة" },
     },
     tax: {
       eyebrow: "ضريبة لبنان (11%)",

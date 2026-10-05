@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
 import ChartOfAccounts from "@/app/admin/accounting/chart-of-accounts/page";
 import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { renderWithSwitch } from "@/test/language-shell";
 import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
@@ -101,5 +102,43 @@ describe("chart of accounts — a failed load (NEX-64)", () => {
     lib.listAccounts.mockReset().mockRejectedValue(new ApiError(403, "Accounting access required"));
     renderPage("ar");
     expect(await screen.findByText("Accounting access required")).toBeInTheDocument();
+  });
+});
+
+describe("chart of accounts — seeding and the language of a failure (NEX-64)", () => {
+  const switchLanguage = () => fireEvent.click(screen.getByRole("button", { name: "switch language" }));
+  beforeEach(() => {
+    lib.listAccounts.mockReset().mockResolvedValue({ items: [] });
+    lib.seedCoa.mockReset();
+    document.cookie = "mz_lang=; path=/; max-age=0";
+    localStorage.clear();
+  });
+
+  it("a failed seed is no longer silent: the server's reason, or the translated fallback", async () => {
+    lib.seedCoa.mockRejectedValueOnce(new ApiError(403, "Admin access required")).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    renderWithSwitch(<ChartOfAccounts />, "ar");
+    const seed = await screen.findByRole("button", { name: ar.accounting.coa.seedBtn });
+    fireEvent.click(seed);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Admin access required");
+    fireEvent.click(seed);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(ar.errors.actionFailed));
+    expect(document.body).not.toHaveTextContent("Failed to fetch");
+  });
+
+  it("a successful seed reloads the accounts", async () => {
+    lib.seedCoa.mockResolvedValue({ created: 24 });
+    renderWithSwitch(<ChartOfAccounts />, "en");
+    fireEvent.click(await screen.findByRole("button", { name: en.accounting.coa.seedBtn }));
+    await waitFor(() => expect(lib.listAccounts).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("a failed load retranslates when the language changes", async () => {
+    lib.listAccounts.mockRejectedValue(new ApiError(500, undefined));
+    renderWithSwitch(<ChartOfAccounts />, "ar");
+    expect(await screen.findByRole("alert")).toHaveTextContent(ar.errors.loadFailed);
+    switchLanguage();
+    expect(screen.getByRole("alert")).toHaveTextContent(en.errors.loadFailed);
+    expect(screen.getByRole("alert")).not.toHaveTextContent(ar.errors.loadFailed);
   });
 });
