@@ -92,6 +92,10 @@ export default function SettingsPage() {
     }
     setPwSaving(true);
     try {
+      // The answer is ignored on purpose. The old backend sends 204; the new one
+      // sends 200 with a fresh token in the body and — what matters — a fresh
+      // HttpOnly cookie, which the browser has already stored. Like the login
+      // token, the one in the body is never kept where a script can read it.
       await api.post("/auth/change-password", {
         current_password: pwForm.current_password,
         new_password: pwForm.new_password,
@@ -277,8 +281,8 @@ export default function SettingsPage() {
         {tab === "security" && (
           <div className="space-y-4">
             <div className="text-sm font-medium text-gray-800">{t.settings.changePassword}</div>
-            {pwSuccess && <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">{t.settings.passwordChanged}</div>}
-            {pwError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{pwError}</div>}
+            {pwSuccess && <div role="status" className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">{t.settings.passwordChanged}</div>}
+            {pwError && <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{pwError}</div>}
             {(["current_password", "new_password", "confirm"] as const).map((f) => (
               <label key={f} className="block">
                 <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
