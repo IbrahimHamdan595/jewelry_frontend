@@ -70,7 +70,7 @@ export default function BuybackPage() {
         <div className="hidden lg:flex flex-1 justify-center">
           <GoldRateCard compact />
         </div>
-        <div className="ml-auto flex items-center gap-5 shrink-0">
+        <div className="ms-auto flex items-center gap-5 shrink-0">
           <div className="hidden md:flex flex-col items-end">
             <TodayInBeirut className="text-pos-gray text-[10px] uppercase tracking-widest" />
             {mounted && user && (
@@ -103,7 +103,7 @@ export default function BuybackPage() {
               <button
                 key={value}
                 onClick={() => setKind(value)}
-                className={`p-4 rounded-lg border transition-colors text-left ${
+                className={`p-4 rounded-lg border transition-colors text-start ${
                   kind === value
                     ? "border-gold bg-gold/10"
                     : "border-white/10 bg-white/5 hover:bg-white/10"
@@ -431,7 +431,12 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
           />
           <Row
             label={t.posBuyback.rate}
-            value={t.posBuyback.rateLine(Number(perUnitQuote.rate_24k).toFixed(2), perUnitQuote.rate_source, perUnitQuote.rate_is_stale)}
+            value={t.posBuyback.rateLine(
+              Number(perUnitQuote.rate_24k).toFixed(2),
+              // "live" or "override" (the quote's rate_source); anything else would print as sent.
+              t.goldRate.sources[perUnitQuote.rate_source as keyof typeof t.goldRate.sources] ?? perUnitQuote.rate_source,
+              perUnitQuote.rate_is_stale,
+            )}
           />
         </div>
       )}

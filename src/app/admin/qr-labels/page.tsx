@@ -6,6 +6,7 @@ import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { KaratBadge } from "@/components/shared/KaratBadge";
 import { useLang } from "@/context/LanguageContext";
+import { Ltr } from "@/components/shared/Ltr";
 import type { ProductListResponse, Product } from "@/types/api";
 
 function generateBarcode(code: string): string {
@@ -255,11 +256,13 @@ export default function QRLabelsPage() {
                   {preview.name_en}
                 </div>
                 <div className="text-[9px] text-gray-500">
-                  {/* eslint-disable-next-line i18next/no-literal-string -- mirrors the printed tag below: "g"/"ct" are fixed unit symbols on the physical label, whatever the UI language */}
-                  {preview.weight_grams}g · {preview.karat}
-                  {preview.stone_carats != null
-                    ? ` · 💎 ${preview.stone_carats}ct${preview.stone_cert ? ` · ${preview.stone_cert}` : ""}`
-                    : ""}
+                  <Ltr>
+                    {/* eslint-disable-next-line i18next/no-literal-string -- mirrors the printed tag below: "g"/"ct" are fixed unit symbols on the physical label, whatever the UI language */}
+                    {preview.weight_grams}g · {preview.karat}
+                    {preview.stone_carats != null
+                      ? ` · 💎 ${preview.stone_carats}ct${preview.stone_cert ? ` · ${preview.stone_cert}` : ""}`
+                      : ""}
+                  </Ltr>
                 </div>
               </div>
             ) : (
@@ -293,7 +296,7 @@ export default function QRLabelsPage() {
                 lineHeight: 1,
               }}
             >
-              {p.code}
+              <Ltr>{p.code}</Ltr>
             </div>
             <div
               style={{
@@ -310,11 +313,13 @@ export default function QRLabelsPage() {
               {p.name_en}
             </div>
             <div style={{ fontSize: "7.5pt", color: "#555" }}>
-              {/* eslint-disable-next-line i18next/no-literal-string -- printed tag: "g"/"ct" are fixed unit symbols on the physical label, which always carries the English product name */}
-              {p.weight_grams}g · {p.karat}
-              {p.stone_carats != null
-                ? ` · 💎 ${p.stone_carats}ct${p.stone_cert ? ` · ${p.stone_cert}` : ""}`
-                : ""}
+              <Ltr>
+                {/* eslint-disable-next-line i18next/no-literal-string -- printed tag: "g"/"ct" are fixed unit symbols on the physical label, which always carries the English product name */}
+                {p.weight_grams}g · {p.karat}
+                {p.stone_carats != null
+                  ? ` · 💎 ${p.stone_carats}ct${p.stone_cert ? ` · ${p.stone_cert}` : ""}`
+                  : ""}
+              </Ltr>
             </div>
           </div>
         ))}

@@ -69,7 +69,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
         </p>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-gray/60 pointer-events-none" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-gray/60 pointer-events-none" />
             <Input
               dark
               value={manual}
@@ -77,7 +77,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleManual()}
               placeholder={t.pos.productCodePlaceholder}
               aria-label={t.pos.manualEntry}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
           <Button

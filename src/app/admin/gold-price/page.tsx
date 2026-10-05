@@ -114,10 +114,10 @@ export default function GoldPricePage() {
                 <span className={`w-2 h-2 rounded-full ${rate.is_stale ? "bg-yellow-400" : "bg-green-400"}`} />
                 <span className="text-white/40 text-xs uppercase tracking-widest">{rate.is_stale ? t.goldRate.stale : t.goldRate.live}</span>
                 <span className="text-white/20 text-xs">{formatDateTime(rate.fetched_at)}</span>
-                <span className="text-white/20 text-xs capitalize">{rate.source}</span>
+                <span className="text-white/20 text-xs capitalize">{t.goldRate.sources[rate.source as keyof typeof t.goldRate.sources] ?? rate.source}</span>
               </div>
             </div>
-            <div className="text-right space-y-3">
+            <div className="text-end space-y-3">
               <div>
                 <div className="text-white/40 text-xs uppercase tracking-widest">22K</div>
                 <div className="text-white text-xl font-semibold">{`$${rate.rate_22k.toFixed(2)}`}</div>
@@ -192,9 +192,9 @@ export default function GoldPricePage() {
                   <stop offset="95%" stopColor="#C9A84C" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="fetched_at" tick={{ fontSize: 10 }} tickFormatter={(v) => new Date(v).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} />
+              <XAxis dataKey="fetched_at" tick={{ fontSize: 10 }} tickFormatter={(v) => formatDateTime(v)} />
               <YAxis domain={["auto", "auto"]} tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-              <Tooltip formatter={(v) => [`$${Number(v).toFixed(2)}`, gp.tooltipRate(karat.toUpperCase())]} labelFormatter={(v) => new Date(v).toLocaleString()} />
+              <Tooltip formatter={(v) => [`$${Number(v).toFixed(2)}`, gp.tooltipRate(karat.toUpperCase())]} labelFormatter={(v) => formatDateTime(v)} />
               <Area type="monotone" dataKey={`rate_${karat}`} stroke="#C9A84C" strokeWidth={2} fill="url(#goldGrad)" />
             </AreaChart>
           </ResponsiveContainer>

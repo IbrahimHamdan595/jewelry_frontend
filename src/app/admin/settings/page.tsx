@@ -151,14 +151,15 @@ export default function SettingsPage() {
             <div>
               <label className="block">
                 <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.storeNameAr}</span>
-                <input dir="rtl" value={(form as any).store_name_ar ?? ""} onChange={(e) => setForm({ ...form, store_name_ar: e.target.value })} placeholder="فواز النمل" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-right focus:outline-none focus:border-gold" />
+                <input dir="rtl" value={(form as any).store_name_ar ?? ""} onChange={(e) => setForm({ ...form, store_name_ar: e.target.value })} placeholder="فواز النمل" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-start focus:outline-none focus:border-gold" />
               </label>
               <p className="text-[11px] text-gray-400 mt-1">{t.settings.storeNameArHint}</p>
             </div>
             {(["address", "phone", "vat_number"] as const).map((f) => (
               <label key={f} className="block">
                 <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.fields[f]}</span>
-                <input value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                {/* A phone or VAT number is typed left-to-right in either language. */}
+                <input dir={f === "address" ? undefined : "ltr"} value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
               </label>
             ))}
           </>
@@ -231,14 +232,14 @@ export default function SettingsPage() {
                       {t.settings.markupLabel(f === "markup_k18" ? "18K" : f === "markup_k21" ? "21K" : "24K")}
                     </span>
                     <span className="relative block">
-                      <span aria-hidden className="absolute left-3 inset-y-0 flex items-center text-gray-400 text-sm">$</span>
+                      <span aria-hidden className="absolute start-3 inset-y-0 flex items-center text-gray-400 text-sm">$</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         value={(form as any)[f] ?? "0"}
                         onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-                        className="w-full border border-gray-200 rounded pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                        className="w-full border border-gray-200 rounded ps-6 pe-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                       />
                     </span>
                   </label>
@@ -371,7 +372,7 @@ export default function SettingsPage() {
             {showAdd && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
                 {(["name", "email", "password"] as const).map((f) => (
-                  <input key={f} placeholder={t.settings.staffFields[f]} aria-label={t.settings.staffFields[f]} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
+                  <input key={f} dir={f === "name" ? undefined : "ltr"} placeholder={t.settings.staffFields[f]} aria-label={t.settings.staffFields[f]} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
                 ))}
                 <div className="flex gap-2">
                   <button onClick={handleAddStaff} className="px-4 py-2 bg-gold text-white text-xs rounded">{t.common.save}</button>

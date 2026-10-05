@@ -126,7 +126,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
                 <button
                   key={u.id}
                   onClick={() => setSelectedId(u.id)}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors ${
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-start transition-colors ${
                     selectedId === u.id ? "bg-gold/10" : "hover:bg-white/5"
                   }`}
                 >
@@ -139,7 +139,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
                       {u.code} · {Number(u.weight_grams).toFixed(3)}g
                     </div>
                   </div>
-                  <div className={`text-xs text-right shrink-0 ${low ? "text-amber-400" : "text-pos-gray"}`}>
+                  <div className={`text-xs text-end shrink-0 ${low ? "text-amber-400" : "text-pos-gray"}`}>
                     {t.pos.onHand} <span className="font-semibold">{u.on_hand_qty}</span>
                   </div>
                 </button>
@@ -155,7 +155,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
                 <div className="text-sm">{selected.name_en}</div>
                 <div className="text-xs text-pos-gray font-mono">{selected.code}</div>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <div className="text-[10px] text-pos-gray uppercase tracking-widest">{t.pos.unitPrice}</div>
                 <div className="text-lg font-semibold text-gold">
                   {price ? formatUSD(price.final_price) : "…"}

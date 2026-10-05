@@ -113,7 +113,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
 
       {/* Metadata */}
       <div className="space-y-1 text-[10px]">
-        <div className="flex justify-between"><span className="text-gray-500">{r.ref}</span><span>{data.reference}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">{r.ref}</span><span><Ltr>{data.reference}</Ltr></span></div>
         <div className="flex justify-between"><span className="text-gray-500">{r.date}</span><span>{formatDateTime(data.issued_at)}</span></div>
         {data.cashier_name && (
           <div className="flex justify-between"><span className="text-gray-500">{r.cashier}</span><span>{data.cashier_name}</span></div>
@@ -130,31 +130,34 @@ export function Receipt({ data }: { data: ReceiptData }) {
 
       {/* Line items */}
       <div className="space-y-2">
-        {data.lines.map((line, i) => (
-          <div key={i}>
-            <div className="flex justify-between">
-              <span className="flex-1 truncate pr-2">
-                {isAr && line.description_ar ? line.description_ar : line.description}
-                {num(line.quantity) > 1 ? ` ×${num(line.quantity)}` : ""}
-                {line.stone_value != null && line.stone_value > 0 ? " 💎" : ""}
-              </span>
-              <span className="font-bold">{formatUSD(line.line_total)}</span>
+        {data.lines.map((line, i) => {
+          // Code, karat, weight and unit price are one machine run; the stones
+          // note is copy and follows it.
+          const machine = [
+            line.code,
+            line.karat,
+            line.weight_grams != null ? `${line.weight_grams}g` : null,
+            line.unit_price != null && num(line.quantity) > 1 ? `@ ${formatUSD(line.unit_price)}` : null,
+          ].filter(Boolean).join(" · ");
+          const stones = line.stone_value != null && line.stone_value > 0 ? r.stonesLine(formatUSD(line.stone_value)) : null;
+          return (
+            <div key={i}>
+              <div className="flex justify-between">
+                <span className="flex-1 truncate pe-2">
+                  {isAr && line.description_ar ? line.description_ar : line.description}
+                  {num(line.quantity) > 1 ? ` ×${num(line.quantity)}` : ""}
+                  {line.stone_value != null && line.stone_value > 0 ? " 💎" : ""}
+                </span>
+                <span className="font-bold">{formatUSD(line.line_total)}</span>
+              </div>
+              <div className="text-gray-400 text-[9px]">
+                {machine ? <Ltr>{machine}</Ltr> : null}
+                {machine && stones ? " · " : null}
+                {stones}
+              </div>
             </div>
-            <div className="text-gray-400 text-[9px]">
-              {[
-                line.code,
-                line.karat,
-                line.weight_grams != null ? `${line.weight_grams}g` : null,
-                line.unit_price != null && num(line.quantity) > 1 ? `@ ${formatUSD(line.unit_price)}` : null,
-                line.stone_value != null && line.stone_value > 0
-                  ? r.stonesLine(formatUSD(line.stone_value))
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="border-t border-dashed border-gray-300 my-3" />
@@ -192,7 +195,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
       {/* Footer */}
       <div className="text-center text-[9px] text-gray-400 space-y-1">
         {data.store.footer ? <div>{data.store.footer}</div> : <div>{r.thankYou(storeName)}</div>}
-        <div className="mt-2 font-bold text-gray-600">{data.reference}</div>
+        <div className="mt-2 font-bold text-gray-600"><Ltr>{data.reference}</Ltr></div>
       </div>
     </div>
   );
