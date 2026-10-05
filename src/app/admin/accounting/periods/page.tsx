@@ -11,6 +11,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/api-client";
+import { Ltr } from "@/components/shared/Ltr";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -170,7 +171,7 @@ export default function PeriodsPage() {
         {preview && (
           <div className="mt-4 space-y-3">
             <div className="text-sm">
-              {a.netIncome}: <b>{preview.net_income}</b>
+              {a.netIncome}: <b><Ltr>{preview.net_income}</Ltr></b>
               {preview.already_closed && <span className="text-amber-700"> · {a.alreadyClosed}</span>}
             </div>
             <DataTable

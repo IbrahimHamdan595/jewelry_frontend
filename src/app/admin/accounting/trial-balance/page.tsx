@@ -12,6 +12,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 type TBAccount = TrialBalance["accounts"][number];
 
@@ -71,7 +72,8 @@ export default function TrialBalancePage() {
               key: "metal",
               label: a.colMetal,
               render: (r: TBAccount) =>
-                Object.entries(r.metal_by_karat).map(([k, v]) => `${k}: ${v.net_grams}`).join(", ") || "—",
+                // Karat codes and signed gram balances: one left-to-right run.
+                <Ltr>{Object.entries(r.metal_by_karat).map(([k, v]) => `${k}: ${v.net_grams}`).join(", ") || "—"}</Ltr>,
             },
           ]}
           rows={tb?.accounts ?? []}

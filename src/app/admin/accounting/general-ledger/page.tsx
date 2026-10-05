@@ -14,6 +14,7 @@ import { StatTile } from "@/components/accounting/StatTile";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -79,7 +80,7 @@ export default function GeneralLedger() {
     ...(showGrams ? [
       { key: "metal_debit_grams", label: a.colGramsDr, align: "end" as const, render: (r: GLDrilldownRow) => <span className="tabular-nums">{r.metal_debit_grams}</span> },
       { key: "metal_credit_grams", label: a.colGramsCr, align: "end" as const, render: (r: GLDrilldownRow) => <span className="tabular-nums">{r.metal_credit_grams}</span> },
-      { key: "running_grams", label: a.colRunningGrams, align: "end" as const, render: (r: GLDrilldownRow) => <span className="tabular-nums">{r.running_grams}</span> },
+      { key: "running_grams", label: a.colRunningGrams, align: "end" as const, render: (r: GLDrilldownRow) => <Ltr className="tabular-nums">{r.running_grams}</Ltr> },
     ] : []),
   ];
 
@@ -103,8 +104,8 @@ export default function GeneralLedger() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatTile label={a.opening} value={<Money value={gl.opening_balance} />} />
           <StatTile label={a.closing} value={<Money value={gl.closing_balance} />} />
-          {showGrams && <StatTile label={`${a.opening} (${c.grams})`} value={<span className="tabular-nums">{gl.opening_grams}</span>} />}
-          {showGrams && <StatTile label={`${a.closing} (${c.grams})`} value={<span className="tabular-nums">{gl.closing_grams}</span>} />}
+          {showGrams && <StatTile label={`${a.opening} (${c.grams})`} value={<Ltr className="tabular-nums">{gl.opening_grams}</Ltr>} />}
+          {showGrams && <StatTile label={`${a.closing} (${c.grams})`} value={<Ltr className="tabular-nums">{gl.closing_grams}</Ltr>} />}
         </div>
       )}
 

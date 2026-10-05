@@ -85,3 +85,34 @@ describe("formatUSD with nothing to show", () => {
     expect(formatUSD(undefined)).toBe(MISSING_AMOUNT);
   });
 });
+
+// A negative amount reads "-$5.00": the sign belongs to the amount, not between
+// the currency symbol and the digits ("$-5.00").
+describe("negative money", () => {
+  it("puts the sign before the currency symbol, for numbers and for decimal strings", () => {
+    expect(formatUSD(-5)).toBe("-$5.00");
+    expect(formatUSD("-5.00")).toBe("-$5.00");
+    expect(formatUSD(-1234.5)).toBe("-$1,234.50");
+    expect(formatUSD("-20572.4833")).toBe("-$20,572.48");
+    expect(formatRate(-2)).toBe("-$2.00");
+    expect(formatRate("-141.66")).toBe("-$141.66");
+  });
+
+  it("rounds a negative half away from zero, like a positive one", () => {
+    expect(formatUSD(-1.125)).toBe("-$1.13");
+    expect(formatRate(-1.125)).toBe("-$1.13");
+  });
+
+  it("never prints a negative zero: an amount that rounds to nothing has no sign", () => {
+    for (const tiny of [-0.001, "-0.004", -0, "-0.00"]) {
+      expect(formatUSD(tiny), String(tiny)).toBe("$0.00");
+      expect(formatRate(tiny), String(tiny)).toBe("$0.00");
+    }
+  });
+
+  it("leaves positive amounts and the bare-figure formatter as they were", () => {
+    expect(formatUSD(5)).toBe("$5.00");
+    expect(formatRate(141.66)).toBe("$141.66");
+    expect(formatDecimal(-6.5, 1)).toBe("-6.5");
+  });
+});

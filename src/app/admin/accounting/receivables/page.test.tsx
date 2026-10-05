@@ -77,3 +77,15 @@ describe("receivables — failures follow the UI language (NEX-64)", () => {
     expect(await screen.findByText(ar.errors.actionFailed)).toBeInTheDocument();
   });
 });
+
+// The tie-out line in the header prints two ledger balances as the API sent
+// them. A net credit balance is negative.
+describe("receivables — the tie-out balances keep their sign in front", () => {
+  it("Arabic: both balances sit in one left-to-right run", async () => {
+    lib.verify.mockResolvedValue({ gl_ar_balance: "-45.00", subledger_balance: "-45.00", matches: true });
+    renderWithSwitch(<Receivables />, "ar");
+    const run = await screen.findByText("-45.00 / -45.00", { selector: "bdi" });
+    expect(run).toHaveAttribute("dir", "ltr");
+    expect(run.parentElement).toHaveTextContent("✓ -45.00 / -45.00");
+  });
+});

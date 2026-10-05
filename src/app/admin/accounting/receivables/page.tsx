@@ -14,6 +14,7 @@ import { CardSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -101,7 +102,7 @@ export default function Receivables() {
         description={a.description}
         actions={tie && (
           <span className={`text-xs ${tie.matches ? "text-green-700" : "text-red-700"}`}>
-            {tie.matches ? "✓" : "✗"} {tie.gl_ar_balance} / {tie.subledger_balance}
+            {tie.matches ? "✓" : "✗"} <Ltr>{tie.gl_ar_balance} / {tie.subledger_balance}</Ltr>
           </span>
         )}
       />

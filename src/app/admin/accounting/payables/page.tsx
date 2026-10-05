@@ -10,6 +10,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
 import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
+import { Ltr } from "@/components/shared/Ltr";
 
 type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
 
@@ -54,7 +55,7 @@ export default function Payables() {
         description={a.description}
         actions={tie && (
           <span className={`text-xs ${tie.ap.matches && tie.metal_ap.matches ? "text-green-700" : "text-red-700"}`}>
-            {tie.ap.matches ? "✓" : "✗"} {tie.ap.gl} / {tie.ap.subledger}
+            {tie.ap.matches ? "✓" : "✗"} <Ltr>{tie.ap.gl} / {tie.ap.subledger}</Ltr>
           </span>
         )}
       />

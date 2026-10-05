@@ -291,7 +291,7 @@ export default function DashboardPage() {
             <div className="text-xs text-gray-400 uppercase tracking-widest">{t.dashboard.receivables}</div>
             <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gold transition-colors rtl:rotate-180" />
           </div>
-          <div className="text-xl font-bold text-gray-900">{formatUSD(data.receivables.total)}</div>
+          <div className="text-xl font-bold text-gray-900"><Ltr>{formatUSD(data.receivables.total)}</Ltr></div>
           <AgingChips a={data.receivables} t={t} />
         </Link>
         <Link href="/admin/accounting/payables" className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm hover:border-gold/40 transition-colors group">
@@ -299,7 +299,7 @@ export default function DashboardPage() {
             <div className="text-xs text-gray-400 uppercase tracking-widest">{t.dashboard.payables}</div>
             <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gold transition-colors rtl:rotate-180" />
           </div>
-          <div className="text-xl font-bold text-gray-900">{formatUSD(data.payables_aging.cash_total)}</div>
+          <div className="text-xl font-bold text-gray-900"><Ltr>{formatUSD(data.payables_aging.cash_total)}</Ltr></div>
           <AgingChips a={data.payables_aging} t={t} />
           {Object.keys(data.payables_aging.metal_owed_by_karat).length > 0 && (
             <div className="mt-2 space-y-0.5">
@@ -313,13 +313,13 @@ export default function DashboardPage() {
         {data.cash_bank_balance !== null && (
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.cashBank}</div>
-            <div className="text-xl font-bold text-gray-900">{formatUSD(data.cash_bank_balance)}</div>
+            <div className="text-xl font-bold text-gray-900"><Ltr>{formatUSD(data.cash_bank_balance)}</Ltr></div>
           </div>
         )}
         {data.vat_position !== null && (
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.vatPosition}</div>
-            <div className="text-xl font-bold text-gray-900">{formatUSD(data.vat_position.net_payable)}</div>
+            <div className="text-xl font-bold text-gray-900"><Ltr>{formatUSD(data.vat_position.net_payable)}</Ltr></div>
             <div className="text-[10px] text-gray-400 mt-1">
               {data.vat_position.direction === "REFUNDABLE" ? t.dashboard.vatRefundable : t.dashboard.vatPayable} · {data.vat_position.period_label}
             </div>
@@ -332,16 +332,16 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.grossProfit}</div>
-            <div className="text-kpi font-bold text-gray-900">{formatUSD(data.profitability.gross_profit)}</div>
+            <div className="text-kpi font-bold text-gray-900"><Ltr>{formatUSD(data.profitability.gross_profit)}</Ltr></div>
             <div className="text-[10px] text-gray-400 mt-1">{t.dashboard.since} <Ltr>{data.profitability.since}</Ltr></div>
           </div>
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.grossMargin}</div>
-            <div className="text-kpi font-bold text-gray-900">{data.profitability.gross_margin_pct !== null ? `${data.profitability.gross_margin_pct.toFixed(2)}%` : "—"}</div>
+            <div className="text-kpi font-bold text-gray-900">{data.profitability.gross_margin_pct !== null ? <Ltr>{`${data.profitability.gross_margin_pct.toFixed(2)}%`}</Ltr> : "—"}</div>
           </div>
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.profitPerGram}</div>
-            <div className="text-kpi font-bold text-gray-900">{data.profitability.profit_per_gram !== null ? formatUSD(data.profitability.profit_per_gram) : "—"}</div>
+            <div className="text-kpi font-bold text-gray-900">{data.profitability.profit_per_gram !== null ? <Ltr>{formatUSD(data.profitability.profit_per_gram)}</Ltr> : "—"}</div>
           </div>
         </div>
       )}
@@ -500,7 +500,7 @@ function AgingChips({ a, t }: {
     <div className="grid grid-cols-4 gap-1 mt-2 text-center">
       {chips.map(([label, v]) => (
         <div key={label}>
-          <div className="text-xs font-semibold text-gray-700">{formatUSD(v)}</div>
+          <div className="text-xs font-semibold text-gray-700"><Ltr>{formatUSD(v)}</Ltr></div>
           <div className="text-[9px] text-gray-400">{label}</div>
         </div>
       ))}

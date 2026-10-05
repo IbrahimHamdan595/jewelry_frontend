@@ -78,7 +78,17 @@ export function toFiniteNumber(n: unknown): number | null {
 export function formatUSD(n: Money | null | undefined) {
   const v = toFiniteNumber(n);
   if (v === null) return MISSING_AMOUNT;
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return signed(v, Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+}
+
+/**
+ * "$" in front of a formatted magnitude, and the sign in front of that:
+ * "-$5.00", not "$-5.00". An amount that rounds to zero has no sign — there is
+ * no "-$0.00".
+ */
+function signed(value: number, magnitude: string) {
+  const isZero = /^[0.,]*$/.test(magnitude);
+  return `${value < 0 && !isZero ? "-" : ""}$${magnitude}`;
 }
 
 /** Lira has no useful sub-unit: whole numbers only. */
@@ -101,7 +111,7 @@ export function formatDecimal(n: Money | null | undefined, places = 2) {
 /** A per-gram gold rate: "$141.66". Ungrouped, as the rate cards always showed it. */
 export function formatRate(n: Money | null | undefined) {
   const v = toFiniteNumber(n);
-  return v === null ? MISSING_AMOUNT : `$${v.toFixed(2)}`;
+  return v === null ? MISSING_AMOUNT : signed(v, Math.abs(v).toFixed(2));
 }
 
 // ── Dates ─────────────────────────────────────────────────────────────────────
