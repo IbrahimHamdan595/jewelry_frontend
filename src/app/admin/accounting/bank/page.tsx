@@ -11,6 +11,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { errorMessage } from "@/lib/api-client";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -34,7 +35,7 @@ export default function BankPage() {
 
   async function load() {
     try { setAccounts((await bank.cashPosition()).accounts); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, "")); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
@@ -43,7 +44,7 @@ export default function BankPage() {
   async function create() {
     setError(null);
     try { await bank.createAccount({ name, account_type: type, currency: ccy }); setName(""); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
   async function doTransfer() {
     setError(null); setOk(null);
@@ -51,7 +52,7 @@ export default function BankPage() {
       const r = await bank.transfer({ from_account_id: from, to_account_id: to, amount,
         dest_amount: destAmount || undefined, memo: "transfer", entry_date: tDate });
       setOk(`Posted ${r.entry_no}`); await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (
@@ -62,7 +63,8 @@ export default function BankPage() {
         description={a.description}
         actions={<Button variant="outline" onClick={adopt}>{a.adoptSeeded}</Button>}
       />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* "" is a failed read that came back with no reason of its own. */}
+      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
 
       <SectionCard title={a.title} flush>
         <DataTable

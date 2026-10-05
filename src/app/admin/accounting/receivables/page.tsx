@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ar, CustomerT } from "@/lib/accounting";
-import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { apiFetcher, downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfYear, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -52,7 +52,7 @@ export default function Receivables() {
       setCustomers((await ar.listCustomers()).items);
       setTie(await ar.verify());
       setAging(await ar.aging(today()));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, "")); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
@@ -70,7 +70,7 @@ export default function Receivables() {
   async function create() {
     setError(null);
     try { await ar.createCustomer({ name, credit_limit: limit || undefined }); setName(""); setLimit(""); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
   async function receipt() {
     setError(null); setOk(null);
@@ -80,7 +80,7 @@ export default function Receivables() {
         currency: rcCcy, fx_rate: rcCcy === "USD" ? "1" : (rcRate || "1"),
       });
       setOk(`Receipt ${r.receipt_no} (unapplied ${r.unapplied_amount})`); setRcAmt(""); await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   const agingCells = aging ? [
@@ -103,7 +103,8 @@ export default function Receivables() {
           </span>
         )}
       />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* "" is a failed read that came back with no reason of its own. */}
+      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
 
       {loading && !aging && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

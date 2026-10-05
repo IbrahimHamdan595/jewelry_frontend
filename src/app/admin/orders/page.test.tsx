@@ -20,7 +20,7 @@ vi.mock("swr", () => ({
     return { data: page && swr.empty ? { ...page, items: [], total: 0 } : page, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() };
   },
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), apiUrl: (p: string) => "/api" + p, api: {} }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), apiUrl: (p: string) => "/api" + p, api: {} }));
 
 // Database values and format names: not interface copy.
 const DATA = ["ORD-20260905-002", "Ibrahim", "Abu Ali", "Rana Haddad", "CSV"];

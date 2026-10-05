@@ -23,7 +23,7 @@ vi.mock("swr", () => ({
   }),
 }));
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 // The rate feed's name comes from the server.
 const DATA = ["goldapi"];

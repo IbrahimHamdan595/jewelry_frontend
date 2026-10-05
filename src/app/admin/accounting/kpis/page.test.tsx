@@ -11,7 +11,7 @@ const data = {
   metal_turnover: kpi("1.4"), dso: kpi("12"), ccc: kpi("57"), current_ratio: kpi("1.8"), quick_ratio: kpi("0.9"),
 };
 vi.mock("@/lib/accounting", () => ({ kpis: { compute: vi.fn(() => Promise.resolve(data)) } }));
-vi.mock("@/lib/api-client", () => ({ downloadFile: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), downloadFile: vi.fn() }));
 
 function renderPage(lang: "en" | "ar") {
   return render(<LanguageProvider initialLang={lang}><KpisPage /></LanguageProvider>);

@@ -11,6 +11,8 @@ export interface Translations {
     showPassword: string;
     hidePassword: string;
     failed: string;
+    /** HTTP 429 on sign-in: the per-IP rate limit, or a locked account. */
+    tooManyAttempts: string;
   };
 
   suppliers: {
@@ -615,6 +617,7 @@ export interface Translations {
     record: string;
     recording: string;
     recorded: string;
+    failed: string;
     paidTo: (amount: string, name: string) => string;
     newBuyback: string;
   };
@@ -659,6 +662,7 @@ export interface Translations {
     confirmRateAbove: string;
     confirmComplete: string;
     saleComplete: string;
+    failed: string;
     thankYou: (name: string) => string;
     items: string;
     cashier: string;
@@ -727,6 +731,8 @@ export interface Translations {
     reasonInputLabel: string;
     auditNote: string;
     setOverride: string;
+    setOverrideFailed: string;
+    clearOverrideFailed: string;
   };
 
   // NEX-64 slice 5 — admin barcode-label page
@@ -804,6 +810,7 @@ export interface Translations {
     autoPostDisableConfirm: string;
     autoPostDisableBlocked: string;
     autoPostStateUnknownBlocked: string;
+    autoPostFailed: string;
     cancel: string;
     close: string;
     saving: string;
@@ -848,6 +855,7 @@ export interface Translations {
     confirmNewPassword: string;
     updatePassword: string;
     passwordsMismatch: string;
+    changePasswordFailed: string;
     cashiers: string;
     addCashier: string;
     staffFields: { name: string; email: string; password: string };
@@ -878,6 +886,9 @@ export interface Translations {
     rateFeedDown: string;
     rateAsOf: string;
     fetchingRate: string;
+    /** Fallbacks for a failed request that came back with no reason of its own (see errorMessage). */
+    actionFailed: string;
+    downloadFailed: string;
   };
 
   stockTake: {
@@ -1270,6 +1281,7 @@ const en: Translations = {
     showPassword: "Show password",
     hidePassword: "Hide password",
     failed: "Login failed",
+    tooManyAttempts: "Too many attempts. Try again later.",
   },
 
   suppliers: {
@@ -1877,6 +1889,7 @@ const en: Translations = {
     record: "Record buy back",
     recording: "Recording…",
     recorded: "Buy back recorded",
+    failed: "Buyback failed",
     paidTo: (amount, name) => `Paid ${amount} to ${name}`,
     newBuyback: "New buy back",
   },
@@ -1915,6 +1928,7 @@ const en: Translations = {
     confirmRateAbove: "CONFIRM THE RATE ABOVE",
     confirmComplete: "CONFIRM & COMPLETE",
     saleComplete: "SALE COMPLETE",
+    failed: "Checkout failed",
     thankYou: (name) => `Thank you, ${name}`,
     items: "Items",
     cashier: "Cashier",
@@ -1982,6 +1996,8 @@ const en: Translations = {
     reasonInputLabel: "Reason for the override",
     auditNote: "Every override is logged with actor, rate, prior rate, and reason. Reason is mandatory.",
     setOverride: "Set Override",
+    setOverrideFailed: "Failed to set override",
+    clearOverrideFailed: "Failed to clear override",
   },
 
   // NEX-64 slice 5 — admin barcode-label page
@@ -2057,6 +2073,7 @@ const en: Translations = {
     autoPostDisableConfirm: "Turn off",
     autoPostDisableBlocked: "The ledger already has entries. Turning auto-posting off now would leave a gap in the books, so it can't be switched off from here. Ask your accountant how to close the books instead.",
     autoPostStateUnknownBlocked: "The ledger's state couldn't be checked, so auto-posting can't be switched off from here right now. Try again in a moment.",
+    autoPostFailed: "Failed",
     cancel: "Cancel",
     close: "Close",
     saving: "Saving…",
@@ -2101,6 +2118,7 @@ const en: Translations = {
     confirmNewPassword: "Confirm New Password",
     updatePassword: "Update Password",
     passwordsMismatch: "New passwords do not match",
+    changePasswordFailed: "Failed to change password",
     cashiers: "Cashiers",
     addCashier: "Add Cashier",
     staffFields: { name: "name", email: "email", password: "password" },
@@ -2131,6 +2149,8 @@ const en: Translations = {
     rateFeedDown: "Feed down",
     rateAsOf: "as of",
     fetchingRate: "Fetching rate…",
+    actionFailed: "Couldn't complete this action. Try again.",
+    downloadFailed: "Download failed",
   },
 
   stockTake: {

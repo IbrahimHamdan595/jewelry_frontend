@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
-import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { apiFetcher, downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -50,7 +50,7 @@ export default function Expenses() {
       setBills((await expenses.listBills()).items);
       setCat(await expenses.byCategory(firstOfMonth(), today()));
       setTie(await expenses.verify());
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -73,7 +73,7 @@ export default function Expenses() {
         currency: ccy, fx_rate: ccy === "USD" ? "1" : (rate || "1"),
         lines: [{ description: "", expense_account_id: acct, amount: amt }] });
       setOk(`Bill ${b.bill_no} (${b.status}, total ${b.total})`); setVendor(""); setAmt(""); await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (

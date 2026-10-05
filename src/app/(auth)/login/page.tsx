@@ -6,6 +6,7 @@ import { login } from "@/lib/auth";
 import { canAccess, homeFor, safeNextPath } from "@/lib/access";
 import { useLang } from "@/context/LanguageContext";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { errorMessage, errorStatus } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,8 +33,11 @@ export default function LoginPage() {
       // static page with no Suspense boundary requirement.
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       router.push(next && canAccess(user.role, next.split("?")[0]) ? next : home);
-    } catch (err: any) {
-      setError(err.message ?? t.login.failed);
+    } catch (err) {
+      // 429 is "too many attempts" from either backend: the per-IP rate limit
+      // (a body with no `detail`) or a locked account (a `detail` in English).
+      // Both get the same translated sentence.
+      setError(errorStatus(err) === 429 ? t.login.tooManyAttempts : errorMessage(err, t.login.failed));
     } finally {
       setLoading(false);
     }

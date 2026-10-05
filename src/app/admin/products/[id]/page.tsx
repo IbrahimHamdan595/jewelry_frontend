@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import useSWR from "swr";
 import { Flame, Recycle, AlertCircle, Gem } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { ProductForm } from "@/components/admin/ProductForm";
@@ -206,7 +206,7 @@ function MeltProductDialog({
       });
       await onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : pr.meltFailed);
+      setError(errorMessage(err, pr.meltFailed));
     } finally {
       setSaving(false);
     }

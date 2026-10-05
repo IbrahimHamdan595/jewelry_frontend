@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
@@ -84,8 +84,8 @@ export default function ZakatPage() {
       setSnapModalOpen(false);
       setSnapNotes("");
       await Promise.all([mutateSummary(), mutateSnapshots()]);
-    } catch (e: any) {
-      setSaveError(e.message ?? z.saveFailed);
+    } catch (e) {
+      setSaveError(errorMessage(e, z.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -94,8 +94,9 @@ export default function ZakatPage() {
   // ── render ─────────────────────────────────────────────────────────────────
 
   if (summaryErr && !summary) {
-    const msg = summaryErr.message ?? String(summaryErr);
-    const isRateUnavail = msg.includes("Gold rate") || msg.toLowerCase().includes("rate");
+    // Only what the backend itself said; a dropped connection has no message here.
+    const msg = errorMessage(summaryErr, "");
+    const isRateUnavail = msg.toLowerCase().includes("rate");
     // The rate-unavailable case is a deliberate backend message for the admin;
     // anything else is a generic failure and gets the generic state.
     if (!isRateUnavail) {

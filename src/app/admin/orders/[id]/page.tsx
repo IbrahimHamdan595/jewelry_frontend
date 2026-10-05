@@ -3,7 +3,7 @@ import { Ltr } from "@/components/shared/Ltr";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
 import { formatUSD, formatLBP } from "@/lib/utils";
@@ -91,7 +91,7 @@ export default function OrderDetailPage() {
       await mutate();
       setShowVoid(false);
     } catch (e) {
-      setVoidError(e instanceof Error ? e.message : o.voidFailed);
+      setVoidError(errorMessage(e, o.voidFailed));
     } finally {
       setVoiding(false);
     }
@@ -113,7 +113,7 @@ export default function OrderDetailPage() {
       await mutate();
       setRefundItem(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : o.refundFailed);
+      setError(errorMessage(e, o.refundFailed));
     } finally {
       setBusy(false);
     }

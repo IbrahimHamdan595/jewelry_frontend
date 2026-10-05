@@ -13,7 +13,7 @@ import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
 import { CheckoutConfirmDialog } from "@/components/pos/CheckoutConfirmDialog";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
-import { api, staleRateError } from "@/lib/api-client";
+import { api, errorMessage, staleRateError } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
 import { cn, toFiniteNumber } from "@/lib/utils";
@@ -123,9 +123,10 @@ export default function POSPage() {
       // this the dialog shows the server's message with no checkbox and a still-
       // enabled button, which just 409s again until the poll catches up.
       if (stale) refreshRate();
-      setCheckoutError(
-        stale ? stale.message : err instanceof Error ? err.message : "Checkout failed"
-      );
+      // The guard's own sentence when it is a stale-rate refusal (its `message`
+      // is the detail's readable part), any other reason the server gave, or
+      // the translated fallback when it gave none.
+      setCheckoutError(errorMessage(err, t.checkout.failed));
     } finally {
       setCheckingOut(false);
     }

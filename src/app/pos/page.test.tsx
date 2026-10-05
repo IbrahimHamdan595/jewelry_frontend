@@ -7,6 +7,7 @@ import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { formatDateTime } from "@/lib/utils";
 import en from "@/i18n/en";
+import ar from "@/i18n/ar";
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }), usePathname: () => "/pos" }));
@@ -185,5 +186,48 @@ describe("POS sell — the stale-rate acknowledgement with rate_24k as a string 
       discount_percent: 0,
       stale_rate_ack: { rate_fetched_at: FETCHED_AT },
     }]);
+  });
+});
+
+// NEX-64: a checkout that fails with no reason from the server used to print the
+// client's English ("Failed to fetch", "API error 500") in the confirm dialog.
+describe("POS sell — a failed checkout speaks the UI language", () => {
+  async function checkoutIn(lang: "en" | "ar", dict: typeof en) {
+    api.get.mockResolvedValue({ ...LOOKUP, gold_rate_24k: "141.66" });
+    render(
+      <LanguageProvider initialLang={lang}>
+        <CartProvider vatPercent={11}><POSPage /></CartProvider>
+      </LanguageProvider>,
+    );
+    fireEvent.change(screen.getByLabelText(dict.pos.manualEntry), { target: { value: "FN-21K-0001" } });
+    fireEvent.click(screen.getByRole("button", { name: dict.pos.find }));
+    await screen.findByText("Twisted Ring");
+    fireEvent.click(screen.getByRole("button", { name: dict.checkout.checkoutTotal("$773.38") }));
+    fireEvent.click(screen.getByRole("button", { name: dict.checkout.confirmComplete }));
+  }
+
+  it.each([
+    ["the connection drops", new TypeError("Failed to fetch")],
+    ["the server answers 500 with no detail", new ApiError(500, undefined)],
+  ])("Arabic, when %s: the translated fallback, the cart intact", async (_name, failure) => {
+    api.post.mockRejectedValue(failure);
+    await checkoutIn("ar", ar);
+    expect(await screen.findByText(ar.checkout.failed)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/Failed to fetch|API error/);
+    expect(storedLines()).toHaveLength(1);
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it("English keeps its wording", async () => {
+    api.post.mockRejectedValue(new TypeError("Failed to fetch"));
+    await checkoutIn("en", en);
+    expect(await screen.findByText("Checkout failed")).toBeInTheDocument();
+  });
+
+  it("a reason from the server is shown as it was sent", async () => {
+    const detail = "Insufficient stock for FN-21K-0001: requested 1, on hand 0";
+    api.post.mockRejectedValue(new ApiError(409, detail));
+    await checkoutIn("ar", ar);
+    expect(await screen.findByText(detail)).toBeInTheDocument();
   });
 });

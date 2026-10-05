@@ -6,7 +6,7 @@ import {
   ArrowLeft, ClipboardCheck, Save, ShieldCheck, ShieldAlert,
   CheckCircle2, XCircle, AlertTriangle, Info, Lock,
 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
@@ -248,8 +248,8 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
         });
       }
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? s.saveFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.saveFailed));
     } finally {
       setSavingKey(null);
     }
@@ -259,8 +259,8 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
     try {
       await api.delete(`/stock-takes/${take.id}/lines/${lineId}`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? s.removeFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.removeFailed));
     }
   }
 
@@ -274,8 +274,8 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
     try {
       await api.post(`/stock-takes/${take.id}/submit`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? s.submitFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.submitFailed));
     } finally {
       setSubmitting(false);
     }
@@ -489,8 +489,8 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
     try {
       await api.post(`/stock-takes/${take.id}/lines/${line.id}/approve`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? s.approveFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.approveFailed));
     } finally {
       setActingLineId(null);
     }
@@ -512,8 +512,8 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
       setRejectingLine(null);
       setRejectReason("");
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? s.rejectFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.rejectFailed));
     } finally {
       setActingLineId(null);
     }

@@ -7,7 +7,7 @@ const swr = vi.hoisted(() => ({ byKey: {} as Record<string, SwrState> }));
 vi.mock("swr", () => ({
   default: (key: string) => ({ data: undefined, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn(), ...(swr.byKey[key] ?? {}) }),
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 const SETTINGS = "/settings";
 const VERIFY = "/accounting/ledger/verify";

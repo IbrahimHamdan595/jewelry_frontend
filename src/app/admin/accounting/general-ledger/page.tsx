@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { accounting, GLAccount, GLDrilldown, GLDrilldownRow } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -33,7 +33,7 @@ export default function GeneralLedger() {
   useEffect(() => {
     accounting.listAccounts()
       .then((r) => { setAccounts(r.items); if (r.items.length && !accountId) setAccountId(r.items[0].id); })
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => setError(errorMessage(e, t.errors.loadFailed)));
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
@@ -48,7 +48,7 @@ export default function GeneralLedger() {
     if (!accountId) return;
     setRunning(true);
     try { setGl(await accounting.generalLedger(accountId, start, end)); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
     finally { setRunning(false); }
   }
 
@@ -59,7 +59,7 @@ export default function GeneralLedger() {
       await downloadFile(
         `/accounting/general-ledger?account_id=${accountId}&start=${start}&end=${end}&format=xlsx`,
         `general-ledger-${gl?.code ?? accountId}-${start}-${end}.xlsx`);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.downloadFailed)); }
   }
 
   const columns = [

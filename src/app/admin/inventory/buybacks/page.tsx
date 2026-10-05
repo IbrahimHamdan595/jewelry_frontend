@@ -2,7 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { Sparkles, Flame, AlertCircle } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { cn, formatUSD } from "@/lib/utils";
 import { useFormat } from "@/hooks/useFormat";
@@ -273,7 +273,7 @@ function PolishDialog({
       });
       await onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : b.polishFailed);
+      setError(errorMessage(err, b.polishFailed));
     } finally {
       setSaving(false);
     }
@@ -373,7 +373,7 @@ function MeltBuybackDialog({
       });
       await onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : b.meltFailed);
+      setError(errorMessage(err, b.meltFailed));
     } finally {
       setSaving(false);
     }

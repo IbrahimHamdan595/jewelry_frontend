@@ -2,7 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Sliders, History } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorRow, ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useFormat } from "@/hooks/useFormat";
@@ -266,7 +266,7 @@ function NewLotForm({
       });
       await onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : l.createFailed);
+      setError(errorMessage(err, l.createFailed));
     } finally {
       setSaving(false);
     }
@@ -395,7 +395,7 @@ function AdjustLotDialog({
       });
       await onAdjusted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : l.adjustFailed);
+      setError(errorMessage(err, l.adjustFailed));
     } finally {
       setSaving(false);
     }

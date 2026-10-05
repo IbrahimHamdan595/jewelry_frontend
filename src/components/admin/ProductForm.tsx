@@ -4,7 +4,7 @@ import { useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 import { ImagePlus, Star, Trash2, Loader2 } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { apiFetcher, uploadFile } from "@/lib/api-client";
+import { apiFetcher, uploadFile, errorMessage } from "@/lib/api-client";
 import { calculatePrice, formatUSD, KARAT_LABEL, toFiniteNumber } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import type { Category, Product, Settings } from "@/types/api";
@@ -136,8 +136,8 @@ export function ProductForm({ initial, onSave }: Props) {
           { url, isHero: prev.length === 0, order: prev.length },
         ]);
       }
-    } catch (err: any) {
-      setUploadError(err.message ?? p.uploadFailed);
+    } catch (err) {
+      setUploadError(errorMessage(err, p.uploadFailed));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";

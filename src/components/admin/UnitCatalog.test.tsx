@@ -29,7 +29,7 @@ vi.mock("swr", () => ({
     return { data: { items, total: items.length, page: 1, page_size: 100 }, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() };
   },
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), uploadFile: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), uploadFile: vi.fn(), api: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 
 type Dict = typeof en;
 function renderCatalog(lang: "en" | "ar", resource: "coins" | "ounces" = "coins") {

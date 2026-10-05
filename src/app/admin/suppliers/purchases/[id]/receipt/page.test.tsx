@@ -8,7 +8,7 @@ import ar from "@/i18n/ar";
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "p1" }) }));
 const swr = vi.hoisted(() => ({ error: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: undefined, error: swr.error, isLoading: !swr.error, isValidating: false, mutate: vi.fn() }) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), ApiError: class ApiError extends Error {} }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn() }));
 // The receipt itself is a shared component with its own bilingual table.
 vi.mock("@/components/shared/Receipt", () => ({ ReceiptScreen: () => null }));
 

@@ -9,6 +9,7 @@ import { SectionCard } from "@/components/accounting/SectionCard";
 import { DataTable } from "@/components/accounting/DataTable";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
+import { errorMessage } from "@/lib/api-client";
 
 type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
 
@@ -29,7 +30,7 @@ export default function Payables() {
         setTie(await ap.verify());
         setAging(await ap.aging(today()));
         setSups((await ap.balances()).suppliers);
-      } catch (e) { setError((e as Error).message); }
+      } catch (e) { setError(errorMessage(e, "")); }
       finally { setLoading(false); }
     })();
   }, []);
@@ -57,7 +58,8 @@ export default function Payables() {
           </span>
         )}
       />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* "" is a failed read that came back with no reason of its own. */}
+      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
 
       {loading && !aging && (
         <div className="space-y-6">

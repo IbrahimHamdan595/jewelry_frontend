@@ -12,7 +12,7 @@ const gold = vi.hoisted(() => ({ rate: undefined as unknown }));
 vi.mock("@/hooks/useGoldRate", () => ({
   useGoldRate: () => ({ rate: gold.rate, refresh: vi.fn(), error: undefined, isLoading: false, isValidating: false }),
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), uploadFile: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), uploadFile: vi.fn() }));
 
 function renderForm(lang: "en" | "ar") {
   return render(

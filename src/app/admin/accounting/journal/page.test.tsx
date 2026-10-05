@@ -13,7 +13,7 @@ vi.mock("@/lib/accounting", () => ({
     postEntry: lib.postEntry,
   },
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(() => Promise.resolve({ lbp_exchange_rate: 89500 })) }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(() => Promise.resolve({ lbp_exchange_rate: 89500 })) }));
 
 async function renderPage(lang: "en" | "ar") {
   render(<LanguageProvider initialLang={lang}><JournalPage /></LanguageProvider>);

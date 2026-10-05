@@ -13,7 +13,7 @@ vi.mock("swr", () => ({
   },
 }));
 const api = vi.hoisted(() => ({ get: vi.fn() }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 const REF_ID = "7b1e4c90-55aa-4d2f-9c11-0a1b2c3d4e5f";
 const ACTOR_ID = "c0ffee12-0000-4000-8000-000000000001";

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor, act } from "@testing-library/react";
 import OrderDetailPage from "@/app/admin/orders/[id]/page";
+import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ar from "@/i18n/ar";
 
@@ -8,7 +9,7 @@ const swr = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "o1" }) }));
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 const item = (over: Record<string, unknown>) => ({
   id: "i1", item_kind: "PRODUCT", product_id: "p1", coin_type_id: null, ounce_type_id: null, quantity: 3,
@@ -189,7 +190,7 @@ describe("order detail: voiding an order", () => {
   });
 
   it("stays open and shows the server's reason when the void fails", async () => {
-    api.post.mockRejectedValueOnce(new Error("Order already voided"));
+    api.post.mockRejectedValueOnce(new ApiError(400, "Order already voided")); // POST /orders/{id}/void on a voided order
     openVoidPanel("duplicate sale");
     confirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("Order already voided");

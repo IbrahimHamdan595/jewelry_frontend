@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { formatUSD } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { Ltr } from "@/components/shared/Ltr";
@@ -172,7 +172,7 @@ export default function NewPurchasePage() {
       await api.post(`/suppliers/${id}/purchases`, body);
       router.push(`/admin/suppliers/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : sp.saveFailed);
+      setError(errorMessage(err, sp.saveFailed));
     } finally {
       setSaving(false);
     }

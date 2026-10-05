@@ -2,7 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import type { Category } from "@/types/api";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -62,7 +62,7 @@ export default function CategoriesPage() {
       setShowForm(false);
     } catch (err) {
       // A rejected save used to vanish; the form stays open and says why.
-      setSaveErr(err instanceof Error ? err.message : c.saveFailed);
+      setSaveErr(errorMessage(err, c.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -82,7 +82,7 @@ export default function CategoriesPage() {
       setDeleting(null);
       await mutate();
     } catch (err) {
-      setDelErr(err instanceof Error ? err.message : c.deleteFailed);
+      setDelErr(errorMessage(err, c.deleteFailed));
     } finally {
       setDelBusy(false);
     }

@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
-import { apiFetcher, api, uploadFile } from "@/lib/api-client";
+import { apiFetcher, api, uploadFile, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { formatRate, formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -324,8 +324,8 @@ function UnitTypeForm({
       fd.append("file", file);
       const { url } = await uploadFile<{ url: string }>("/products/upload-image", fd);
       setPhotoUrl(url);
-    } catch (err: any) {
-      setUploadError(err?.message ?? u.uploadFailed);
+    } catch (err) {
+      setUploadError(errorMessage(err, u.uploadFailed));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -356,7 +356,7 @@ function UnitTypeForm({
       }
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : u.saveFailed);
+      setError(errorMessage(err, u.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -578,7 +578,7 @@ function StockAdjustDialog({
       });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : u.adjustFailed);
+      setError(errorMessage(err, u.adjustFailed));
     } finally {
       setSaving(false);
     }
@@ -681,7 +681,7 @@ function LivePriceDialog({
           <div className="text-xs text-gray-500 mt-0.5 font-mono"><Ltr>{row.code}</Ltr></div>
         </div>
         {isLoading && <div className="text-sm text-gray-500">{u.pricing}</div>}
-        {error && <div role="alert" className="text-sm text-red-600">{(error as Error).message}</div>}
+        {error && <div role="alert" className="text-sm text-red-600">{errorMessage(error, t.errors.loadFailed)}</div>}
         {data && (
           <>
             <div className="text-center py-3">

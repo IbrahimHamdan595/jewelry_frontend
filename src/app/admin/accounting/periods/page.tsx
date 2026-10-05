@@ -10,6 +10,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { errorMessage } from "@/lib/api-client";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -42,7 +43,7 @@ export default function PeriodsPage() {
   async function open() {
     setError(null);
     try { await accounting.openPeriod(year, month); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   async function check(p: Period) {
@@ -50,7 +51,7 @@ export default function PeriodsPage() {
     try {
       const r = await periodClose.readiness(p.year, p.period_no);
       setChecking((c) => ({ ...c, [p.id]: r }));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
   }
   async function close(p: Period) {
     setError(null);
@@ -58,17 +59,17 @@ export default function PeriodsPage() {
       await accounting.closePeriod(p.id);
       setChecking((c) => { const n = { ...c }; delete n[p.id]; return n; });
       await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
   async function reopen(p: Period) {
     setError(null);
     try { await accounting.reopenPeriod(p.id); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   async function previewYear() {
     setYearMsg(null);
-    try { setPreview(await periodClose.yearPreview(yr)); } catch (e) { setYearMsg((e as Error).message); }
+    try { setPreview(await periodClose.yearPreview(yr)); } catch (e) { setYearMsg(errorMessage(e, t.errors.loadFailed)); }
   }
   async function doCloseYear() {
     setYearMsg(null);
@@ -77,7 +78,7 @@ export default function PeriodsPage() {
       setYearMsg(x.yearClosed(yr, r.entry_no, r.opened_periods.length, yr + 1));
       setPreview(null);
       await load();
-    } catch (e) { setYearMsg((e as Error).message); }
+    } catch (e) { setYearMsg(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (

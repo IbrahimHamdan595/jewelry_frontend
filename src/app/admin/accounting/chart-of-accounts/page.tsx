@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/accounting/SectionCard";
 import { ActionBar } from "@/components/accounting/ActionBar";
 import { DataTable } from "@/components/accounting/DataTable";
 import { Button } from "@/components/ui/button";
+import { errorMessage } from "@/lib/api-client";
 
 export default function ChartOfAccounts() {
   const { t } = useLang();
@@ -23,7 +24,7 @@ export default function ChartOfAccounts() {
     try {
       const r = await accounting.listAccounts();
       setAccounts(r.items);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, "")); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
@@ -36,7 +37,8 @@ export default function ChartOfAccounts() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* "" is a failed read that came back with no reason of its own. */}
+      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
 
       {!loading && accounts.length === 0 && (
         <ActionBar>

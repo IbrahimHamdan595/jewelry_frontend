@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import CategoriesPage from "@/app/admin/categories/page";
+import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
 import en from "@/i18n/en";
 import ar from "@/i18n/ar";
@@ -10,7 +11,7 @@ const api = vi.hoisted(() => ({ post: vi.fn(), patch: vi.fn(), delete: vi.fn() }
 vi.mock("swr", () => ({
   default: () => ({ data: swr.categories, error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }),
 }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 // The confirm dialog is a shared component with its own copy (not part of this
 // slice). Stand in for it so these tests only speak for the categories screen.
 vi.mock("@/components/admin/ConfirmDeleteDialog", () => ({
@@ -185,7 +186,7 @@ describe("categories in Arabic (NEX-64)", () => {
 
 describe("categories — a failed save is no longer silent (NEX-64)", () => {
   it("announces the failure, keeps the form and what was typed, and lets the user try again", async () => {
-    api.post.mockRejectedValueOnce(new Error(SLUG_TAKEN));
+    api.post.mockRejectedValueOnce(new ApiError(409, SLUG_TAKEN));
     renderPage("ar");
     fireEvent.click(screen.getByRole("button", { name: ar.categories.addCategory }));
     fireEvent.change(screen.getByLabelText(ar.common.nameEn), { target: { value: "Rings" } });
@@ -208,7 +209,7 @@ describe("categories — a failed save is no longer silent (NEX-64)", () => {
   });
 
   it("does not carry an old failure into the next time the form opens", async () => {
-    api.patch.mockRejectedValueOnce(new Error(SLUG_TAKEN));
+    api.patch.mockRejectedValueOnce(new ApiError(409, SLUG_TAKEN));
     renderPage("en");
     fireEvent.click(rowButton(en, en.common.edit, "Rings"));
     fireEvent.click(screen.getByRole("button", { name: en.common.save }));
@@ -221,7 +222,7 @@ describe("categories — a failed save is no longer silent (NEX-64)", () => {
 
 describe("categories — a refused delete", () => {
   it("shows the server's reason in the confirm dialog", async () => {
-    api.delete.mockRejectedValueOnce(new Error(IN_USE));
+    api.delete.mockRejectedValueOnce(new ApiError(409, IN_USE));
     renderPage("ar");
     fireEvent.click(rowButton(ar, ar.categories.deletePermanently, "Rings"));
     fireEvent.click(screen.getByRole("button", { name: "confirm-delete" }));

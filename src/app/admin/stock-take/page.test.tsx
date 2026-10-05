@@ -10,7 +10,7 @@ vi.mock("swr", () => ({ default: () => ({ data: swr.data, error: undefined, isLo
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }) }));
 const api = vi.hoisted(() => ({ post: vi.fn() }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 const STARTED = "2026-09-05T10:00:00Z";
 const CLOSED = "2026-09-06T08:30:00Z";

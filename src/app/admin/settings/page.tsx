@@ -2,7 +2,7 @@
 import { Ltr } from "@/components/shared/Ltr";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/context/LanguageContext";
@@ -60,7 +60,7 @@ export default function SettingsPage() {
       await mutate(); // the switch renders the server's answer, never the click
       setAutoPostPrompt(null);
     } catch (e) {
-      setAutoPostError(e instanceof Error ? e.message : "Failed");
+      setAutoPostError(errorMessage(e, t.settings.autoPostFailed));
     } finally {
       setAutoPostBusy(false);
     }
@@ -99,8 +99,8 @@ export default function SettingsPage() {
       setPwSuccess(true);
       setPwForm({ current_password: "", new_password: "", confirm: "" });
       setTimeout(() => setPwSuccess(false), 3000);
-    } catch (e: any) {
-      setPwError(e.message ?? "Failed to change password");
+    } catch (e) {
+      setPwError(errorMessage(e, t.settings.changePasswordFailed));
     } finally {
       setPwSaving(false);
     }

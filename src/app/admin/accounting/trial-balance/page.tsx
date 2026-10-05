@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { accounting, TrialBalance } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -29,7 +29,7 @@ export default function TrialBalancePage() {
     setError(null);
     setRunning(true);
     try { setTb(await accounting.trialBalance(asOf)); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
     finally { setRunning(false); }
   }
 

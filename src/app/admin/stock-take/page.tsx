@@ -12,7 +12,7 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
 import { useFormat } from "@/hooks/useFormat";
@@ -36,8 +36,8 @@ export default function StockTakeIndexPage() {
     try {
       const created = await api.post<StockTake>("/stock-takes", { notes: null });
       router.push(`/admin/stock-take/${created.id}`);
-    } catch (e: any) {
-      setError(e.message ?? s.startFailed);
+    } catch (e) {
+      setError(errorMessage(e, s.startFailed));
       setStarting(false);
     }
   }

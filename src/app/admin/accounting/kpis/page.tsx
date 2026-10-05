@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { kpis } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -25,7 +25,7 @@ export default function Kpis() {
 
   async function run() {
     setError(null);
-    try { setData(await kpis.compute(start, end)); } catch (e) { setError((e as Error).message); }
+    try { setData(await kpis.compute(start, end)); } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
   }
   useEffect(() => { run(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 

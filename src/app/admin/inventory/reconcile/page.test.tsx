@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import InventoryReconcilePage from "@/app/admin/inventory/reconcile/page";
+import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
 import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
 const api = vi.hoisted(() => ({ get: vi.fn() }));
-vi.mock("@/lib/api-client", () => ({ api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api }));
 
 // The response of GET /inventory/reconcile-units (jewelry_backend/app/api/inventory.py):
 // plain integers, drift = stored − computed, codes with the karat label, and a
@@ -164,7 +165,7 @@ describe("stock reconcile in Arabic (NEX-64)", () => {
 
   it("announces a failed run, with the server's message as received", async () => {
     // What the API client throws for a 403 from require_admin.
-    api.get.mockRejectedValueOnce(new Error("Admin access required"));
+    api.get.mockRejectedValueOnce(new ApiError(403, "Admin access required"));
     renderPage("ar");
     fireEvent.click(screen.getByRole("button", { name: ar.reconcile.run }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Admin access required");

@@ -18,7 +18,7 @@ vi.mock("swr", () => ({
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(), useRouter: () => ({ replace: vi.fn() }), usePathname: () => "/admin/products" }));
 const gold = vi.hoisted(() => ({ rate: { rate_24k: 100 } as unknown }));
 vi.mock("@/hooks/useGoldRate", () => ({ useGoldRate: () => ({ rate: gold.rate }) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { patch: vi.fn(), delete: vi.fn() } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api: { patch: vi.fn(), delete: vi.fn() } }));
 
 // Database values: product names and codes, and the category name.
 const DATA = ["Twisted Ring", "Rope Bracelet", "RNG-0042", "BRC-0007", "Rings"];

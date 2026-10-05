@@ -7,7 +7,7 @@ import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
-import { api, apiFetcher, staleRateError } from "@/lib/api-client";
+import { api, apiFetcher, errorMessage, staleRateError } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { logout, getStoredUser } from "@/lib/auth";
@@ -229,9 +229,7 @@ function PureGoldForm() {
       const stale = staleRateError(err);
       // Pull market_closed immediately; don't wait for the 30s poll.
       if (stale) guard.refresh();
-      setError(
-        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
-      );
+      setError(errorMessage(err, t.posBuyback.failed));
     } finally {
       setSubmitting(false);
     }
@@ -375,9 +373,7 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
       const stale = staleRateError(err);
       // Pull market_closed immediately; don't wait for the 30s poll.
       if (stale) guard.refresh();
-      setError(
-        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
-      );
+      setError(errorMessage(err, t.posBuyback.failed));
     } finally {
       setSubmitting(false);
     }
@@ -520,9 +516,7 @@ function UsedProductForm() {
       const stale = staleRateError(err);
       // Pull market_closed immediately; don't wait for the 30s poll.
       if (stale) guard.refresh();
-      setError(
-        stale ? stale.message : err instanceof Error ? err.message : "Buyback failed"
-      );
+      setError(errorMessage(err, t.posBuyback.failed));
     } finally {
       setSubmitting(false);
     }

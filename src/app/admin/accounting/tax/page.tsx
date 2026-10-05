@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { tax, TaxCodeT } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -31,7 +31,7 @@ export default function Tax() {
   const [error, setError] = useState<string | null>(null);
 
   async function loadCodes() {
-    try { setCodes((await tax.listCodes()).items); } catch (e) { setError((e as Error).message); }
+    try { setCodes((await tax.listCodes()).items); } catch (e) { setError(errorMessage(e, "")); }
     finally { setLoading(false); }
   }
   useEffect(() => { loadCodes(); }, []);
@@ -39,13 +39,14 @@ export default function Tax() {
   async function seed() { await tax.seedCodes(); await loadCodes(); }
   async function runReturn() {
     setError(null);
-    try { setRet(await tax.vatReturn(year, quarter)); } catch (e) { setError((e as Error).message); }
+    try { setRet(await tax.vatReturn(year, quarter)); } catch (e) { setError(errorMessage(e, "")); }
   }
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.description} />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* "" is a failed read that came back with no reason of its own. */}
+      {error !== null && <div className="text-sm text-red-600">{error || t.errors.loadFailed}</div>}
 
       <SectionCard
         title={a.taxCodes}

@@ -6,7 +6,7 @@ import ar from "@/i18n/ar";
 
 const lib = vi.hoisted(() => ({ listCodes: vi.fn(), vatReturn: vi.fn() }));
 vi.mock("@/lib/accounting", () => ({ tax: { listCodes: lib.listCodes, seedCodes: vi.fn(), vatReturn: lib.vatReturn } }));
-vi.mock("@/lib/api-client", () => ({ downloadFile: vi.fn() }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), downloadFile: vi.fn() }));
 
 const vatReturn = { year: 2026, quarter: 3, output_vat: "110.00", input_vat: "40.00", net_payable: "70.00", direction: "PAYABLE", cash_split: null, transactions: [] };
 

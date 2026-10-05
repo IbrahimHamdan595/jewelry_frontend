@@ -7,7 +7,7 @@ import ar from "@/i18n/ar";
 const swr = vi.hoisted(() => ({ byKey: {} as Record<string, unknown> }));
 vi.mock("swr", () => ({ default: (key: string) => ({ data: swr.byKey[key], error: undefined, isLoading: false, isValidating: false, mutate: vi.fn() }) }));
 const api = vi.hoisted(() => ({ post: vi.fn<(path: string, body?: unknown) => Promise<unknown>>(() => Promise.resolve({})), patch: vi.fn(() => Promise.resolve({})), delete: vi.fn(() => Promise.resolve({})) }));
-vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), apiFetcher: vi.fn(), api }));
 
 const TAKE_ID = "3f2a9c1b-0000-4000-8000-000000000001";
 const COIN_ID = "c01dbeef-0000-4000-8000-000000000002";

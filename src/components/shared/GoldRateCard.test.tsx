@@ -14,7 +14,7 @@ type HookValue = {
 
 const hook = vi.hoisted(() => ({ value: {} as HookValue }));
 vi.mock("@/hooks/useGoldRate", () => ({ useGoldRate: () => hook.value }));
-vi.mock("@/lib/api-client", () => ({ api: { post: vi.fn(() => Promise.resolve()) } }));
+vi.mock("@/lib/api-client", async (orig) => ({ ...(await orig<typeof import("@/lib/api-client")>()), api: { post: vi.fn(() => Promise.resolve()) } }));
 
 const rate: GoldRate = {
   rate_24k: 141.66,

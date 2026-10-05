@@ -14,6 +14,7 @@ const ar: Translations = {
     showPassword: "إظهار كلمة المرور",
     hidePassword: "إخفاء كلمة المرور",
     failed: "فشل تسجيل الدخول",
+    tooManyAttempts: "محاولات كثيرة جداً. حاول مجدداً لاحقاً.",
   },
 
   suppliers: {
@@ -637,6 +638,7 @@ const ar: Translations = {
     record: "تسجيل إعادة الشراء",
     recording: "جارٍ التسجيل…",
     recorded: "تم تسجيل إعادة الشراء",
+    failed: "تعذّر تسجيل إعادة الشراء",
     paidTo: (amount, name) => `تم دفع \u2066${amount}\u2069 إلى \u2068${name}\u2069`,
     newBuyback: "إعادة شراء جديدة",
   },
@@ -675,6 +677,7 @@ const ar: Translations = {
     confirmRateAbove: "أكّد السعر أعلاه",
     confirmComplete: "تأكيد وإتمام",
     saleComplete: "تم البيع",
+    failed: "تعذّر إتمام الشراء",
     thankYou: (name) => `شكراً لك، ${name}`,
     items: "الأصناف",
     cashier: "أمين الصندوق",
@@ -742,6 +745,8 @@ const ar: Translations = {
     reasonInputLabel: "سبب التجاوز",
     auditNote: "يُسجَّل كل تجاوز مع المنفّذ والسعر والسعر السابق والسبب. السبب إلزامي.",
     setOverride: "تعيين التجاوز",
+    setOverrideFailed: "تعذّر تعيين التجاوز",
+    clearOverrideFailed: "تعذّرت إزالة التجاوز",
   },
 
   // NEX-64 الشريحة 5 — صفحة ملصقات الباركود في لوحة الإدارة
@@ -818,6 +823,7 @@ const ar: Translations = {
     autoPostDisableConfirm: "إيقاف",
     autoPostDisableBlocked: "يحتوي دفتر الأستاذ على قيود بالفعل. إيقاف الترحيل التلقائي الآن سيترك فجوة في الدفاتر، لذا لا يمكن إيقافه من هنا. اسأل محاسبك عن طريقة إقفال الدفاتر بدلاً من ذلك.",
     autoPostStateUnknownBlocked: "تعذّر التحقق من حالة دفتر الأستاذ، لذا لا يمكن إيقاف الترحيل التلقائي من هنا الآن. حاول مجدداً بعد قليل.",
+    autoPostFailed: "تعذّر تغيير الإعداد",
     cancel: "إلغاء",
     close: "إغلاق",
     saving: "جارٍ الحفظ…",
@@ -862,6 +868,7 @@ const ar: Translations = {
     confirmNewPassword: "تأكيد كلمة المرور الجديدة",
     updatePassword: "تحديث كلمة المرور",
     passwordsMismatch: "كلمتا المرور الجديدتان غير متطابقتين",
+    changePasswordFailed: "تعذّر تغيير كلمة المرور",
     cashiers: "أمناء الصندوق",
     addCashier: "إضافة أمين صندوق",
     staffFields: { name: "الاسم", email: "البريد الإلكتروني", password: "كلمة المرور" },
@@ -892,6 +899,8 @@ const ar: Translations = {
     rateFeedDown: "المصدر متوقف",
     rateAsOf: "بتاريخ",
     fetchingRate: "جارٍ جلب السعر…",
+    actionFailed: "تعذّر إتمام العملية. حاول مجددًا.",
+    downloadFailed: "تعذّر التنزيل",
   },
 
   stockTake: {

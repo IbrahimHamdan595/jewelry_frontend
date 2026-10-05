@@ -5,7 +5,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Plus, Edit2, ToggleLeft, ToggleRight, Trash2, Image as ImageIcon } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { useGoldRate } from "@/hooks/useGoldRate";
@@ -125,7 +125,7 @@ function ProductsTab() {
       setDeleting(null);
       mutate();
     } catch (err) {
-      setDelErr(err instanceof Error ? err.message : pr.deleteFailed);
+      setDelErr(errorMessage(err, pr.deleteFailed));
     } finally {
       setDelBusy(false);
     }

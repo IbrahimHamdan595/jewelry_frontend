@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { accounting, GLAccount, JournalEntry } from "@/lib/accounting";
-import { apiFetcher } from "@/lib/api-client";
+import { apiFetcher, errorMessage } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -112,7 +112,7 @@ export default function Journal() {
       setOk(x.posted(e.entry_no));
       setRows([{ ...EMPTY }, { ...EMPTY }]); setMemo("");
       await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (
