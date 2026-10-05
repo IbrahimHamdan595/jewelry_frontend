@@ -694,7 +694,7 @@ function LivePriceDialog({
               <Row label={u.spot24k} value={`${formatRate(data.gold_rate_24k)}/g`} />
               <Row
                 label={u.effectiveRate}
-                value={`$${Number(data.effective_rate).toFixed(2)}/g`}
+                value={`${formatRate(data.effective_rate)}/g`}
                 note={<>{" "}{u.markupApplied}</>}
               />
               <Row label={u.metalValue} value={formatUSD(data.metal_value)} />

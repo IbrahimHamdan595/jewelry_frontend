@@ -633,7 +633,7 @@ const ar: Translations = {
     perUnitFormula: "للوحدة (حسب المعادلة)",
     totalBuyPrice: "إجمالي سعر الشراء",
     rate: "السعر",
-    rateLine: (rate, source, stale) => `\u2066$${rate}/غ\u2069 (24K) · ${source}${stale ? " (قديم)" : ""}`,
+    rateLine: (rate, source, stale) => `\u2066${rate}/غ\u2069 (24K) · ${source}${stale ? " (قديم)" : ""}`,
     sellerRequired: "اسم البائع ورقم الهاتف مطلوبان.",
     record: "تسجيل إعادة الشراء",
     recording: "جارٍ التسجيل…",

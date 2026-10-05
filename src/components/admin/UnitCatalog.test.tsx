@@ -382,6 +382,19 @@ describe("UnitCatalog live price — the rate as a decimal string or a number (N
     expect(spot).toBe("Spot 24K—/g");
     expect(html).not.toContain("NaN");
   });
+
+  it.each([
+    ["a string", "100.50", "$100.50/g"],
+    ["a number", 100.5, "$100.50/g"],
+    ["missing", undefined, "—/g"],
+    ["null", null, "—/g"],
+    ["unreadable", "n/a", "—/g"],
+  ])("the effective rate as %s", (_name, effective_rate, shown) => {
+    db.price = { ...PRICE, effective_rate };
+    renderCatalog("en");
+    fireEvent.click(rowButton(en, "Live price"));
+    expect(screen.getByText("Effective rate").parentElement).toHaveTextContent(`Effective rate${shown} (markup applied)`);
+  });
 });
 
 describe("unitCatalog dictionary is translated, not English placeholders", () => {

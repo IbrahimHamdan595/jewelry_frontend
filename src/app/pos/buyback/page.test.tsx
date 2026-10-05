@@ -127,7 +127,7 @@ describe("POS buyback — labels and i18n (NEX-64)", () => {
     fireEvent.change(screen.getByLabelText(ar.common.quantity), { target: { value: "2" } });
     expect(screen.getByText(b.totalBuyPrice).nextElementSibling).toHaveTextContent("$1,841.80");
     // The rate source ("live") is an API enum, translated; the amount keeps its order.
-    expect(screen.getByText(b.rate).nextElementSibling).toHaveTextContent(b.rateLine("141.66", ar.goldRate.sources.live, false));
+    expect(screen.getByText(b.rate).nextElementSibling).toHaveTextContent(b.rateLine("$141.66", ar.goldRate.sources.live, false));
     expect(englishLeft(container, DATA)).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: b.priceModeManual }));
     expect(screen.getByLabelText(b.manualPriceUsdTotal)).toBeInTheDocument();
@@ -246,6 +246,77 @@ describe("POS buyback — what is sent is unchanged", () => {
     fireEvent.change(screen.getByLabelText(ar.products.weightGrams), { target: { value: "5" } });
     fireEvent.click(screen.getByRole("button", { name: b.record }));
     expect(await screen.findByText(detail)).toBeInTheDocument();
+  });
+});
+
+// BuybackQuoteOut (GET /buybacks/quote) is all Decimals: strings on the wire.
+// The quote rows printed `$${Number(x).toFixed(2)}`, which turns a missing
+// figure into "$NaN/g" and a null one into a confident "$0.00/g".
+describe("POS buyback — quote figures are formatted, never NaN or a made-up zero (NEX-54)", () => {
+  beforeEach(() => {
+    nav.push.mockClear();
+    api.post.mockReset();
+    swr.byKey = { "/gold-price": RATE, "/coins?is_active=true&page_size=200": COINS, [COIN_QUOTE_KEY]: COIN_QUOTE };
+  });
+
+  const row = (label: string) => screen.getByText(label).nextElementSibling?.textContent;
+  function quoteCard(quote: unknown) {
+    swr.byKey[QUOTE_KEY] = quote;
+    const view = renderPage("en");
+    fireEvent.change(screen.getByLabelText(en.products.weightGrams), { target: { value: "5" } });
+    const rows = ["Spot 24K", "Purity rate", "Buyback margin", "Effective", "Pay seller"].map(row);
+    view.unmount();
+    return rows;
+  }
+
+  it("prints the same card whether the figures arrive as strings or as numbers", () => {
+    const fromStrings = quoteCard(QUOTE);
+    const fromNumbers = quoteCard({ ...QUOTE, rate_24k: 141.66, purity_rate: 123.95, margin_value: 2, effective_rate_per_gram: 121.95, buy_price: 609.76 });
+    expect(fromStrings).toEqual(["$141.66/g", "$123.95/g (K21)", "−$2.00/g", "$121.95/g", "$609.76"]);
+    expect(fromNumbers).toEqual(fromStrings);
+  });
+
+  it("a percentage margin reads as a percentage", () => {
+    expect(quoteCard({ ...QUOTE, margin_mode: "PERCENT", margin_value: "1.50" })[2]).toBe("1.50%");
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["null", null],
+    ["unreadable", "n/a"],
+  ])("a %s figure shows the missing-amount dash", (_name, bad) => {
+    const rows = quoteCard({ ...QUOTE, rate_24k: bad, purity_rate: bad, margin_value: bad, effective_rate_per_gram: bad, buy_price: bad });
+    expect(rows).toEqual(["—/g", "—/g (K21)", "—", "—/g", "—"]);
+    for (const text of rows) {
+      expect(text).not.toMatch(/NaN/);
+      expect(text).not.toContain("0.00");
+    }
+  });
+
+  function perUnit(quote: unknown, qty = "2") {
+    swr.byKey[COIN_QUOTE_KEY] = quote;
+    const view = renderPage("en");
+    const b = en.posBuyback;
+    fireEvent.click(screen.getByRole("button", { name: b.kinds.COIN }));
+    fireEvent.change(screen.getByLabelText(b.coinType), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText(en.common.quantity), { target: { value: qty } });
+    const rows = [b.perUnitFormula, b.totalBuyPrice, b.rate].map(row);
+    view.unmount();
+    return rows;
+  }
+
+  it("the per-unit quote: price, total and rate, the same for strings and numbers", () => {
+    const fromStrings = perUnit(COIN_QUOTE);
+    expect(fromStrings).toEqual(["$920.90", "$1,841.80", "$141.66/g (24K) · live"]);
+    expect(perUnit({ ...COIN_QUOTE, rate_24k: 141.66, buy_price: 920.9 })).toEqual(fromStrings);
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["null", null],
+    ["unreadable", "n/a"],
+  ])("the per-unit quote with a %s price and rate shows dashes, not $0.00 × 2", (_name, bad) => {
+    expect(perUnit({ ...COIN_QUOTE, rate_24k: bad, buy_price: bad })).toEqual(["—", "—", "—/g (24K) · live"]);
   });
 });
 

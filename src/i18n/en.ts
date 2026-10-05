@@ -612,6 +612,7 @@ export interface Translations {
     perUnitFormula: string;
     totalBuyPrice: string;
     rate: string;
+    /** `rate` arrives formatted ("$141.66", or the missing-amount dash). */
     rateLine: (rate: string, source: string, stale: boolean) => string;
     sellerRequired: string;
     record: string;
@@ -1888,7 +1889,7 @@ const en: Translations = {
     perUnitFormula: "Per unit (formula)",
     totalBuyPrice: "Total buy price",
     rate: "Rate",
-    rateLine: (rate, source, stale) => `$${rate}/g (24K) · ${source}${stale ? " (stale)" : ""}`,
+    rateLine: (rate, source, stale) => `${rate}/g (24K) · ${source}${stale ? " (stale)" : ""}`,
     sellerRequired: "Seller name and phone are required.",
     record: "Record buy back",
     recording: "Recording…",

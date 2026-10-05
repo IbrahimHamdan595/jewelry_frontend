@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
-import { formatUSD, formatLBP } from "@/lib/utils";
+import { formatUSD, formatLBP, formatRate } from "@/lib/utils";
 import { useFormat } from "@/hooks/useFormat";
 import { useLang } from "@/context/LanguageContext";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
                   <td className="px-4 py-3 text-gray-700 font-semibold">×{item.quantity}</td>
                   <td className="px-4 py-3"><KaratBadge karat={item.karat} /></td>
                   <td className="px-4 py-3 text-gray-600">{Number(item.weight_grams).toFixed(3)}{t.dashboard.grams}</td>
-                  <td className="px-4 py-3 text-gray-600">${Number(item.gold_rate_at_sale).toFixed(2)}{t.products.perGram}</td>
+                  <td className="px-4 py-3 text-gray-600">{formatRate(item.gold_rate_at_sale)}{t.products.perGram}</td>
                   <td className="px-4 py-3 font-semibold">{formatUSD(item.final_price)}</td>
                   <td className="px-4 py-3 text-end">
                     {canRefundItems && remaining > 0 ? (

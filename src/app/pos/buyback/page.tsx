@@ -9,7 +9,7 @@ import { PosModeTabs } from "@/components/pos/PosModeTabs";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { api, apiFetcher, errorMessage, staleRateError } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatDecimal, formatRate, formatUSD, MISSING_AMOUNT, toFiniteNumber } from "@/lib/utils";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
 import { useLang } from "@/context/LanguageContext";
@@ -339,8 +339,9 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
   const { data: perUnitQuote, error: perUnitQuoteError, isValidating: perUnitQuoteValidating, mutate: mutatePerUnitQuote } = useSWR<QuoteOut>(quoteKey, apiFetcher);
 
   const quantity = Math.max(1, Number(qty) || 1);
-  const totalQuote =
-    perUnitQuote && Number(perUnitQuote.buy_price) * quantity;
+  // A quote whose price cannot be read has no total: a dash, not $0.00 × quantity.
+  const unitBuyPrice = toFiniteNumber(perUnitQuote?.buy_price);
+  const totalQuote = unitBuyPrice !== null ? unitBuyPrice * quantity : null;
 
   async function submit() {
     if (!seller.sellerName || !seller.sellerPhone) {
@@ -423,14 +424,14 @@ function UnitForm({ kind }: { kind: "COIN" | "OUNCE" }) {
             label={t.posBuyback.totalBuyPrice}
             value={
               <span className="text-gold font-semibold text-base">
-                {formatUSD(totalQuote ?? 0)}
+                {formatUSD(totalQuote)}
               </span>
             }
           />
           <Row
             label={t.posBuyback.rate}
             value={t.posBuyback.rateLine(
-              Number(perUnitQuote.rate_24k).toFixed(2),
+              formatRate(perUnitQuote.rate_24k),
               // "live" or "override" (the quote's rate_source); anything else would print as sent.
               t.goldRate.sources[perUnitQuote.rate_source as keyof typeof t.goldRate.sources] ?? perUnitQuote.rate_source,
               perUnitQuote.rate_is_stale,
@@ -617,12 +618,21 @@ function PriceModeToggle({
 function QuoteCard({ quote }: { quote: QuoteOut }) {
   const { t } = useLang();
   const perGram = t.products.perGram;
+  // The shop's cut: dollars off each gram ("−$2.00/g") or a percentage ("1.50%").
+  // A figure that cannot be read is a dash on its own, not "−$—/g".
+  const marginValue = toFiniteNumber(quote.margin_value);
+  const margin =
+    marginValue === null
+      ? MISSING_AMOUNT
+      : quote.margin_mode === "USD_PER_GRAM"
+        ? `−${formatRate(marginValue)}${perGram}`
+        : `${formatDecimal(marginValue)}${quote.margin_mode === "PERCENT" ? "%" : perGram}`;
   return (
     <div className="bg-white/5 border border-white/10 rounded p-4 space-y-1.5 text-xs">
-      <Row label={t.posBuyback.spot24k} value={`$${Number(quote.rate_24k).toFixed(2)}${perGram}`} />
-      <Row label={t.products.purityRate} value={`$${Number(quote.purity_rate).toFixed(2)}${perGram} (${quote.karat})`} />
-      <Row label={t.posBuyback.buybackMargin} value={`${quote.margin_mode === "USD_PER_GRAM" ? "−$" : ""}${Number(quote.margin_value).toFixed(2)}${quote.margin_mode === "PERCENT" ? "%" : perGram}`} />
-      <Row label={t.posBuyback.effective} value={`$${Number(quote.effective_rate_per_gram).toFixed(2)}${perGram}`} />
+      <Row label={t.posBuyback.spot24k} value={`${formatRate(quote.rate_24k)}${perGram}`} />
+      <Row label={t.products.purityRate} value={`${formatRate(quote.purity_rate)}${perGram} (${quote.karat})`} />
+      <Row label={t.posBuyback.buybackMargin} value={margin} />
+      <Row label={t.posBuyback.effective} value={`${formatRate(quote.effective_rate_per_gram)}${perGram}`} />
       <Row
         label={t.posBuyback.paySeller}
         value={

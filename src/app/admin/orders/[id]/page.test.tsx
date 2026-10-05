@@ -263,3 +263,18 @@ describe("order detail: every payment method the API can send is named", () => {
     expect(screen.getByText("Payment Method").nextElementSibling).toHaveTextContent("CREDIT");
   });
 });
+
+// OrderItemOut.gold_rate_at_sale is a Decimal: a string on the wire.
+describe("order detail: the rate at sale is formatted, never NaN", () => {
+  it.each([
+    ["a string", "88.40", "$88.40/g"],
+    ["a number", 88.4, "$88.40/g"],
+    ["null", null, "—/g"],
+    ["unreadable", "n/a", "—/g"],
+  ])("gold_rate_at_sale as %s", (_name, gold_rate_at_sale, shown) => {
+    renderPage("en", order({ items: [item({ gold_rate_at_sale })] }));
+    const row = screen.getByText("Twisted Ring").closest("tr") as HTMLElement;
+    expect(within(row).getAllByRole("cell")[5]).toHaveTextContent(shown);
+    expect(row).not.toHaveTextContent("NaN");
+  });
+});
