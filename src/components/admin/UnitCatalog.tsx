@@ -117,25 +117,25 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="px-4 py-3 w-14" aria-label={u.photo} />
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.code}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {t.common.name}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.karat}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.weight}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.markupMargin}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.onHand}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
                 {u.min}
               </th>
               <th className="px-4 py-3" aria-label={t.common.actions} />
@@ -171,7 +171,7 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{row.code}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700"><Ltr>{row.code}</Ltr></td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800">{row.name_en}</div>
                       {row.name_ar && (
@@ -195,9 +195,11 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                         <Ltr>{`${Number(row.markup_per_gram) >= 0 ? "+" : ""}${Number(row.markup_per_gram).toFixed(4)}/g`}</Ltr>
                       </div>
                       <div className="text-gray-500 mt-0.5">
-                        {row.margin_mode === "USD"
-                          ? `+ ${formatUSD(Number(row.margin_value))}`
-                          : `+ ${Number(row.margin_value).toFixed(2)}%`}
+                        <Ltr>
+                          {row.margin_mode === "USD"
+                            ? `+ ${formatUSD(Number(row.margin_value))}`
+                            : `+ ${Number(row.margin_value).toFixed(2)}%`}
+                        </Ltr>
                       </div>
                     </td>
                     <td
@@ -214,12 +216,13 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                       {row.min_stock_qty ?? "—"}
                     </td>
                     <td className="px-4 py-3">
+                      {/* The same four buttons on every row: each is named after its row's code. */}
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => setPriceFor(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
                           title={u.livePrice}
-                          aria-label={u.livePrice}
+                          aria-label={u.rowAction(u.livePrice, row.code)}
                         >
                           <DollarSign className="w-4 h-4" aria-hidden />
                         </button>
@@ -227,7 +230,7 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                           onClick={() => setAdjustRow(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
                           title={u.adjustStock}
-                          aria-label={u.adjustStock}
+                          aria-label={u.rowAction(u.adjustStock, row.code)}
                         >
                           <Sliders className="w-4 h-4" aria-hidden />
                         </button>
@@ -235,7 +238,7 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                           onClick={() => openEdit(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
                           title={t.common.edit}
-                          aria-label={t.common.edit}
+                          aria-label={u.rowAction(t.common.edit, row.code)}
                         >
                           <Pencil className="w-4 h-4" aria-hidden />
                         </button>
@@ -243,12 +246,12 @@ export function UnitCatalog({ resource, adjustmentTarget }: Props) {
                           onClick={() => toggleActive(row)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                           title={row.is_active ? u.deactivate : u.reactivate}
-                          aria-label={row.is_active ? u.deactivate : u.reactivate}
+                          aria-label={u.rowAction(row.is_active ? u.deactivate : u.reactivate, row.code)}
                         >
                           {row.is_active ? (
-                            <ToggleRight className="w-5 h-5 text-green-500" aria-hidden />
+                            <ToggleRight className="w-5 h-5 text-green-500 rtl:rotate-180" aria-hidden />
                           ) : (
-                            <ToggleLeft className="w-5 h-5" aria-hidden />
+                            <ToggleLeft className="w-5 h-5 rtl:rotate-180" aria-hidden />
                           )}
                         </button>
                       </div>
@@ -384,7 +387,7 @@ function UnitTypeForm({
         ) : (
           <div>
             <div className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.code}</div>
-            <div className="w-full border border-dashed border-gray-200 rounded px-3 py-2.5 text-sm font-mono text-gray-400">
+            <div className="w-full border border-dashed border-gray-200 rounded px-3 py-2.5 text-sm ltr:font-mono text-gray-400">
               {u.autoGenerated}
             </div>
           </div>
@@ -415,7 +418,7 @@ function UnitTypeForm({
             dir="rtl"
             value={nameAr}
             onChange={(e) => setNameAr(e.target.value)}
-            className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-right focus:outline-none focus:border-gold"
+            className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-start focus:outline-none focus:border-gold"
           />
         </label>
         <label className="block">
@@ -488,7 +491,7 @@ function UnitTypeForm({
               <button
                 type="button"
                 onClick={() => setPhotoUrl("")}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
                 title={u.removePhoto}
                 aria-label={u.removePhoto}
               >
@@ -518,13 +521,13 @@ function UnitTypeForm({
               {uploading ? u.uploading : photoUrl ? u.changePhoto : u.uploadPhoto}
             </button>
             {uploadError && (
-              <div className="text-xs text-red-600">{uploadError}</div>
+              <div role="alert" className="text-xs text-red-600">{uploadError}</div>
             )}
           </div>
         </div>
       </div>
 
-      {error && <div className="text-xs text-red-600">{error}</div>}
+      {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
@@ -558,7 +561,7 @@ function StockAdjustDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
-  const { t, isRTL } = useLang();
+  const { t } = useLang();
   const u = t.unitCatalog;
   const [delta, setDelta] = useState("");
   const [reason, setReason] = useState<AdjustmentReason>("CORRECTION");
@@ -590,13 +593,11 @@ function StockAdjustDialog({
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-5 space-y-4">
         <div>
           <div className="text-sm font-medium text-gray-800">{u.adjustStock}</div>
-          {/* font-mono is laid out left-to-right in RTL (globals.css) because it
-              marks identifiers. This line is a phrase with a code in it, so the
-              phrase follows the UI direction and only the code stays LTR. */}
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">
-            <span dir={isRTL ? "rtl" : "ltr"}>
-              <Ltr>{row.code}</Ltr> · {u.onHandInline} {row.on_hand_qty}
-            </span>
+          {/* Monospace in LTR only: .font-mono is laid out left-to-right in RTL
+              (globals.css), which would reverse a translated phrase. The code is
+              the machine value, and it keeps it. */}
+          <div className="text-xs text-gray-500 mt-0.5 ltr:font-mono">
+            <Ltr className="font-mono">{row.code}</Ltr> · {u.onHandInline} {row.on_hand_qty}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -636,7 +637,7 @@ function StockAdjustDialog({
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
         </label>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -681,10 +682,10 @@ function LivePriceDialog({
       <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-5 space-y-4">
         <div>
           <div className="text-sm font-medium text-gray-800">{u.livePrice}</div>
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">{row.code}</div>
+          <div className="text-xs text-gray-500 mt-0.5 font-mono"><Ltr>{row.code}</Ltr></div>
         </div>
         {isLoading && <div className="text-sm text-gray-500">{u.pricing}</div>}
-        {error && <div className="text-sm text-red-600">{(error as Error).message}</div>}
+        {error && <div role="alert" className="text-sm text-red-600">{(error as Error).message}</div>}
         {data && (
           <>
             <div className="text-center py-3">
@@ -697,20 +698,21 @@ function LivePriceDialog({
               <Row label={u.spot24k} value={`$${data.gold_rate_24k.toFixed(2)}/g`} />
               <Row
                 label={u.effectiveRate}
-                value={`$${Number(data.effective_rate).toFixed(2)}/g ${u.markupApplied}`}
+                value={`$${Number(data.effective_rate).toFixed(2)}/g`}
+                note={<>{" "}{u.markupApplied}</>}
               />
               <Row label={u.metalValue} value={formatUSD(data.metal_value)} />
               <Row label={u.margin} value={formatUSD(data.margin_amount)} />
               <Row label={u.onHand} value={String(data.on_hand_qty)} />
               <Row
                 label={u.source}
-                value={
-                  <span className="text-gray-600">
-                    {data.rate_source}
+                note={
+                  <>
+                    {u.sources[data.rate_source as keyof typeof u.sources] ?? data.rate_source}
                     {data.rate_is_stale && (
-                      <span className="ml-1 text-amber-600">{u.stale}</span>
+                      <span className="ms-1 text-amber-600">{u.stale}</span>
                     )}
-                  </span>
+                  </>
                 }
               />
             </div>
@@ -727,11 +729,20 @@ function LivePriceDialog({
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+/**
+ * `value` is a machine value (a rate, an amount, a count); `note` is translated
+ * text beside it. The whole cell is monospace in LTR, as it always was. In RTL
+ * only the value keeps it: .font-mono is laid out left-to-right there
+ * (globals.css), which would reverse an Arabic note.
+ */
+function Row({ label, value, note }: { label: string; value?: string; note?: React.ReactNode }) {
   return (
     <div className="flex justify-between">
       <span className="text-gray-400">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="ltr:font-mono">
+        {value !== undefined && <Ltr className="font-mono">{value}</Ltr>}
+        {note}
+      </span>
     </div>
   );
 }
