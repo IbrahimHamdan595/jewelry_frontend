@@ -234,6 +234,7 @@ export interface Translations {
     slug: string;
     slugPlaceholder: string;
     saving: string;
+    saveFailed: string;
     empty: string;
     active: string;
     inactive: string;
@@ -241,6 +242,7 @@ export interface Translations {
     deactivate: string;
     deletePermanently: string;
     deleteFailed: string;
+    rowAction: (action: string, name: string) => string;
   };
 
   zakat: {
@@ -843,6 +845,7 @@ const en: Translations = {
     slug: "Slug",
     slugPlaceholder: "auto-generated from name",
     saving: "Saving…",
+    saveFailed: "Save failed",
     empty: "No categories yet",
     active: "Active",
     inactive: "Inactive",
@@ -850,6 +853,7 @@ const en: Translations = {
     deactivate: "Deactivate",
     deletePermanently: "Delete permanently",
     deleteFailed: "Delete failed",
+    rowAction: (action, name) => `${action}: ${name}`,
   },
 
   zakat: {

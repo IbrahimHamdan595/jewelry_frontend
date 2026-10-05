@@ -237,6 +237,7 @@ const ar: Translations = {
     slug: "المعرّف",
     slugPlaceholder: "يُنشأ تلقائياً من الاسم",
     saving: "جارٍ الحفظ…",
+    saveFailed: "فشل الحفظ",
     empty: "لا توجد فئات بعد",
     active: "نشطة",
     inactive: "غير نشطة",
@@ -244,6 +245,7 @@ const ar: Translations = {
     deactivate: "تعطيل",
     deletePermanently: "حذف نهائي",
     deleteFailed: "فشل الحذف",
+    rowAction: (action, name) => `${action}: \u2068${name}\u2069`,
   },
 
   // TODO(ar): user to supply zakat terminology — see plan §6.2. Strings below

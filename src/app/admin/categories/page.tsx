@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import type { Category } from "@/types/api";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
+import { Ltr } from "@/components/shared/Ltr";
 import { useLang } from "@/context/LanguageContext";
 
 export default function CategoriesPage() {
@@ -20,6 +21,7 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState({ name_en: "", name_ar: "", slug: "" });
   const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
 
   const [deleting, setDeleting] = useState<Category | null>(null);
   const [delBusy, setDelBusy] = useState(false);
@@ -28,12 +30,14 @@ export default function CategoriesPage() {
   function openAdd() {
     setEditing(null);
     setForm({ name_en: "", name_ar: "", slug: "" });
+    setSaveErr(null);
     setShowForm(true);
   }
 
   function openEdit(cat: Category) {
     setEditing(cat);
     setForm({ name_en: cat.name_en, name_ar: cat.name_ar, slug: cat.slug });
+    setSaveErr(null);
     setShowForm(true);
   }
 
@@ -43,6 +47,7 @@ export default function CategoriesPage() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveErr(null);
     try {
       const payload = {
         ...form,
@@ -55,6 +60,9 @@ export default function CategoriesPage() {
       }
       await mutate();
       setShowForm(false);
+    } catch (err) {
+      // A rejected save used to vanish; the form stays open and says why.
+      setSaveErr(err instanceof Error ? err.message : c.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -113,19 +121,22 @@ export default function CategoriesPage() {
                 dir="rtl"
                 value={form.name_ar}
                 onChange={(e) => setForm({ ...form, name_ar: e.target.value })}
-                className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold text-right"
+                className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold text-start"
               />
             </label>
           </div>
           <label className="block">
             <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{c.slug}</span>
+            {/* Monospace in LTR only: .font-mono is laid out left-to-right in RTL
+                (globals.css), and this field's placeholder is a translated phrase. */}
             <input
               value={form.slug}
               onChange={(e) => setForm({ ...form, slug: e.target.value })}
-              className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-gold"
+              className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm ltr:font-mono focus:outline-none focus:border-gold"
               placeholder={c.slugPlaceholder}
             />
           </label>
+          {saveErr && <div role="alert" className="text-xs text-red-600">{saveErr}</div>}
           <div className="flex gap-2">
             <button
               onClick={handleSave}
@@ -152,9 +163,9 @@ export default function CategoriesPage() {
             <table className="w-full min-w-[420px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{c.slug}</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{c.slug}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
                   <th className="px-4 py-3" aria-label={t.common.actions} />
                 </tr>
               </thead>
@@ -170,9 +181,9 @@ export default function CategoriesPage() {
           <table className="w-full min-w-[420px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{c.slug}</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{c.slug}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
                 <th className="px-4 py-3" aria-label={t.common.actions} />
               </tr>
             </thead>
@@ -183,25 +194,26 @@ export default function CategoriesPage() {
                     <div className="font-medium text-gray-800">{cat.name_en}</div>
                     {cat.name_ar && <div className="text-xs text-gray-400 mt-0.5" dir="rtl">{cat.name_ar}</div>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{cat.slug}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500"><Ltr>{cat.slug}</Ltr></td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${cat.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       {cat.is_active ? c.active : c.inactive}
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    {/* The same three buttons on every row: each is named after its category. */}
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => openEdit(cat)} aria-label={t.common.edit} className="text-gray-400 hover:text-gray-600 transition-colors">
+                      <button onClick={() => openEdit(cat)} aria-label={c.rowAction(t.common.edit, cat.name_en)} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <Pencil className="w-4 h-4" aria-hidden />
                       </button>
-                      <button onClick={() => handleToggle(cat)} aria-label={cat.is_active ? c.deactivate : c.activate} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        {cat.is_active ? <ToggleRight className="w-5 h-5 text-green-500" aria-hidden /> : <ToggleLeft className="w-5 h-5" aria-hidden />}
+                      <button onClick={() => handleToggle(cat)} aria-label={c.rowAction(cat.is_active ? c.deactivate : c.activate, cat.name_en)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        {cat.is_active ? <ToggleRight className="w-5 h-5 text-green-500 rtl:rotate-180" aria-hidden /> : <ToggleLeft className="w-5 h-5 rtl:rotate-180" aria-hidden />}
                       </button>
                       <button
                         onClick={() => { setDelErr(null); setDeleting(cat); }}
                         className="text-gray-400 hover:text-red-600 transition-colors"
                         title={c.deletePermanently}
-                        aria-label={c.deletePermanently}
+                        aria-label={c.rowAction(c.deletePermanently, cat.name_en)}
                       >
                         <Trash2 className="w-4 h-4" aria-hidden />
                       </button>
