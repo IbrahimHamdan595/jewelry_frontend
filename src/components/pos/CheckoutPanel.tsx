@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatUSD } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
+import { useLang } from "@/context/LanguageContext";
 import type { PaymentMethod } from "@/types/api";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "CARD", "MIXED"];
@@ -26,18 +27,19 @@ export function CheckoutPanel({
     items, removeItem, updateQuantity, paymentMethod, setPaymentMethod, subtotal, vat, total,
     vatPercent, maxDiscountPercent, discountPercent, setDiscountPercent, discountAmount,
   } = useCart();
+  const { t } = useLang();
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-5 pb-3 shrink-0 flex items-center justify-between border-b border-white/5">
         <div>
           <p className="text-pos-gray text-[10px] uppercase tracking-widest">
-            Current Sale
+            {t.checkout.currentSale}
           </p>
           <p className="text-pos-cream text-sm mt-0.5">
             {items.length === 0
-              ? "No items yet"
-              : `${items.length} item${items.length === 1 ? "" : "s"}`}
+              ? t.checkout.noItems
+              : t.checkout.itemCount(items.length)}
           </p>
         </div>
       </div>
@@ -46,10 +48,10 @@ export function CheckoutPanel({
         <div className="flex-1 flex flex-col items-center justify-center text-pos-gray px-6">
           <ShoppingCart className="w-12 h-12 mb-4 opacity-30" />
           <p className="font-serif italic text-lg opacity-60">
-            Scan an item to begin
+            {t.checkout.scanToBegin}
           </p>
           <p className="text-xs opacity-50 mt-1">
-            Items added will appear here
+            {t.checkout.itemsAppearHere}
           </p>
         </div>
       ) : (
@@ -61,22 +63,25 @@ export function CheckoutPanel({
       )}
 
       <div className="border-t border-white/10 px-6 py-5 space-y-4 shrink-0 bg-pos-bg/60">
-        <div>
-          <label className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
-            Customer (optional)
-          </label>
+        {/* Inputs sit inside their labels (NEX-64): a click on the text focuses
+            the field and a screen reader announces it by name. */}
+        <label className="block">
+          <span className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
+            {t.checkout.customerOptional}
+          </span>
           <Input
             dark
             value={customerName}
             onChange={(e) => onCustomerNameChange(e.target.value)}
-            placeholder="Customer name"
+            placeholder={t.checkout.customerNamePlaceholder}
           />
-        </div>
+        </label>
 
-        <div>
-          <label className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
-            Payment method
-          </label>
+        {/* A group of buttons has no single control to label: fieldset + legend. */}
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <legend className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
+            {t.checkout.paymentMethod}
+          </legend>
           <div className="grid grid-cols-3 gap-2">
             {PAYMENT_METHODS.map((p) => (
               <button
@@ -88,17 +93,17 @@ export function CheckoutPanel({
                     : "border-white/15 text-pos-gray hover:border-white/30 hover:text-pos-cream"
                 }`}
               >
-                {p}
+                {t.checkout.paymentMethods[p]}
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {maxDiscountPercent > 0 && (
-          <div>
-            <label className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
-              Discount % (max {maxDiscountPercent}%)
-            </label>
+          <label className="block">
+            <span className="text-pos-gray text-[10px] uppercase tracking-widest mb-1.5 block">
+              {t.checkout.discountPctMax(maxDiscountPercent)}
+            </span>
             <Input
               dark
               type="number"
@@ -109,27 +114,27 @@ export function CheckoutPanel({
               onChange={(e) => setDiscountPercent(Number(e.target.value))}
               placeholder="0"
             />
-          </div>
+          </label>
         )}
 
         <div className="space-y-1.5 text-sm pt-3 border-t border-white/5">
           <div className="flex justify-between text-pos-gray">
-            <span>Subtotal</span>
+            <span>{t.common.subtotal}</span>
             <span>{formatUSD(subtotal)}</span>
           </div>
           <div className="flex justify-between text-pos-gray">
-            <span>VAT {vatPercent}%</span>
+            <span>{t.checkout.vatLine(vatPercent)}</span>
             <span>{formatUSD(vat)}</span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between text-gold">
-              <span>Discount {discountPercent}%</span>
+              <span>{t.checkout.discountLine(discountPercent)}</span>
               <span>−{formatUSD(discountAmount)}</span>
             </div>
           )}
           <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-white/5">
             <span className="font-serif text-base text-pos-cream uppercase tracking-widest">
-              Total
+              {t.common.total}
             </span>
             <span className="font-serif text-2xl font-bold text-gold">
               {formatUSD(total)}
@@ -143,10 +148,10 @@ export function CheckoutPanel({
           disabled={checkingOut || items.length === 0}
         >
           {checkingOut
-            ? "PROCESSING…"
+            ? t.checkout.processing
             : items.length === 0
-              ? "ADD ITEMS TO CHECKOUT"
-              : `CHECKOUT · ${formatUSD(total)}`}
+              ? t.checkout.addItemsToCheckout
+              : t.checkout.checkoutTotal(formatUSD(total))}
         </Button>
       </div>
     </div>

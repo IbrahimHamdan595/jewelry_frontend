@@ -56,7 +56,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
   const feedDown = !!error;
   const isStale = rate.is_stale || feedDown;
   const asOf = `${t.errors.rateAsOf} ${formatDateTime(rate.fetched_at)}`;
-  const statusLabel = feedDown ? t.errors.rateFeedDown : isStale ? "STALE" : "LIVE";
+  const statusLabel = feedDown ? t.errors.rateFeedDown : isStale ? t.goldRate.stale : t.goldRate.live;
   const dotClass = feedDown ? "bg-red-400" : isStale ? "bg-yellow-400" : "bg-green-400";
   const serverRefresh = () => api.post("/gold-price/refresh").then(() => refresh());
 
@@ -97,7 +97,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
                 onClick={serverRefresh}
                 className="ms-2 text-[10px] uppercase tracking-wider text-yellow-400 hover:text-yellow-300 underline"
               >
-                Refresh
+                {t.goldRate.refresh}
               </button>
             )
           )}
@@ -119,9 +119,9 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
       ) : (
         isStale && (
           <div className="flex items-center gap-2 bg-yellow-900/30 border border-yellow-600/40 rounded px-3 py-2 text-yellow-400 text-xs">
-            <span>Gold rate is older than 15 minutes</span>
-            <button onClick={serverRefresh} className="ms-auto underline hover:no-underline">
-              REFRESH
+            <span>{t.goldRate.olderThan15}</span>
+            <button onClick={serverRefresh} className="ms-auto uppercase underline hover:no-underline">
+              {t.goldRate.refresh}
             </button>
           </div>
         )
@@ -129,7 +129,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white/5 border border-white/10 rounded-lg p-3">
           <div className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
-            24K · USD/g
+            {t.goldRate.karatUsdPerGram("24K")}
           </div>
           <div className="font-serif text-3xl text-gold leading-none">
             {rate.rate_24k.toFixed(2)}
@@ -143,7 +143,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-3">
           <div className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
-            21K · USD/g
+            {t.goldRate.karatUsdPerGram("21K")}
           </div>
           <div className="text-2xl font-semibold text-pos-cream leading-none">
             {rate.rate_21k.toFixed(2)}
@@ -151,7 +151,7 @@ export function GoldRateCard({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-3">
           <div className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
-            18K · USD/g
+            {t.goldRate.karatUsdPerGram("18K")}
           </div>
           <div className="text-2xl font-semibold text-pos-cream leading-none">
             {rate.rate_18k.toFixed(2)}

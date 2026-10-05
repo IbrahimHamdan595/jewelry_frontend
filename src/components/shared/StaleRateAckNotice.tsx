@@ -10,6 +10,7 @@
  */
 import { AlertTriangle } from "lucide-react";
 import { useFormat } from "@/hooks/useFormat";
+import { useLang } from "@/context/LanguageContext";
 
 interface Props {
   required: boolean;
@@ -23,19 +24,18 @@ export function StaleRateAckNotice({
   required, accepted, onChange, fetchedAt, action,
 }: Props) {
   const { formatDateTime } = useFormat();
+  const { t } = useLang();
   if (!required || !fetchedAt) return null;
+  const at = formatDateTime(fetchedAt);
 
   return (
     <div className="rounded-lg border border-red-500/50 bg-red-500/15 p-3.5 space-y-2.5">
       <div className="flex items-start gap-2.5">
         <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
         <div className="text-xs text-red-200">
-          <span className="font-semibold block">The gold rate is out of date.</span>
-          It last refreshed at {formatDateTime(fetchedAt)} and the feed has not
-          recovered since.{" "}
-          {action === "buying"
-            ? "You are paying out on this price."
-            : "You are charging on this price."}
+          <span className="font-semibold block">{t.goldRate.outOfDate}</span>
+          {t.goldRate.lastRefreshed(at)}{" "}
+          {action === "buying" ? t.goldRate.payingOut : t.goldRate.charging}
         </div>
       </div>
       <label className="flex items-center gap-2.5 cursor-pointer text-xs text-red-100">
@@ -45,7 +45,7 @@ export function StaleRateAckNotice({
           onChange={(e) => onChange(e.target.checked)}
           className="w-4 h-4 accent-red-500 shrink-0"
         />
-        I confirm {action} on the rate from {formatDateTime(fetchedAt)}.
+        <span>{action === "buying" ? t.goldRate.confirmBuying(at) : t.goldRate.confirmSelling(at)}</span>
       </label>
     </div>
   );

@@ -87,7 +87,7 @@ export default function SettingsPage() {
   async function handleChangePassword() {
     setPwError("");
     if (pwForm.new_password !== pwForm.confirm) {
-      setPwError("New passwords do not match");
+      setPwError(t.settings.passwordsMismatch);
       return;
     }
     setPwSaving(true);
@@ -107,12 +107,12 @@ export default function SettingsPage() {
   }
 
   const tabs = [
-    { id: "store" as const, label: "Store Info" },
-    { id: "pricing" as const, label: "Default Pricing" },
-    { id: "receipt" as const, label: "Receipt" },
+    { id: "store" as const, label: t.settings.tabStore },
+    { id: "pricing" as const, label: t.settings.tabPricing },
+    { id: "receipt" as const, label: t.settings.tabReceipt },
     { id: "accounting" as const, label: t.settings.accountingTab },
-    { id: "staff" as const, label: "Staff" },
-    { id: "security" as const, label: "Security" },
+    { id: "staff" as const, label: t.settings.tabStaff },
+    { id: "security" as const, label: t.settings.tabSecurity },
   ];
 
   if (settingsError && !settings) {
@@ -122,19 +122,19 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">Settings</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{t.nav.settings}</h2>
         {tab !== "staff" && tab !== "security" && tab !== "accounting" && (
           <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors">
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? t.settings.saving : t.settings.saveChanges}
           </button>
         )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-        {tabs.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 py-2 rounded text-xs font-medium transition-colors ${tab === t.id ? "bg-white shadow text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>
-            {t.label}
+        {tabs.map((tb) => (
+          <button key={tb.id} onClick={() => setTab(tb.id)} className={`flex-1 py-2 rounded text-xs font-medium transition-colors ${tab === tb.id ? "bg-white shadow text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>
+            {tb.label}
           </button>
         ))}
       </div>
@@ -142,20 +142,25 @@ export default function SettingsPage() {
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6 space-y-5">
         {tab === "store" && (
           <>
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">store name</label>
+            {/* Inputs sit inside their labels (NEX-64): a click on the text
+                focuses the field and a screen reader announces it by name. */}
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.storeName}</span>
               <input value={(form as any).store_name ?? ""} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-            </div>
+            </label>
             <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">store name (arabic)</label>
-              <input dir="rtl" value={(form as any).store_name_ar ?? ""} onChange={(e) => setForm({ ...form, store_name_ar: e.target.value })} placeholder="فواز النمل" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-right focus:outline-none focus:border-gold" />
-              <p className="text-[11px] text-gray-400 mt-1">Printed on receipts when the language is Arabic. Leave blank to fall back to the English name.</p>
+              <label className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.storeNameAr}</span>
+                <input dir="rtl" value={(form as any).store_name_ar ?? ""} onChange={(e) => setForm({ ...form, store_name_ar: e.target.value })} placeholder="فواز النمل" className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-start focus:outline-none focus:border-gold" />
+              </label>
+              <p className="text-[11px] text-gray-400 mt-1">{t.settings.storeNameArHint}</p>
             </div>
             {(["address", "phone", "vat_number"] as const).map((f) => (
-              <div key={f}>
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{f.replace(/_/g, " ")}</label>
-                <input value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
-              </div>
+              <label key={f} className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.fields[f]}</span>
+                {/* A phone or VAT number is typed left-to-right in either language. */}
+                <input dir={f === "address" ? undefined : "ltr"} value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+              </label>
             ))}
           </>
         )}
@@ -163,35 +168,37 @@ export default function SettingsPage() {
         {tab === "pricing" && (
           <>
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
-              Existing products are not affected. Editing a product overrides these defaults.
+              {t.settings.pricingNotice}
             </div>
             {(["default_margin_pct", "default_making_charge", "vat_percent", "lbp_exchange_rate", "max_discount_percent"] as const).map((f) => (
               <div key={f}>
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{f.replace(/_/g, " ")}</label>
-                <input type="number" step="0.01" value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.fields[f]}</span>
+                  <input type="number" step="0.01" value={(form as any)[f] ?? ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold" />
+                </label>
                 {f === "max_discount_percent" && (
-                  <p className="text-[11px] text-gray-400 mt-1">Maximum order-level discount a cashier may apply at checkout. 0 disables discounts.</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{t.settings.maxDiscountHint}</p>
                 )}
               </div>
             ))}
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Buyback Pricing</div>
-              <p className="text-xs text-gray-400">Default spread the shop applies when buying gold back from customers. Per-transaction override is available on the buyback POS form.</p>
+              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">{t.settings.buybackPricing}</div>
+              <p className="text-xs text-gray-400">{t.settings.buybackPricingHelp}</p>
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin Mode</label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.marginMode}</span>
                   <select
                     value={form.default_buyback_margin_mode ?? "USD_PER_GRAM"}
                     onChange={(e) => setForm({ ...form, default_buyback_margin_mode: e.target.value as "USD_PER_GRAM" | "PERCENT" })}
                     className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold bg-white"
                   >
-                    <option value="USD_PER_GRAM">USD per gram</option>
-                    <option value="PERCENT">Percent</option>
+                    <option value="USD_PER_GRAM">{t.settings.marginModes.USD_PER_GRAM}</option>
+                    <option value="PERCENT">{t.settings.marginModes.PERCENT}</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin Value</label>
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.marginValue}</span>
                   <input
                     type="number"
                     step="0.01"
@@ -200,9 +207,9 @@ export default function SettingsPage() {
                     onChange={(e) => setForm({ ...form, default_buyback_margin_value: e.target.value })}
                     className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Max Drift %</label>
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.maxDriftPct}</span>
                   <input
                     type="number"
                     step="0.01"
@@ -211,42 +218,42 @@ export default function SettingsPage() {
                     onChange={(e) => setForm({ ...form, buyback_rate_drift_pct_max: e.target.value })}
                     className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                   />
-                </div>
+                </label>
               </div>
             </div>
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Per-Karat Gold Markup (USD / gram)</div>
-              <p className="text-xs text-gray-400">Added to the karat purity rate before calculating metal value. Example: K21 markup = $5 means the K21 rate used in pricing is (market × 87.5%) + $5/g.</p>
+              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">{t.settings.markupTitle}</div>
+              <p className="text-xs text-gray-400">{t.settings.markupHelp}</p>
               <div className="grid grid-cols-3 gap-3">
                 {(["markup_k18", "markup_k21", "markup_k24"] as const).map((f) => (
-                  <div key={f}>
-                    <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-                      {f === "markup_k18" ? "18K" : f === "markup_k21" ? "21K" : "24K"} Markup
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 inset-y-0 flex items-center text-gray-400 text-sm">$</span>
+                  <label key={f} className="block">
+                    <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+                      {t.settings.markupLabel(f === "markup_k18" ? "18K" : f === "markup_k21" ? "21K" : "24K")}
+                    </span>
+                    <span className="relative block">
+                      <span aria-hidden className="absolute start-3 inset-y-0 flex items-center text-gray-400 text-sm">$</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         value={(form as any)[f] ?? "0"}
                         onChange={(e) => setForm({ ...form, [f]: e.target.value })}
-                        className="w-full border border-gray-200 rounded pl-6 pr-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+                        className="w-full border border-gray-200 rounded ps-6 pe-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                       />
-                    </div>
-                  </div>
+                    </span>
+                  </label>
                 ))}
               </div>
             </div>
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">Zakat</div>
+              <div className="text-xs font-medium text-gray-600 uppercase tracking-widest">{t.nav.zakat}</div>
               <p className="text-xs text-gray-400">
-                Threshold (in grams of pure gold) above which zakat is due. Conventionally ~85g. Editable so the owner can match the rule their scholar prescribes.
+                {t.settings.nisabHelp}
               </p>
-              <div className="max-w-xs">
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Nisab (grams)</label>
+              <label className="block max-w-xs">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.nisabGrams}</span>
                 <input
                   type="number"
                   step="0.001"
@@ -255,28 +262,28 @@ export default function SettingsPage() {
                   onChange={(e) => setForm({ ...form, nisab_grams: e.target.value })}
                   className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                 />
-              </div>
+              </label>
             </div>
           </>
         )}
 
         {tab === "receipt" && (
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Footer Message</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.settings.footerMessage}</span>
             <textarea rows={3} value={form.receipt_footer ?? ""} onChange={(e) => setForm({ ...form, receipt_footer: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold resize-none" />
-          </div>
+          </label>
         )}
 
         {tab === "security" && (
           <div className="space-y-4">
-            <div className="text-sm font-medium text-gray-800">Change Password</div>
-            {pwSuccess && <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">Password changed successfully.</div>}
+            <div className="text-sm font-medium text-gray-800">{t.settings.changePassword}</div>
+            {pwSuccess && <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded p-3">{t.settings.passwordChanged}</div>}
             {pwError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">{pwError}</div>}
             {(["current_password", "new_password", "confirm"] as const).map((f) => (
-              <div key={f}>
-                <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-                  {f === "current_password" ? "Current Password" : f === "new_password" ? "New Password" : "Confirm New Password"}
-                </label>
+              <label key={f} className="block">
+                <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+                  {f === "current_password" ? t.settings.currentPassword : f === "new_password" ? t.settings.newPassword : t.settings.confirmNewPassword}
+                </span>
                 <input
                   type="password"
                   value={pwForm[f]}
@@ -284,14 +291,14 @@ export default function SettingsPage() {
                   className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
                   placeholder="••••••••"
                 />
-              </div>
+              </label>
             ))}
             <button
               onClick={handleChangePassword}
               disabled={pwSaving || !pwForm.current_password || !pwForm.new_password || !pwForm.confirm}
               className="px-5 py-2.5 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
             >
-              {pwSaving ? "Saving…" : "Update Password"}
+              {pwSaving ? t.settings.saving : t.settings.updatePassword}
             </button>
           </div>
         )}
@@ -359,17 +366,17 @@ export default function SettingsPage() {
         {tab === "staff" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Cashiers</span>
-              <button onClick={() => setShowAdd(true)} className="px-3 py-1.5 bg-gold text-white text-xs rounded hover:bg-gold-dark">Add Cashier</button>
+              <span className="text-sm font-medium">{t.settings.cashiers}</span>
+              <button onClick={() => setShowAdd(true)} className="px-3 py-1.5 bg-gold text-white text-xs rounded hover:bg-gold-dark">{t.settings.addCashier}</button>
             </div>
             {showAdd && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
                 {(["name", "email", "password"] as const).map((f) => (
-                  <input key={f} placeholder={f} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
+                  <input key={f} dir={f === "name" ? undefined : "ltr"} placeholder={t.settings.staffFields[f]} aria-label={t.settings.staffFields[f]} type={f === "password" ? "password" : "text"} value={newStaff[f]} onChange={(e) => setNewStaff({ ...newStaff, [f]: e.target.value })} className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold" />
                 ))}
                 <div className="flex gap-2">
-                  <button onClick={handleAddStaff} className="px-4 py-2 bg-gold text-white text-xs rounded">Save</button>
-                  <button onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded text-xs">Cancel</button>
+                  <button onClick={handleAddStaff} className="px-4 py-2 bg-gold text-white text-xs rounded">{t.common.save}</button>
+                  <button onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded text-xs">{t.settings.cancel}</button>
                 </div>
               </div>
             )}
@@ -383,7 +390,7 @@ export default function SettingsPage() {
                     <div className="text-sm font-medium">{s.name}</div>
                     <div className="text-xs text-gray-400"><Ltr>{s.email}</Ltr></div>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>{s.is_active ? "Active" : "Disabled"}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>{s.is_active ? t.settings.staffActive : t.settings.staffDisabled}</span>
                 </div>
               ))}
             </div>

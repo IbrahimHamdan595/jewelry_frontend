@@ -6,11 +6,13 @@ import useSWR from "swr";
 import Link from "next/link";
 import { apiFetcher } from "@/lib/api-client";
 import { formatUSD, formatLBP } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
 import type { Order } from "@/types/api";
 
 export default function ConfirmationPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const router = useRouter();
+  const { t } = useLang();
   const { data: order } = useSWR<Order>(`/orders/${orderId}`, apiFetcher);
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export default function ConfirmationPage() {
         </svg>
       </div>
 
-      <h1 className="font-serif text-3xl text-gold tracking-widest mb-2">SALE COMPLETE</h1>
+      <h1 className="font-serif text-3xl text-gold tracking-widest mb-2">{t.checkout.saleComplete}</h1>
       {order?.customer_name && (
-        <p className="font-serif italic text-xl text-pos-cream/70 mb-8">Thank you, {order.customer_name}</p>
+        <p className="font-serif italic text-xl text-pos-cream/70 mb-8">{t.checkout.thankYou(order.customer_name)}</p>
       )}
 
       {order && (
@@ -49,15 +51,15 @@ export default function ConfirmationPage() {
           <div className="text-pos-gray text-xs">{formatLBP(order.total_lbp)}</div>
           <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/10">
             <div>
-              <div className="text-pos-gray text-[10px] uppercase tracking-widest">Payment</div>
-              <div className="text-pos-cream text-sm mt-1">{order.payment_method}</div>
+              <div className="text-pos-gray text-[10px] uppercase tracking-widest">{t.checkout.payment}</div>
+              <div className="text-pos-cream text-sm mt-1">{t.checkout.paymentMethods[order.payment_method]}</div>
             </div>
             <div>
-              <div className="text-pos-gray text-[10px] uppercase tracking-widest">Items</div>
+              <div className="text-pos-gray text-[10px] uppercase tracking-widest">{t.checkout.items}</div>
               <div className="text-pos-cream text-sm mt-1">{order.items.length}</div>
             </div>
             <div>
-              <div className="text-pos-gray text-[10px] uppercase tracking-widest">Cashier</div>
+              <div className="text-pos-gray text-[10px] uppercase tracking-widest">{t.checkout.cashier}</div>
               <div className="text-pos-cream text-sm mt-1 truncate">{order.cashier.name}</div>
             </div>
           </div>
@@ -65,11 +67,11 @@ export default function ConfirmationPage() {
       )}
 
       <div className="flex gap-3 mt-8">
-        <Link href={`/pos/receipt/${orderId}`} className="px-5 py-3 border border-white/20 rounded text-sm hover:bg-white/5 transition-colors">Print Receipt</Link>
-        <Link href="/pos" className="px-8 py-3 bg-gold hover:bg-gold-dark text-pos-bg font-semibold rounded text-sm tracking-wider transition-colors">+ New Order</Link>
+        <Link href={`/pos/receipt/${orderId}`} className="px-5 py-3 border border-white/20 rounded text-sm hover:bg-white/5 transition-colors">{t.receipt.printReceipt}</Link>
+        <Link href="/pos" className="px-8 py-3 bg-gold hover:bg-gold-dark text-pos-bg font-semibold rounded text-sm tracking-wider transition-colors">{t.checkout.newOrder}</Link>
       </div>
 
-      <p className="text-pos-gray/40 text-xs mt-6">Returning to POS in 30 seconds…</p>
+      <p className="text-pos-gray/40 text-xs mt-6">{t.checkout.returningToPos}</p>
     </div>
   );
 }
