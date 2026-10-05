@@ -18,6 +18,7 @@
 import { AlertTriangle } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
 import { useFormat } from "@/hooks/useFormat";
+import { useLang } from "@/context/LanguageContext";
 
 interface Props {
   variant?: "light" | "dark";
@@ -43,6 +44,7 @@ const STYLES = {
 export function MarketClosedBanner({ variant = "light" }: Props) {
   const { formatDateTime } = useFormat();
   const { rate } = useGoldRate();
+  const { t } = useLang();
   if (!rate?.is_stale && !rate?.market_closed) return null;
 
   const s = STYLES[variant];
@@ -58,22 +60,19 @@ export function MarketClosedBanner({ variant = "light" }: Props) {
       <AlertTriangle className={`w-5 h-5 shrink-0 ${closed ? s.redIcon : s.amberIcon}`} />
       <div>
         <div className="text-sm font-semibold">
-          {closed ? "Market closed / gold feed down" : "Gold rate is ageing"}
+          {closed ? t.goldRate.marketClosedTitle : t.goldRate.ageingTitle}
         </div>
         <div className={`text-xs ${s.body}`}>
           {closed ? (
             <>
-              The rate hasn&apos;t refreshed since {since}. Sales and buybacks now need
-              an on-screen confirmation before they complete.{" "}
+              {t.goldRate.marketClosedBody(since)}{" "}
               {/* Setting an override is admin-only (require_admin on the endpoint),
                   so don't tell a cashier to go and do it — the dark variant is the
                   till, the light variant is the admin who can actually act. */}
-              {variant === "dark"
-                ? "Ask a manager to set a manual override if this continues."
-                : "Set a manual override on the Gold Price page to price deliberately instead."}
+              {variant === "dark" ? t.goldRate.askManager : t.goldRate.setOverrideHint}
             </>
           ) : (
-            <>Last refreshed {since}. Still trading on it; no action needed yet.</>
+            <>{t.goldRate.ageingBody(since)}</>
           )}
         </div>
       </div>
