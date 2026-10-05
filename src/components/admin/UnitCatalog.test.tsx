@@ -33,11 +33,9 @@ vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), uploadFile: vi.fn(), a
 
 type Dict = typeof en;
 function renderCatalog(lang: "en" | "ar", resource: "coins" | "ounces" = "coins") {
-  // The caller still passes English nouns; the catalog must not use them.
-  const nouns = resource === "coins" ? { singular: "Coin Type", plural: "Coin Types" } : { singular: "Ounce Type", plural: "Ounce Types" };
   return render(
     <LanguageProvider initialLang={lang}>
-      <UnitCatalog resource={resource} adjustmentTarget={resource === "coins" ? "COIN_STOCK" : "OUNCE_STOCK"} {...nouns} />
+      <UnitCatalog resource={resource} adjustmentTarget={resource === "coins" ? "COIN_STOCK" : "OUNCE_STOCK"} />
     </LanguageProvider>,
   );
 }
@@ -234,7 +232,13 @@ describe("UnitCatalog in Arabic (NEX-64)", () => {
     expect(cell).not.toHaveTextContent(ar.unitCatalog.stale);
   });
 
-  it("uses the ounce wording for the ounce catalog, whatever nouns the caller passes", () => {
+  it("has no noun props left: the wording comes from `resource`, and a caller passing the old ones does not compile", () => {
+    // @ts-expect-error `singular` was removed with `plural`; tsc fails here if either comes back.
+    const stale = <UnitCatalog resource="coins" adjustmentTarget="COIN_STOCK" singular="Coin Type" plural="Coin Types" />;
+    expect(stale.type).toBe(UnitCatalog);
+  });
+
+  it("uses the ounce wording for the ounce catalog", () => {
     db.rows = [];
     renderCatalog("ar", "ounces");
     const o = ar.unitCatalog.ounces;

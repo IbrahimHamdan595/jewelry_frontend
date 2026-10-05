@@ -77,16 +77,12 @@ function ProductsPageInner() {
         <UnitCatalog
           resource="coins"
           adjustmentTarget="COIN_STOCK"
-          singular="Coin Type"
-          plural="Coin Types"
         />
       )}
       {activeTab === "ounces" && (
         <UnitCatalog
           resource="ounces"
           adjustmentTarget="OUNCE_STOCK"
-          singular="Ounce Type"
-          plural="Ounce Types"
         />
       )}
     </div>

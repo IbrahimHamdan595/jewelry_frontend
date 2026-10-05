@@ -21,18 +21,14 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 const REASONS: AdjustmentReason[] = ["LOSS", "THEFT", "GIFT", "SAMPLE", "CORRECTION"];
 
 interface Props {
-  /** API resource path segment, e.g. "coins" or "ounces" */
+  /**
+   * API resource path segment. Also picks the catalog's wording
+   * (t.unitCatalog[resource]): "New coin type" and "No coin types yet" are
+   * whole phrases per language, not a noun slotted into an English sentence.
+   */
   resource: "coins" | "ounces";
   /** Adjustment target_type for stock changes */
   adjustmentTarget: "COIN_STOCK" | "OUNCE_STOCK";
-  /**
-   * @deprecated Ignored. The catalog's wording comes from t.unitCatalog[resource]:
-   * "New {singular}" and "No {plural} yet" cannot be assembled from a noun in
-   * Arabic. Still accepted so existing callers compile; drop it at the call site.
-   */
-  singular?: string;
-  /** @deprecated Ignored — see `singular`. */
-  plural?: string;
 }
 
 export function UnitCatalog({ resource, adjustmentTarget }: Props) {
