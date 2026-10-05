@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState, RefreshFailedNotice } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatRate, formatUSD, MISSING_AMOUNT, toFiniteNumber } from "@/lib/utils";
 import { useFormat } from "@/hooks/useFormat";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { KaratBadge } from "@/components/shared/KaratBadge";
@@ -13,7 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { useLang } from "@/context/LanguageContext";
 import { MarketClosedBanner } from "@/components/shared/MarketClosedBanner";
 import { Skeleton, SkeletonText, CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
-import type { DashboardData } from "@/types/api";
+import type { DashboardData, Money } from "@/types/api";
 
 export default function DashboardPage() {
   const { formatDateTime } = useFormat();
@@ -30,9 +30,21 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const weekDelta = data.prev_week_revenue > 0
-    ? ((data.week_revenue - data.prev_week_revenue) / data.prev_week_revenue * 100).toFixed(1)
+  // Money arrives as decimal strings or numbers (NEX-54). Whatever is used in
+  // arithmetic is read once, here; a figure that cannot be read is null and
+  // its tile shows the missing-amount dash rather than NaN or a made-up zero.
+  const weekRevenue = toFiniteNumber(data.week_revenue);
+  const prevWeekRevenue = toFiniteNumber(data.prev_week_revenue);
+  const weekDelta = weekRevenue !== null && prevWeekRevenue !== null && prevWeekRevenue > 0
+    ? ((weekRevenue - prevWeekRevenue) / prevWeekRevenue * 100).toFixed(1)
     : null;
+  const goldRate24k = toFiniteNumber(data.gold_rate_24k);
+  const coinsUsd = toFiniteNumber(data.inventory_value.coins_usd);
+  const ouncesUsd = toFiniteNumber(data.inventory_value.ounces_usd);
+  const coinsAndOuncesUsd = coinsUsd !== null && ouncesUsd !== null ? coinsUsd + ouncesUsd : null;
+  // recharts sizes bars and scales the axis by comparing the values it is
+  // given, and "980.50" sorts after "12000.00" as text: numbers, not strings.
+  const revenueSeries = data.chart_data.map((d) => ({ ...d, revenue: toFiniteNumber(d.revenue) }));
 
   return (
     <div className="space-y-6">
@@ -53,7 +65,7 @@ export default function DashboardPage() {
           <div className="text-kpi font-bold text-gray-900">{formatUSD(data.week_revenue)}</div>
           {weekDelta && (
             <div className={`text-xs mt-1 ${Number(weekDelta) >= 0 ? "text-green-600" : "text-red-500"}`}>
-              {Number(weekDelta) >= 0 ? "+" : ""}{weekDelta}% {t.dashboard.vsLastWeek}
+              <Ltr>{Number(weekDelta) >= 0 ? "+" : ""}{weekDelta}%</Ltr> {t.dashboard.vsLastWeek}
             </div>
           )}
         </div>
@@ -64,7 +76,7 @@ export default function DashboardPage() {
               title={data.gold_rate_fetched_at ? `${t.dashboard.rateAsOf} ${formatDateTime(data.gold_rate_fetched_at)}` : ""} />
           </div>
           <div className="text-kpi font-serif font-bold text-gold">
-            {data.gold_rate_24k ? `$${data.gold_rate_24k.toFixed(2)}` : "—"}
+            {goldRate24k ? formatRate(goldRate24k) : MISSING_AMOUNT}
           </div>
           <div className="text-white/40 text-xs mt-1">{t.dashboard.usdPerGram}</div>
         </div>
@@ -108,7 +120,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
           <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.makingCharges}</div>
           <div className="text-kpi font-bold text-gray-900">{formatUSD(data.making_charges_today)}</div>
-          <div className="text-xs text-gray-400 mt-1">{t.dashboard.soldWeek}: {formatUSD(data.making_charges_week)}</div>
+          <div className="text-xs text-gray-400 mt-1">{t.dashboard.soldWeek}: <Ltr>{formatUSD(data.making_charges_week)}</Ltr></div>
         </div>
         <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
           <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.avgInvoice}</div>
@@ -121,12 +133,12 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
           <div className="text-sm font-semibold text-gray-700 mb-4">{t.dashboard.weekRevenue}</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data.chart_data} barSize={28}>
+            <BarChart data={revenueSeries} barSize={28}>
               <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(Number(v) / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v) => formatUSD(Number(v))} />
               <Bar dataKey="revenue" radius={[3, 3, 0, 0]}>
-                {data.chart_data.map((d, i) => (
+                {revenueSeries.map((d, i) => (
                   <Cell key={i} fill={d.is_today ? "#C9A84C" : "#E8DCC8"} />
                 ))}
               </Bar>
@@ -237,7 +249,7 @@ export default function DashboardPage() {
             <div className="text-[10px] text-gray-400 mt-1">{t.dashboard.atMarketRate}</div>
             <div className="mt-3 space-y-1 text-xs text-gray-500">
               <div className="flex justify-between"><span>{t.dashboard.purePools}</span><span>{formatUSD(data.inventory_value.pure_gold_usd)}</span></div>
-              <div className="flex justify-between"><span>{t.dashboard.coinsOunces}</span><span>{formatUSD(data.inventory_value.coins_usd + data.inventory_value.ounces_usd)}</span></div>
+              <div className="flex justify-between"><span>{t.dashboard.coinsOunces}</span><span>{formatUSD(coinsAndOuncesUsd)}</span></div>
               <div className="flex justify-between"><span>{t.dashboard.products}</span><span>{formatUSD(data.inventory_value.products_usd)}</span></div>
             </div>
           </div>
@@ -321,7 +333,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.grossProfit}</div>
             <div className="text-kpi font-bold text-gray-900">{formatUSD(data.profitability.gross_profit)}</div>
-            <div className="text-[10px] text-gray-400 mt-1">{t.dashboard.since} {data.profitability.since}</div>
+            <div className="text-[10px] text-gray-400 mt-1">{t.dashboard.since} <Ltr>{data.profitability.since}</Ltr></div>
           </div>
           <div className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.dashboard.grossMargin}</div>
@@ -477,10 +489,10 @@ function DashboardSkeleton() {
 }
 
 function AgingChips({ a, t }: {
-  a: { b0_30: number; b31_60: number; b61_90: number; b90_plus: number };
+  a: { b0_30: Money; b31_60: Money; b61_90: Money; b90_plus: Money };
   t: ReturnType<typeof useLang>["t"];
 }) {
-  const chips: [string, number][] = [
+  const chips: [string, Money][] = [
     [t.dashboard.aging0_30, a.b0_30], [t.dashboard.aging31_60, a.b31_60],
     [t.dashboard.aging61_90, a.b61_90], [t.dashboard.aging90Plus, a.b90_plus],
   ];

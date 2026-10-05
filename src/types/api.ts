@@ -219,17 +219,22 @@ export interface Staff {
   created_at: string;
 }
 
+/**
+ * GET /reports/dashboard. Money is `Money` (a decimal string once the backend
+ * serialises exactly, a number before that); counts, gram weights and
+ * percentages are plain numbers.
+ */
 export interface DashboardData {
   today_orders: number;
-  today_revenue: number;
-  week_revenue: number;
-  prev_week_revenue: number;
-  gold_rate_24k: number | null;
-  chart_data: { date: string; revenue: number; is_today: boolean }[];
-  top_sellers: { code: string; name: string; karat: Karat; units: number; revenue: number }[];
-  recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: number; cashier: string; created_at: string }[];
+  today_revenue: Money;
+  week_revenue: Money;
+  prev_week_revenue: Money;
+  gold_rate_24k: Money | null;
+  chart_data: { date: string; revenue: Money; is_today: boolean }[];
+  top_sellers: { code: string; name: string; karat: Karat; units: number; revenue: Money }[];
+  recent_orders: { id: string; order_number: string; status: OrderStatus; total_usd: Money; cashier: string; created_at: string }[];
   // Phase 4 — recent supplier purchases (dashboard receipt links)
-  recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: number; item_count: number }[];
+  recent_purchases?: { id: string; supplier: string; occurred_at: string; total_cash_due: Money; item_count: number }[];
   // Phase 7 — inventory pulse
   inventory?: {
     pure_gold_by_karat: { karat: Karat; grams_remaining: number; lot_count: number }[];
@@ -242,25 +247,26 @@ export interface DashboardData {
   // Phase A — headline KPIs
   gold_weight_sold_today_by_karat: { karat: Karat; grams: number }[];
   gold_weight_sold_week_by_karat: { karat: Karat; grams: number }[];
-  avg_invoice_value_today: number;
-  making_charges_today: number;
-  making_charges_week: number;
+  avg_invoice_value_today: Money;
+  making_charges_today: Money;
+  making_charges_week: Money;
   gold_rate_is_stale: boolean;
   gold_rate_fetched_at: string | null;
   // Phase B — money pulse (cash & VAT are null until the GL is live)
-  receivables: { total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number };
+  receivables: { total: Money; b0_30: Money; b31_60: Money; b61_90: Money; b90_plus: Money };
   payables_aging: {
-    cash_total: number; b0_30: number; b31_60: number; b61_90: number; b90_plus: number;
+    cash_total: Money; b0_30: Money; b31_60: Money; b61_90: Money; b90_plus: Money;
+    /** Grams, not money. */
     metal_owed_by_karat: Record<string, number>;
   };
-  cash_bank_balance: number | null;
-  vat_position: { net_payable: number; direction: string; period_label: string } | null;
+  cash_bank_balance: Money | null;
+  vat_position: { net_payable: Money; direction: string; period_label: string } | null;
   // Phase C — profitability (null until cost-captured sales exist; go-forward)
-  profitability: { gross_profit: number; gross_margin_pct: number | null; profit_per_gram: number | null; since: string } | null;
+  profitability: { gross_profit: Money; gross_margin_pct: number | null; profit_per_gram: Money | null; since: string } | null;
   // Phase D — inventory health
   inventory_value: {
-    total_usd: number; pure_gold_usd: number; coins_usd: number; ounces_usd: number;
-    products_usd: number; rate_24k: number | null; method: string;
+    total_usd: Money; pure_gold_usd: Money; coins_usd: Money; ounces_usd: Money;
+    products_usd: Money; rate_24k: Money | null; method: string;
   };
   inventory_aging: { d0_90: number; d90_180: number; d180_365: number; d365_plus: number };
   dead_stock_count: number;
