@@ -4,6 +4,7 @@ import { Gem } from "lucide-react";
 import { formatUSD } from "@/lib/utils";
 import { useStaleRateGuard } from "@/hooks/useStaleRateGuard";
 import { StaleRateAckNotice } from "@/components/shared/StaleRateAckNotice";
+import { useLang } from "@/context/LanguageContext";
 import type { CartItem } from "@/hooks/useCart";
 import type { PaymentMethod, StaleRateAck } from "@/types/api";
 
@@ -51,6 +52,7 @@ export function CheckoutConfirmDialog(props: Props) {
   // Called before the `open` early return — a hook that runs only while the
   // dialog is mounted-and-open would change the hook count when it opens.
   const guard = useStaleRateGuard();
+  const { t } = useLang();
 
   // A tick belongs to the one sale it was given for. This component stays
   // mounted across open/close, so without this a cashier could tick, cancel,
@@ -72,8 +74,8 @@ export function CheckoutConfirmDialog(props: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-xl bg-pos-bg border border-white/10 shadow-2xl">
         <div className="px-6 pt-5 pb-3 border-b border-white/10 shrink-0">
-          <p className="font-serif text-gold text-lg">Confirm this order?</p>
-          <p className="text-pos-gray text-xs mt-0.5">Review the items and quantities before completing the sale.</p>
+          <p className="font-serif text-gold text-lg">{t.checkout.confirmTitle}</p>
+          <p className="text-pos-gray text-xs mt-0.5">{t.checkout.confirmHint}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -83,10 +85,10 @@ export function CheckoutConfirmDialog(props: Props) {
               <div className="min-w-0 flex-1">
                 <div className="text-pos-cream text-base truncate">{it.nameEn}</div>
                 <div className="text-pos-gray/70 text-[11px] font-mono mt-0.5">{it.code} · {it.karat} · {it.weightGrams}g</div>
-                <div className="text-pos-gray text-xs mt-1.5">{formatUSD(it.unitPrice)} ea · {formatUSD(it.finalPrice)}</div>
+                <div className="text-pos-gray text-xs mt-1.5">{t.checkout.eachAndTotal(formatUSD(it.unitPrice), formatUSD(it.finalPrice))}</div>
               </div>
               <div className="shrink-0 flex flex-col items-center justify-center rounded-lg bg-gold/15 border border-gold/40 px-3.5 py-2">
-                <span className="text-gold/60 text-[9px] uppercase tracking-widest leading-none">Qty</span>
+                <span className="text-gold/60 text-[9px] uppercase tracking-widest leading-none">{t.checkout.qty}</span>
                 <span className="text-gold font-bold text-3xl leading-none mt-1">×{it.quantity}</span>
               </div>
             </div>
@@ -94,15 +96,15 @@ export function CheckoutConfirmDialog(props: Props) {
         </div>
 
         <div className="px-6 py-4 border-t border-white/10 shrink-0 space-y-1.5 text-sm">
-          <div className="flex justify-between text-pos-gray"><span>Subtotal</span><span>{formatUSD(subtotal)}</span></div>
-          <div className="flex justify-between text-pos-gray"><span>VAT {vatPercent}%</span><span>{formatUSD(vat)}</span></div>
+          <div className="flex justify-between text-pos-gray"><span>{t.common.subtotal}</span><span>{formatUSD(subtotal)}</span></div>
+          <div className="flex justify-between text-pos-gray"><span>{t.checkout.vatLine(vatPercent)}</span><span>{formatUSD(vat)}</span></div>
           {discountAmount > 0 && (
-            <div className="flex justify-between text-gold"><span>Discount {discountPercent}%</span><span>−{formatUSD(discountAmount)}</span></div>
+            <div className="flex justify-between text-gold"><span>{t.checkout.discountLine(discountPercent)}</span><span>−{formatUSD(discountAmount)}</span></div>
           )}
-          <div className="flex justify-between text-pos-gray"><span>Customer</span><span>{customerName || "Walk-in"}</span></div>
-          <div className="flex justify-between text-pos-gray"><span>Payment</span><span>{paymentMethod}</span></div>
+          <div className="flex justify-between text-pos-gray"><span>{t.common.customer}</span><span>{customerName || t.checkout.walkIn}</span></div>
+          <div className="flex justify-between text-pos-gray"><span>{t.checkout.payment}</span><span>{t.checkout.paymentMethods[paymentMethod]}</span></div>
           <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-white/5">
-            <span className="font-serif text-pos-cream uppercase tracking-widest">Total</span>
+            <span className="font-serif text-pos-cream uppercase tracking-widest">{t.common.total}</span>
             <span className="font-serif text-2xl font-bold text-gold">{formatUSD(total)}</span>
           </div>
         </div>
@@ -132,7 +134,7 @@ export function CheckoutConfirmDialog(props: Props) {
             disabled={submitting}
             className="flex-1 py-3 rounded border border-white/15 text-pos-gray text-sm hover:border-white/30 hover:text-pos-cream disabled:opacity-50"
           >
-            Back to edit
+            {t.checkout.backToEdit}
           </button>
           <button
             onClick={() => onConfirm(guard.ack)}
@@ -140,10 +142,10 @@ export function CheckoutConfirmDialog(props: Props) {
             className="flex-1 py-3 rounded bg-gold text-pos-bg text-sm font-medium tracking-widest hover:bg-gold/90 disabled:opacity-50"
           >
             {submitting
-              ? "PROCESSING…"
+              ? t.checkout.processing
               : guard.blocked
-                ? "CONFIRM THE RATE ABOVE"
-                : "CONFIRM & COMPLETE"}
+                ? t.checkout.confirmRateAbove
+                : t.checkout.confirmComplete}
           </button>
         </div>
       </div>
