@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within, waitFor, act } from "@testing-librar
 import OrderDetailPage from "@/app/admin/orders/[id]/page";
 import { ApiError } from "@/lib/api-client";
 import { LanguageProvider } from "@/context/LanguageContext";
+import en from "@/i18n/en";
 import ar from "@/i18n/ar";
 
 const swr = vi.hoisted(() => ({ data: undefined as unknown }));
@@ -67,7 +68,7 @@ describe("order detail in Arabic (NEX-64)", () => {
     expect(screen.getByText(ar.orders.customerLine("Rana Haddad"))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.itemKind.PRODUCT)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.itemKind.COIN)).toBeInTheDocument();
-    expect(screen.getByText(ar.orders.payment.CASH)).toBeInTheDocument();
+    expect(screen.getByText(ar.checkout.paymentMethods.CASH)).toBeInTheDocument();
     expect(screen.getByText(ar.orders.discountPct(5))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.refundedLine(1, 3, "$106.00"))).toBeInTheDocument();
     expect(screen.getByText(ar.orders.status.COMPLETED)).toBeInTheDocument();
@@ -256,6 +257,13 @@ describe("order detail: every payment method the API can send is named", () => {
     expect(value).toHaveTextContent(ar.checkout.paymentMethods[method]);
     expect(value?.textContent).toMatch(/[\u0600-\u06FF]/);
     expect(value).not.toHaveTextContent(method);
+  });
+
+  it("there is one payment-method map, shared with the till, the confirmation and the receipt", () => {
+    // The order detail used to carry its own copy under orders.payment, which is
+    // how CREDIT went missing from one screen and not the others.
+    for (const dict of [en, ar]) expect(Object.keys(dict.orders)).not.toContain("payment");
+    expect(Object.keys(ar.checkout.paymentMethods)).toEqual(["CASH", "CARD", "MIXED", "CREDIT", "GOLD"]);
   });
 
   it("CREDIT reads as CREDIT in English, like the other three", () => {

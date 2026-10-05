@@ -250,7 +250,7 @@ export default function OrderDetailPage() {
           <span>{o.lbpEquivalent}</span><span>{formatLBP(order.total_lbp)}</span>
         </div>
         <div className="flex justify-between text-xs text-gray-400">
-          <span>{o.paymentMethod}</span><span>{o.payment[order.payment_method] ?? order.payment_method}</span>
+          <span>{o.paymentMethod}</span><span>{t.checkout.paymentMethods[order.payment_method] ?? order.payment_method}</span>
         </div>
         {(order.status === "PARTIALLY_REFUNDED" || order.status === "REFUNDED") && (
           <p className="text-[11px] text-status-refunded pt-1">
