@@ -15,12 +15,14 @@ import {
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
 import type { StockTake, StockTakeList } from "@/types/stock-take";
 
 export default function StockTakeIndexPage() {
   const router = useRouter();
   const { t } = useLang();
   const s = t.stockTake;
+  const { formatDateTime } = useFormat();
   const { data, error: loadError, isValidating, mutate } = useSWR<StockTakeList>(
     "/stock-takes?page_size=50",
     apiFetcher,
@@ -118,10 +120,10 @@ export default function StockTakeIndexPage() {
                       <StatusBadge status={take.status} hasRejected={hasRejected} />
                     </td>
                     <td className="px-4 py-3 text-gray-600 text-xs">
-                      {new Date(take.started_at).toLocaleString()}
+                      {formatDateTime(take.started_at)}
                     </td>
                     <td className="px-4 py-3 text-gray-600 text-xs">
-                      {take.closed_at ? new Date(take.closed_at).toLocaleString() : "—"}
+                      {take.closed_at ? formatDateTime(take.closed_at) : "—"}
                     </td>
                     <td className="px-4 py-3 text-end text-gray-700">{take.line_count}</td>
                     <td className="px-4 py-3 text-end text-gray-700">{take.variance_line_count}</td>

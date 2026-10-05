@@ -9,6 +9,7 @@ import {
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
 import type { Translations } from "@/i18n/en";
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
@@ -107,6 +108,7 @@ export default function StockTakeDetailPage({ params }: Props) {
 function Header({ take }: { take: StockTake }) {
   const { t } = useLang();
   const s = t.stockTake;
+  const { formatDateTime } = useFormat();
   const rejectedCount = take.lines.filter((l) => l.resolution === "REJECTED").length;
   const approvedCount = take.lines.filter((l) => l.resolution === "APPROVED").length;
 
@@ -119,9 +121,9 @@ function Header({ take }: { take: StockTake }) {
             {t.nav.stockTake} · {take.id.slice(0, 8)}…
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            {s.startedAt(new Date(take.started_at).toLocaleString())}
+            {s.startedAt(formatDateTime(take.started_at))}
             {take.closed_at && (
-              <> · {s.closedAt(new Date(take.closed_at).toLocaleString())}</>
+              <> · {s.closedAt(formatDateTime(take.closed_at))}</>
             )}
           </p>
           {take.notes && (

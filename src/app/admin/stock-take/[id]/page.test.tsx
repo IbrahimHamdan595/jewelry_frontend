@@ -30,12 +30,11 @@ const take = (over: Record<string, unknown>) => ({
   notes: null, lines: [], ...over,
 });
 
-// What the database supplies (names, codes, ids, staff-typed text) and the
-// browser-locale dates: not interface copy, so not expected to be Arabic.
+// What the database supplies (names, codes, ids, staff-typed text): not
+// interface copy, so not expected to be Arabic.
 const DATA = [
   "Gold Lira", "1oz Bar", "LIRA-8G", "OZ-1", "counted twice, still short",
   TAKE_ID.slice(0, 8), COIN_ID.slice(0, 8), OUNCE_ID.slice(0, 8),
-  new Date(STARTED).toLocaleString(), new Date(CLOSED).toLocaleString(),
 ];
 
 /** Text a user reads or a screen reader announces, minus the given data values. */
@@ -178,6 +177,8 @@ describe("stock-take detail: closed screen in Arabic (NEX-64)", () => {
       expect(screen.queryByText(english), english).toBeNull();
     }
     expect(screen.getByText(ar.stockTake.statusClosedRejected)).toBeInTheDocument();
+    // 10:00Z and 08:30Z on the Beirut wall clock, Arabic month, Western digits.
+    expect(screen.getByText(/^بدأ 05 (أيلول|سبتمبر) 2026\D{1,3}0?1:00\D{0,2}م · أُغلق 06 (أيلول|سبتمبر) 2026\D{1,3}11:30\D{0,2}ص$/)).toBeInTheDocument();
     expect(screen.getByText(ar.stockTake.rejectedTitle(1))).toBeInTheDocument();
     expect(screen.getByText(ar.stockTake.approvedTitle(1))).toBeInTheDocument();
     expect(screen.getByText(ar.stockTake.matchedTitle(1))).toBeInTheDocument();
@@ -193,6 +194,7 @@ describe("stock-take detail in English is unchanged", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderPage("en", submitted);
     expect(screen.getByText("Awaiting review")).toBeInTheDocument();
+    expect(screen.getByText(/^Started 05 Sept? 2026, 13:00$/)).toBeInTheDocument();
     expect(screen.getByText("2 pending variances")).toBeInTheDocument();
     expect(screen.getByText("short by 2")).toBeInTheDocument();
     expect(screen.getByText("over by 1")).toBeInTheDocument();

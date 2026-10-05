@@ -24,11 +24,8 @@ vi.mock("swr", () => ({
 }));
 vi.mock("@/lib/api-client", () => ({ apiFetcher: vi.fn(), api: { post: vi.fn(() => Promise.resolve({})) } }));
 
-// The rate feed's name comes from the server. The snapshot time and the money
-// are printed in the browser's own locale (which may say "US$"), not the UI's.
-const money = (n: number) => n.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const DATA = ["goldapi", new Date(TAKEN).toLocaleString(), money(1750), money(43.75)];
-const RATE = `$${(100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// The rate feed's name comes from the server.
+const DATA = ["goldapi"];
 
 /** Text a user reads or a screen reader announces, minus the given data values. */
 function englishLeft(root: HTMLElement): string[] {
@@ -51,8 +48,22 @@ describe("zakat page labels and i18n (NEX-64)", () => {
   it("has no English left in Arabic, units included", () => {
     const { container } = renderPage("ar");
     expect(screen.getByText(ar.zakat.dueFormula(ar.zakat.totalAuCardTitle))).toBeInTheDocument();
-    expect(screen.getByText((text) => text.startsWith(`${RATE}${ar.products.perGram}`))).toBeInTheDocument();
+    expect(screen.getByText((text) => text.startsWith(`$100.00${ar.products.perGram}`))).toBeInTheDocument();
     expect(englishLeft(container)).toEqual([]);
+  });
+
+  it("prints money, weights and the snapshot time the app's way, whatever the browser's locale", () => {
+    const { container } = renderPage("ar");
+    // formatUSD: "$", never "US$"; two decimals.
+    expect(screen.getByText("$1,750.00")).toBeInTheDocument();
+    expect(screen.getAllByText("$43.75")).toHaveLength(2);
+    expect(screen.getByText("$100.00", { selector: "td" })).toBeInTheDocument();
+    expect(screen.getAllByText("17.500").length).toBeGreaterThan(0);
+    // 10:00Z on the Beirut wall clock, Arabic month name, Western digits.
+    expect(screen.getByText(/^05 (أيلول|سبتمبر) 2026\D{1,3}0?1:00\D{0,2}م$/)).toBeInTheDocument();
+    // Dynamic values only: the pre-existing zakat labels spell some figures
+    // in Arabic-Indic digits ("٢٫٥٪"), which is copy, not formatting.
+    for (const cell of Array.from(container.querySelectorAll("td"))) expect(cell.textContent).not.toMatch(/[٠-٩]/);
   });
 
   it("translates the loading placeholder", () => {
@@ -91,7 +102,9 @@ describe("zakat page labels and i18n (NEX-64)", () => {
   it("reads exactly as before in English", () => {
     renderPage("en");
     expect(screen.getByText("2.5% × total pure au on hand")).toBeInTheDocument();
-    expect(screen.getByText((text) => text.startsWith(`${RATE}/g`))).toBeInTheDocument();
+    expect(screen.getByText((text) => text.startsWith("$100.00/g"))).toBeInTheDocument();
+    expect(screen.getByText("$1,750.00")).toBeInTheDocument();
+    expect(screen.getByText(/^05 Sept? 2026, 13:00$/)).toBeInTheDocument();
     expect(screen.getAllByText("g")).toHaveLength(3);
   });
 });

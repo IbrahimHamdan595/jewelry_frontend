@@ -5,17 +5,16 @@ import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from 
 import { apiFetcher, api } from "@/lib/api-client";
 import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
+import { formatUSD } from "@/lib/utils";
 import type { ZakatSnapshot, ZakatSnapshotList, ZakatSummary } from "@/types/zakat";
 
 // ── formatting helpers ────────────────────────────────────────────────────────
-const usd = (n: string | number) =>
-  Number(n).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+// Money goes through formatUSD and dates through useFormat(), like the rest of
+// the app. Weights are pinned to the same digits and separators as the money
+// beside them, instead of whatever the viewer's browser locale would print.
 const grams = (n: string | number, dp = 3) =>
-  Number(n).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
-
-const rate = (n: string | number) =>
-  Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  Number(n).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 
 function todayISO(): string {
   const d = new Date();
@@ -27,6 +26,7 @@ function todayISO(): string {
 export default function ZakatPage() {
   const { t } = useLang();
   const z = t.zakat;
+  const { formatDateTime } = useFormat();
 
   const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary, isValidating: validatingSummary } =
     useSWR<ZakatSummary>("/zakat", apiFetcher);
@@ -132,12 +132,12 @@ export default function ZakatPage() {
           </div>
           <div className="text-xs text-gray-500 mt-3 flex justify-between">
             <span>{z.cashValue}</span>
-            <span className="font-medium text-gray-700">{usd(summary.total_au_value_usd)}</span>
+            <span className="font-medium text-gray-700">{formatUSD(summary.total_au_value_usd)}</span>
           </div>
           <div className="text-xs text-gray-400 mt-2 flex justify-between">
             <span>{z.rateLabel}</span>
             <span>
-              ${rate(summary.gold_rate_24k)}{t.products.perGram}
+              {formatUSD(summary.gold_rate_24k)}{t.products.perGram}
               <span className="ms-1.5 inline-flex items-center gap-1 text-[10px]">
                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
                   {summary.gold_rate_source}
@@ -160,7 +160,7 @@ export default function ZakatPage() {
           </div>
           <div className="text-xs text-gray-500 mt-3 flex justify-between">
             <span>{z.zakatDueCash}</span>
-            <span className="font-medium text-gold">{usd(summary.zakat_value_usd)}</span>
+            <span className="font-medium text-gold">{formatUSD(summary.zakat_value_usd)}</span>
           </div>
           <div className="text-xs text-gray-400 mt-2">
             {z.dueFormula(z.totalAuCardTitle.toLowerCase())}
@@ -294,12 +294,12 @@ export default function ZakatPage() {
                   <tr key={s.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-2.5 font-medium text-gray-800">{s.assessment_date}</td>
                     <td className="px-3 py-2.5 text-gray-500 text-xs">
-                      {new Date(s.taken_at).toLocaleString()}
+                      {formatDateTime(s.taken_at)}
                     </td>
                     <td className="px-3 py-2.5 text-end text-gray-700">{grams(s.total_au_grams)}</td>
                     <td className="px-3 py-2.5 text-end text-gold font-medium">{grams(s.zakat_au_grams)}</td>
-                    <td className="px-3 py-2.5 text-end text-gold font-medium">{usd(s.zakat_value_usd)}</td>
-                    <td className="px-3 py-2.5 text-end text-gray-600">${rate(s.gold_rate_24k_usd_per_gram)}</td>
+                    <td className="px-3 py-2.5 text-end text-gold font-medium">{formatUSD(s.zakat_value_usd)}</td>
+                    <td className="px-3 py-2.5 text-end text-gray-600">{formatUSD(s.gold_rate_24k_usd_per_gram)}</td>
                     <td className="px-3 py-2.5 text-xs">
                       <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
                         {s.gold_rate_source}

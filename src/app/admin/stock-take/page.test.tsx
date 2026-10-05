@@ -24,8 +24,12 @@ const takes = [
   row({ id: "t3", status: "CLOSED", closed_at: CLOSED, approved_count: 2 }),
   row({ id: "t4", status: "CLOSED", closed_at: CLOSED, rejected_count: 1 }),
 ];
-// The screen prints dates with the browser's own locale; they are data here.
-const DATES = [new Date(STARTED).toLocaleString(), new Date(CLOSED).toLocaleString()];
+// 10:00Z and 08:30Z on the Beirut wall clock (UTC+3 in September). Month
+// spelling and separators are ICU's; the day, year and time are what matter.
+const STARTED_AR = /^05 (أيلول|سبتمبر) 2026\D{1,3}0?1:00\D{0,2}م$/;
+const CLOSED_AR = /^06 (أيلول|سبتمبر) 2026\D{1,3}11:30\D{0,2}ص$/;
+const STARTED_EN = /^05 Sept? 2026, 13:00$/;
+const CLOSED_EN = /^06 Sept? 2026, 11:30$/;
 
 /** Text a user reads or a screen reader announces, minus the given data values. */
 function englishLeft(root: HTMLElement, data: string[] = []): string[] {
@@ -57,7 +61,14 @@ describe("stock-take list in Arabic (NEX-64)", () => {
       expect(screen.queryByText(english), english).toBeNull();
     }
     expect(screen.queryByText(/Nothing touches inventory/)).toBeNull();
-    expect(englishLeft(container, DATES)).toEqual([]);
+    expect(englishLeft(container)).toEqual([]);
+  });
+
+  it("prints dates on the Beirut clock with Arabic month names and Western digits", () => {
+    const { container } = renderPage("ar");
+    expect(screen.getAllByText(STARTED_AR)).toHaveLength(4);
+    expect(screen.getAllByText(CLOSED_AR)).toHaveLength(2);
+    expect(container.textContent).not.toMatch(/[٠-٩]/);
   });
 
   it("translates every status pill, and keeps 'closed with rejection' apart from plain 'closed'", () => {
@@ -101,6 +112,8 @@ describe("stock-take list in English is unchanged", () => {
     expect(screen.getByRole("button", { name: "Start new count" })).toBeInTheDocument();
     expect(screen.getByText("Closed with rejection")).toBeInTheDocument();
     expect(screen.getByText(en.stockTake.introStrong)).toHaveTextContent("Nothing touches inventory until you click Approve on a specific line.");
+    expect(screen.getAllByText(STARTED_EN)).toHaveLength(4);
+    expect(screen.getAllByText(CLOSED_EN)).toHaveLength(2);
     for (const header of ["Status", "Started", "Lines", "Variances", "Approved", "Rejected"]) {
       expect(screen.getByRole("columnheader", { name: header })).toBeInTheDocument();
     }
