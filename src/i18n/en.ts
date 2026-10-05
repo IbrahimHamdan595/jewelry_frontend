@@ -162,6 +162,186 @@ export interface Translations {
     signOut: string;
     buyback: string;
     sale: string;
+    // NEX-64 slice 5 — scan panel and add-coin / add-ounce dialog
+    capture: string;
+    step01: string;
+    itemNotFound: string;
+    readyToScan: string;
+    scanHint: string;
+    manualEntry: string;
+    productCodePlaceholder: string;
+    find: string;
+    addCoinToCart: string;
+    addOunceToCart: string;
+    searchCoinTypes: string;
+    searchOunceTypes: string;
+    noCoinTypes: string;
+    noOunceTypes: string;
+    onHand: string;
+    unitPrice: string;
+    qty: string;
+    adding: string;
+    addToCart: string;
+  };
+
+  // NEX-64 slice 5 — POS buyback form and its confirmation screen
+  posBuyback: {
+    eyebrow: string;
+    title: string;
+    kinds: { PURE_GOLD: string; COIN: string; OUNCE: string; USED_PRODUCT: string };
+    sellerName: string;
+    phone: string;
+    coinType: string;
+    ounceType: string;
+    selectPlaceholder: string;
+    enterWeightHint: string;
+    manualPriceUsd: string;
+    manualPriceUsdTotal: string;
+    pricePaidUsd: string;
+    notes: string;
+    notesOptional: string;
+    /** `mark` wraps the two highlighted verbs; each language places them itself. */
+    usedPieceHint: <T>(mark: (word: string) => T) => (string | T)[];
+    priceModeAuto: string;
+    priceModeManual: string;
+    spot24k: string;
+    buybackMargin: string;
+    effective: string;
+    paySeller: string;
+    staleQuote: string;
+    perUnitFormula: string;
+    totalBuyPrice: string;
+    rate: string;
+    rateLine: (rate: string, source: string, stale: boolean) => string;
+    sellerRequired: string;
+    record: string;
+    recording: string;
+    recorded: string;
+    paidTo: (amount: string, name: string) => string;
+    newBuyback: string;
+  };
+
+  // NEX-64 slice 5 — cart, checkout panel, confirm dialog, sale-complete screen
+  checkout: {
+    currentSale: string;
+    noItems: string;
+    itemCount: (n: number) => string;
+    scanToBegin: string;
+    itemsAppearHere: string;
+    customerOptional: string;
+    customerNamePlaceholder: string;
+    paymentMethod: string;
+    /**
+     * Every value the API can put on an order or a purchase: CASH / CARD / MIXED from the
+     * till, CREDIT for a sale on account, GOLD for a supplier purchase settled in metal.
+     */
+    paymentMethods: { CASH: string; CARD: string; MIXED: string; CREDIT: string; GOLD: string };
+    discountPctMax: (max: number) => string;
+    vatLine: (pct: number) => string;
+    discountLine: (pct: number) => string;
+    processing: string;
+    addItemsToCheckout: string;
+    checkoutTotal: (total: string) => string;
+    perEach: (price: string) => string;
+    eachAndTotal: (unit: string, total: string) => string;
+    itemKinds: { COIN: string; OUNCE: string };
+    /** One set of buttons per cart line, so each names its item. */
+    decreaseQty: (item: string) => string;
+    increaseQty: (item: string) => string;
+    removeItem: (item: string) => string;
+    onlyInStock: (n: number) => string;
+    confirmTitle: string;
+    confirmHint: string;
+    qty: string;
+    walkIn: string;
+    payment: string;
+    backToEdit: string;
+    confirmRateAbove: string;
+    confirmComplete: string;
+    saleComplete: string;
+    thankYou: (name: string) => string;
+    items: string;
+    cashier: string;
+    newOrder: string;
+    returningToPos: string;
+  };
+
+  // NEX-64 slice 5 — printable receipt (sale, supplier purchase, buyback)
+  receipt: {
+    titles: { SALE: string; SUPPLIER_PURCHASE: string; BUYBACK: string };
+    roles: { customer: string; supplier: string; seller: string };
+    vatNumber: string;
+    ref: string;
+    date: string;
+    cashier: string;
+    phone: string;
+    stonesLine: (amount: string) => string;
+    total: string;
+    lbpEquiv: string;
+    thankYou: (store: string) => string;
+    printReceipt: string;
+    print: string;
+    loading: string;
+  };
+
+  // NEX-64 slice 5 — live rate card, stale-rate acknowledgement, market-closed banner
+  goldRate: {
+    live: string;
+    stale: string;
+    /** `source` as the API reports it: "live" (polled feed) or "override" (set by an admin). */
+    sources: { live: string; override: string };
+    refresh: string;
+    olderThan15: string;
+    karatUsdPerGram: (karat: string) => string;
+    outOfDate: string;
+    lastRefreshed: (time: string) => string;
+    payingOut: string;
+    charging: string;
+    confirmSelling: (time: string) => string;
+    confirmBuying: (time: string) => string;
+    marketClosedTitle: string;
+    ageingTitle: string;
+    marketClosedBody: (since: string) => string;
+    askManager: string;
+    setOverrideHint: string;
+    ageingBody: (since: string) => string;
+  };
+
+  // NEX-64 slice 5 — admin gold-price page
+  goldPrice: {
+    marketClosedBody: (since: string) => string;
+    heroLabel: string;
+    liveChartTitle: string;
+    realTimeData: string;
+    historyTitle: string;
+    ranges: { "24h": string; "7d": string; "30d": string };
+    noHistory: string;
+    tooltipRate: (karat: string) => string;
+    overrideTitle: string;
+    overrideActive: string;
+    clear: string;
+    noOverride: string;
+    ratePlaceholder: string;
+    reasonPlaceholder: string;
+    rateInputLabel: string;
+    reasonInputLabel: string;
+    auditNote: string;
+    setOverride: string;
+  };
+
+  // NEX-64 slice 5 — admin barcode-label page
+  qrLabels: {
+    selectProducts: string;
+    selectAll: string;
+    labelsSelected: (n: number) => string;
+    printLabels: string;
+    previewTitle: string;
+    selectAProduct: string;
+    formatTitle: string;
+    formatHelp: string;
+    /** One stepper per product row, so each names its product. */
+    fewerCopies: (product: string) => string;
+    moreCopies: (product: string) => string;
   };
 
   common: {
@@ -221,6 +401,52 @@ export interface Translations {
     cancel: string;
     close: string;
     saving: string;
+    // NEX-64 slice 5 — the rest of the settings page
+    saveChanges: string;
+    tabStore: string;
+    tabPricing: string;
+    tabReceipt: string;
+    tabStaff: string;
+    tabSecurity: string;
+    storeName: string;
+    storeNameAr: string;
+    storeNameArHint: string;
+    fields: {
+      address: string;
+      phone: string;
+      vat_number: string;
+      default_margin_pct: string;
+      default_making_charge: string;
+      vat_percent: string;
+      lbp_exchange_rate: string;
+      max_discount_percent: string;
+    };
+    pricingNotice: string;
+    maxDiscountHint: string;
+    buybackPricing: string;
+    buybackPricingHelp: string;
+    marginMode: string;
+    marginModes: { USD_PER_GRAM: string; PERCENT: string };
+    marginValue: string;
+    maxDriftPct: string;
+    markupTitle: string;
+    markupHelp: string;
+    markupLabel: (karat: string) => string;
+    nisabHelp: string;
+    nisabGrams: string;
+    footerMessage: string;
+    changePassword: string;
+    passwordChanged: string;
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+    updatePassword: string;
+    passwordsMismatch: string;
+    cashiers: string;
+    addCashier: string;
+    staffFields: { name: string; email: string; password: string };
+    staffActive: string;
+    staffDisabled: string;
   };
 
   errors: {
@@ -570,6 +796,184 @@ const en: Translations = {
     signOut: "Sign out",
     buyback: "Buyback",
     sale: "Sale",
+    // NEX-64 slice 5 — scan panel and add-coin / add-ounce dialog
+    capture: "Capture",
+    step01: "Step 01",
+    itemNotFound: "Item not found",
+    readyToScan: "Ready to scan",
+    scanHint: "Point scanner at barcode or enter code below",
+    manualEntry: "Manual entry",
+    productCodePlaceholder: "Product code…",
+    find: "Find",
+    addCoinToCart: "Add coin to cart",
+    addOunceToCart: "Add ounce bar to cart",
+    searchCoinTypes: "Search coin types…",
+    searchOunceTypes: "Search ounce types…",
+    noCoinTypes: "No coin types found",
+    noOunceTypes: "No ounce types found",
+    onHand: "on hand:",
+    unitPrice: "Unit price",
+    qty: "Qty",
+    adding: "Adding…",
+    addToCart: "Add to cart",
+  },
+
+  // NEX-64 slice 5 — POS buyback form and its confirmation screen
+  posBuyback: {
+    eyebrow: "Buy back",
+    title: "Customer is selling gold",
+    kinds: { PURE_GOLD: "Pure gold", COIN: "Coin", OUNCE: "Ounce bar", USED_PRODUCT: "Used piece" },
+    sellerName: "Seller name",
+    phone: "Phone",
+    coinType: "Coin type",
+    ounceType: "Ounce bar type",
+    selectPlaceholder: "— select —",
+    enterWeightHint: "Enter weight to see the live quote.",
+    manualPriceUsd: "Manual price (USD)",
+    manualPriceUsdTotal: "Manual price (USD, total)",
+    pricePaidUsd: "Price paid (USD)",
+    notes: "Notes",
+    notesOptional: "Notes (optional)",
+    usedPieceHint: (mark) => [
+      "Used pieces are priced by hand. Admin can later ",
+      mark("polish"),
+      " them into the catalog or ",
+      mark("melt"),
+      " them into a pure-gold lot.",
+    ],
+    priceModeAuto: "Auto (spot − margin)",
+    priceModeManual: "Manual price",
+    spot24k: "Spot 24K",
+    buybackMargin: "Buyback margin",
+    effective: "Effective",
+    paySeller: "Pay seller",
+    staleQuote: "⚠️ This quote is based on an out-of-date rate.",
+    perUnitFormula: "Per unit (formula)",
+    totalBuyPrice: "Total buy price",
+    rate: "Rate",
+    rateLine: (rate, source, stale) => `$${rate}/g (24K) · ${source}${stale ? " (stale)" : ""}`,
+    sellerRequired: "Seller name and phone are required.",
+    record: "Record buy back",
+    recording: "Recording…",
+    recorded: "Buy back recorded",
+    paidTo: (amount, name) => `Paid ${amount} to ${name}`,
+    newBuyback: "New buy back",
+  },
+
+  // NEX-64 slice 5 — cart, checkout panel, confirm dialog, sale-complete screen
+  checkout: {
+    currentSale: "Current Sale",
+    noItems: "No items yet",
+    itemCount: (n) => `${n} item${n === 1 ? "" : "s"}`,
+    scanToBegin: "Scan an item to begin",
+    itemsAppearHere: "Items added will appear here",
+    customerOptional: "Customer (optional)",
+    customerNamePlaceholder: "Customer name",
+    paymentMethod: "Payment method",
+    paymentMethods: { CASH: "CASH", CARD: "CARD", MIXED: "MIXED", CREDIT: "CREDIT", GOLD: "GOLD" },
+    discountPctMax: (max) => `Discount % (max ${max}%)`,
+    vatLine: (pct) => `VAT ${pct}%`,
+    discountLine: (pct) => `Discount ${pct}%`,
+    processing: "PROCESSING…",
+    addItemsToCheckout: "ADD ITEMS TO CHECKOUT",
+    checkoutTotal: (total) => `CHECKOUT · ${total}`,
+    perEach: (price) => `${price}/ea`,
+    eachAndTotal: (unit, total) => `${unit} ea · ${total}`,
+    itemKinds: { COIN: "COIN", OUNCE: "OUNCE" },
+    decreaseQty: (item) => `Decrease quantity of ${item}`,
+    increaseQty: (item) => `Increase quantity of ${item}`,
+    removeItem: (item) => `Remove ${item}`,
+    onlyInStock: (n) => `Only ${n} in stock`,
+    confirmTitle: "Confirm this order?",
+    confirmHint: "Review the items and quantities before completing the sale.",
+    qty: "Qty",
+    walkIn: "Walk-in",
+    payment: "Payment",
+    backToEdit: "Back to edit",
+    confirmRateAbove: "CONFIRM THE RATE ABOVE",
+    confirmComplete: "CONFIRM & COMPLETE",
+    saleComplete: "SALE COMPLETE",
+    thankYou: (name) => `Thank you, ${name}`,
+    items: "Items",
+    cashier: "Cashier",
+    newOrder: "+ New Order",
+    returningToPos: "Returning to POS in 30 seconds…",
+  },
+
+  // NEX-64 slice 5 — printable receipt (sale, supplier purchase, buyback)
+  receipt: {
+    titles: { SALE: "SALES RECEIPT", SUPPLIER_PURCHASE: "PURCHASE RECEIPT", BUYBACK: "BUYBACK RECEIPT" },
+    roles: { customer: "CUSTOMER", supplier: "SUPPLIER", seller: "SELLER" },
+    vatNumber: "VAT:",
+    ref: "REF",
+    date: "DATE",
+    cashier: "CASHIER",
+    phone: "PHONE",
+    stonesLine: (amount) => `Stones: ${amount}`,
+    total: "TOTAL",
+    lbpEquiv: "LBP Equiv.",
+    thankYou: (store) => `Thank you — ${store}`,
+    printReceipt: "Print Receipt",
+    print: "Print",
+    loading: "Loading receipt…",
+  },
+
+  // NEX-64 slice 5 — live rate card, stale-rate acknowledgement, market-closed banner
+  goldRate: {
+    live: "LIVE",
+    stale: "STALE",
+    sources: { live: "live", override: "override" },
+    refresh: "Refresh",
+    olderThan15: "Gold rate is older than 15 minutes",
+    karatUsdPerGram: (karat) => `${karat} · USD/g`,
+    outOfDate: "The gold rate is out of date.",
+    lastRefreshed: (time) => `It last refreshed at ${time} and the feed has not recovered since.`,
+    payingOut: "You are paying out on this price.",
+    charging: "You are charging on this price.",
+    confirmSelling: (time) => `I confirm selling on the rate from ${time}.`,
+    confirmBuying: (time) => `I confirm buying on the rate from ${time}.`,
+    marketClosedTitle: "Market closed / gold feed down",
+    ageingTitle: "Gold rate is ageing",
+    marketClosedBody: (since) => `The rate hasn't refreshed since ${since}. Sales and buybacks now need an on-screen confirmation before they complete.`,
+    askManager: "Ask a manager to set a manual override if this continues.",
+    setOverrideHint: "Set a manual override on the Gold Price page to price deliberately instead.",
+    ageingBody: (since) => `Last refreshed ${since}. Still trading on it; no action needed yet.`,
+  },
+
+  // NEX-64 slice 5 — admin gold-price page
+  goldPrice: {
+    marketClosedBody: (since) => `The rate hasn't refreshed since ${since}. Customers are being served the last known rate. Set a manual override below if you need to trade.`,
+    heroLabel: "24K Gold — USD/gram",
+    liveChartTitle: "XAU/USD — Live Chart (TradingView)",
+    realTimeData: "Real-time market data",
+    historyTitle: "Polled Rate History",
+    ranges: { "24h": "24H", "7d": "7D", "30d": "30D" },
+    noHistory: "No polled rates for this period",
+    tooltipRate: (karat) => `${karat} rate`,
+    overrideTitle: "Manual Override",
+    overrideActive: "Override active:",
+    clear: "Clear",
+    noOverride: "No override active — using live feed",
+    ratePlaceholder: "Enter rate USD/g…",
+    reasonPlaceholder: "Reason (required, recorded in audit log)…",
+    rateInputLabel: "Override rate (USD/g)",
+    reasonInputLabel: "Reason for the override",
+    auditNote: "Every override is logged with actor, rate, prior rate, and reason. Reason is mandatory.",
+    setOverride: "Set Override",
+  },
+
+  // NEX-64 slice 5 — admin barcode-label page
+  qrLabels: {
+    selectProducts: "Select Products",
+    selectAll: "Select all",
+    labelsSelected: (n) => `${n} label${n !== 1 ? "s" : ""} selected`,
+    printLabels: "Print Labels",
+    previewTitle: "Label Preview (80×40mm)",
+    selectAProduct: "Select a product",
+    formatTitle: "Format: CODE128 (1D)",
+    formatHelp: "Compatible with any standard 1D barcode scanner. The cashier scans the bars; the product code below is a fallback for manual entry.",
+    fewerCopies: (product) => `Fewer copies of ${product}`,
+    moreCopies: (product) => `More copies of ${product}`,
   },
 
   common: {
@@ -629,6 +1033,52 @@ const en: Translations = {
     cancel: "Cancel",
     close: "Close",
     saving: "Saving…",
+    // NEX-64 slice 5 — the rest of the settings page
+    saveChanges: "Save Changes",
+    tabStore: "Store Info",
+    tabPricing: "Default Pricing",
+    tabReceipt: "Receipt",
+    tabStaff: "Staff",
+    tabSecurity: "Security",
+    storeName: "Store name",
+    storeNameAr: "Store name (Arabic)",
+    storeNameArHint: "Printed on receipts when the language is Arabic. Leave blank to fall back to the English name.",
+    fields: {
+      address: "Address",
+      phone: "Phone",
+      vat_number: "VAT number",
+      default_margin_pct: "Default margin pct",
+      default_making_charge: "Default making charge",
+      vat_percent: "VAT percent",
+      lbp_exchange_rate: "LBP exchange rate",
+      max_discount_percent: "Max discount percent",
+    },
+    pricingNotice: "Existing products are not affected. Editing a product overrides these defaults.",
+    maxDiscountHint: "Maximum order-level discount a cashier may apply at checkout. 0 disables discounts.",
+    buybackPricing: "Buyback Pricing",
+    buybackPricingHelp: "Default spread the shop applies when buying gold back from customers. Per-transaction override is available on the buyback POS form.",
+    marginMode: "Margin Mode",
+    marginModes: { USD_PER_GRAM: "USD per gram", PERCENT: "Percent" },
+    marginValue: "Margin Value",
+    maxDriftPct: "Max Drift %",
+    markupTitle: "Per-Karat Gold Markup (USD / gram)",
+    markupHelp: "Added to the karat purity rate before calculating metal value. Example: K21 markup = $5 means the K21 rate used in pricing is (market × 87.5%) + $5/g.",
+    markupLabel: (karat) => `${karat} Markup`,
+    nisabHelp: "Threshold (in grams of pure gold) above which zakat is due. Conventionally ~85g. Editable so the owner can match the rule their scholar prescribes.",
+    nisabGrams: "Nisab (grams)",
+    footerMessage: "Footer Message",
+    changePassword: "Change Password",
+    passwordChanged: "Password changed successfully.",
+    currentPassword: "Current Password",
+    newPassword: "New Password",
+    confirmNewPassword: "Confirm New Password",
+    updatePassword: "Update Password",
+    passwordsMismatch: "New passwords do not match",
+    cashiers: "Cashiers",
+    addCashier: "Add Cashier",
+    staffFields: { name: "name", email: "email", password: "password" },
+    staffActive: "Active",
+    staffDisabled: "Disabled",
   },
 
   errors: {
