@@ -1,7 +1,7 @@
 "use client";
 import { Trash2, Minus, Plus } from "lucide-react";
 import { KaratBadge } from "@/components/shared/KaratBadge";
-import { formatUSD } from "@/lib/utils";
+import { formatRate, formatUSD } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { Ltr } from "@/components/shared/Ltr";
 import type { CartItem as CartItemType } from "@/hooks/useCart";
@@ -32,7 +32,7 @@ export function CartItem({ item, onRemove, onQuantityChange }: Props) {
         <div className="text-xs text-pos-gray mt-0.5">
           {/* A data line — code, weight and rate with their unit symbols — kept as one
               isolated left-to-right run in either language; only the per-piece note is copy. */}
-          <Ltr>{`${item.code} · ${item.weightGrams}g @ $${item.goldRate24k.toFixed(2)}/g`}</Ltr>
+          <Ltr>{`${item.code} · ${item.weightGrams}g @ ${formatRate(item.goldRate24k)}/g`}</Ltr>
           {item.quantity > 1 && <span className="ms-1">· {t.checkout.perEach(formatUSD(item.unitPrice))}</span>}
         </div>
       </div>

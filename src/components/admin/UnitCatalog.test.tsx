@@ -352,6 +352,34 @@ describe("UnitCatalog in English is unchanged", () => {
   });
 });
 
+// NEX-54: GET /coins/{id}/price is moving gold_rate_24k from a JSON number to
+// an exact decimal string.
+describe("UnitCatalog live price — the rate as a decimal string or a number (NEX-54)", () => {
+  function dialog(price: unknown) {
+    db.price = price;
+    const view = renderCatalog("en");
+    fireEvent.click(rowButton(en, "Live price"));
+    const spot = screen.getByText("Spot 24K").parentElement?.textContent;
+    const html = view.container.innerHTML;
+    view.unmount();
+    return { spot, html };
+  }
+
+  it("prints the same dialog for both shapes", () => {
+    const numeric = dialog({ ...PRICE, gold_rate_24k: 141.6 });
+    const exact = dialog({ ...PRICE, gold_rate_24k: "141.60" });
+    expect(numeric.spot).toBe("Spot 24K$141.60/g");
+    expect(exact.spot).toBe(numeric.spot);
+    expect(exact.html).toBe(numeric.html);
+  });
+
+  it("a rate that cannot be read shows the missing-amount dash, never NaN", () => {
+    const { spot, html } = dialog({ ...PRICE, gold_rate_24k: null });
+    expect(spot).toBe("Spot 24K—/g");
+    expect(html).not.toContain("NaN");
+  });
+});
+
 describe("unitCatalog dictionary is translated, not English placeholders", () => {
   const strings = (dict: typeof en.unitCatalog) => ({
     ...dict,

@@ -65,9 +65,10 @@ export interface Product {
 }
 
 export interface ProductLookup extends Product {
-  gold_rate_24k: number;
-  purity_rate: number;
-  final_price: number;
+  gold_rate_24k: Money;
+  /** Decimal columns: strings on the wire. */
+  purity_rate: Money;
+  final_price: Money;
   photo_url: string | null;
 }
 
@@ -379,11 +380,12 @@ export interface UnitTypeListResponse {
 export interface UnitPrice {
   type_id: string;
   code: string;
-  gold_rate_24k: number;
-  effective_rate: number;
-  metal_value: number;
-  margin_amount: number;
-  final_price: number;
+  gold_rate_24k: Money;
+  /** Decimal columns: strings on the wire. */
+  effective_rate: Money;
+  metal_value: Money;
+  margin_amount: Money;
+  final_price: Money;
   on_hand_qty: number;
   rate_source: string;
   rate_is_stale: boolean;

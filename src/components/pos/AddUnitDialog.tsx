@@ -3,7 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import useSWR from "swr";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatUSD, toFiniteNumber } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
 import { useLang } from "@/context/LanguageContext";
 import type { UnitPrice, UnitTypeListResponse } from "@/types/api";
@@ -51,13 +51,18 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
     apiFetcher,
   );
 
+  // Decimal strings or numbers (NEX-54): read once, as numbers, before they
+  // reach the cart. A quote that cannot be read cannot be added — never at $0.
+  const unitPrice = toFiniteNumber(price?.final_price);
+  const goldRate24k = toFiniteNumber(price?.gold_rate_24k);
+
   const selected = types?.items.find((u) => u.id === selectedId);
   const qty = Math.max(1, Number(quantity) || 1);
   const exceedsCap = qty > 100;
   const insufficientStock = selected && selected.on_hand_qty < qty;
 
   async function handleAdd() {
-    if (!selected || !price) return;
+    if (!selected || unitPrice === null || goldRate24k === null) return;
     setError(null);
     if (exceedsCap) {
       setError("Quantity capped at 100 per line. Add a second line for more.");
@@ -79,9 +84,9 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
         karat: selected.karat,
         weightGrams: Number(selected.weight_grams),
         quantity: qty,
-        goldRate24k: price.gold_rate_24k,
-        unitPrice: Number(price.final_price),
-        finalPrice: Number(price.final_price) * qty,
+        goldRate24k,
+        unitPrice,
+        finalPrice: unitPrice * qty,
         imageUrl: selected.photo_url ?? undefined,
       });
       onAdded();
@@ -175,9 +180,9 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
                   className="w-24 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
                 />
               </label>
-              {price && (
+              {unitPrice !== null && (
                 <span className="text-sm text-pos-gray">
-                  = <span className="text-pos-cream font-semibold">{formatUSD(Number(price.final_price) * qty)}</span>
+                  = <span className="text-pos-cream font-semibold">{formatUSD(unitPrice * qty)}</span>
                 </span>
               )}
             </div>
@@ -196,7 +201,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
           </button>
           <button
             onClick={handleAdd}
-            disabled={!selected || !price || adding || exceedsCap || !!insufficientStock}
+            disabled={!selected || unitPrice === null || goldRate24k === null || adding || exceedsCap || !!insufficientStock}
             className="px-5 py-2 bg-gold hover:bg-gold-dark text-black text-sm font-semibold rounded disabled:opacity-50 transition-colors"
           >
             {adding ? t.pos.adding : t.pos.addToCart}

@@ -162,3 +162,41 @@ describe("CheckoutPanel — the money is untouched", () => {
     expect(screen.getByRole("button", { name: ar.checkout.processing })).toBeDisabled();
   });
 });
+
+// NEX-54: a tab running the previous build while the backend switches to decimal
+// strings can leave a rate in the stored cart as the string the API sent. The
+// reload onto this build must read that cart, not crash on it.
+describe("CheckoutPanel — a stored cart from before the rate was normalised (NEX-54)", () => {
+  beforeEach(() => sessionStorage.clear());
+
+  const stored = (items: unknown[]) =>
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items, paymentMethod: "CASH", discountPercent: 0 }));
+
+  it("a rate stored as a decimal string renders the same line and totals as a number", () => {
+    seedCart([ring]);
+    const numeric = renderPanel("en");
+    const expected = numeric.container.innerHTML;
+    numeric.unmount();
+
+    stored([{ ...ring, goldRate24k: "141.66" }]);
+    const { container } = renderPanel("en");
+    expect(container.innerHTML).toBe(expected);
+    expect(screen.getByText("FN-21K-0001 · 5g @ $141.66/g")).toBeInTheDocument();
+    // …and it is a number again in the cart from here on.
+    const [line] = JSON.parse(sessionStorage.getItem(CART_STORAGE_KEY) ?? "{}").items;
+    expect(line.goldRate24k).toBe(141.66);
+  });
+
+  it.each([
+    ["a price that cannot be read", { ...ring, unitPrice: "n/a", finalPrice: "n/a" }],
+    ["a missing price", { ...ring, finalPrice: null }],
+    ["a rate that cannot be read", { ...ring, goldRate24k: "n/a" }],
+  ])("a stored line with %s is not trusted: the till starts empty rather than show a NaN or zero-priced line", (_name, line) => {
+    stored([coin, line]);
+    const { container } = renderPanel("en");
+    expect(screen.getByText(en.checkout.noItems)).toBeInTheDocument();
+    expect(screen.queryByText("Ring")).toBeNull();
+    expect(container).not.toHaveTextContent("NaN");
+    expect(sessionStorage.getItem(CART_STORAGE_KEY)).toBeNull();
+  });
+});
