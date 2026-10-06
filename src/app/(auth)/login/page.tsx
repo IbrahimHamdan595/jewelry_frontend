@@ -6,6 +6,7 @@ import { login } from "@/lib/auth";
 import { canAccess, homeFor, safeNextPath } from "@/lib/access";
 import { useLang } from "@/context/LanguageContext";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { errorMessage, errorStatus } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,8 +33,21 @@ export default function LoginPage() {
       // static page with no Suspense boundary requirement.
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       router.push(next && canAccess(user.role, next.split("?")[0]) ? next : home);
-    } catch (err: any) {
-      setError(err.message ?? t.login.failed);
+    } catch (err) {
+      // The sign-in endpoint refuses in three fixed ways, each the same sentence
+      // every time, so each is translated by its status rather than shown in
+      // the server's English:
+      //   401  wrong email or password
+      //   403  the account is disabled
+      //   429  too many attempts — the per-IP rate limit (a body with no
+      //        `detail`) or, on the newer backend, a locked account
+      // Anything else goes through errorMessage like every other screen.
+      const fixed: Record<number, string> = {
+        401: t.login.invalidCredentials,
+        403: t.login.accountDisabled,
+        429: t.login.tooManyAttempts,
+      };
+      setError(fixed[errorStatus(err) ?? 0] ?? errorMessage(err, t.login.failed));
     } finally {
       setLoading(false);
     }

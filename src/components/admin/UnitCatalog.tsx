@@ -2,10 +2,12 @@
 import { useRef, useState } from "react";
 import useSWR from "swr";
 import { Plus, Pencil, Sliders, DollarSign, ToggleLeft, ToggleRight, Image as ImageIcon } from "lucide-react";
-import { apiFetcher, api, uploadFile } from "@/lib/api-client";
+import { apiFetcher, api, uploadFile, errorMessage } from "@/lib/api-client";
 import { ErrorRow } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatRate, formatUSD } from "@/lib/utils";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { Ltr } from "@/components/shared/Ltr";
+import { useLang } from "@/context/LanguageContext";
 import type {
   Karat,
   MarginMode,
@@ -19,17 +21,20 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 const REASONS: AdjustmentReason[] = ["LOSS", "THEFT", "GIFT", "SAMPLE", "CORRECTION"];
 
 interface Props {
-  /** API resource path segment, e.g. "coins" or "ounces" */
+  /**
+   * API resource path segment. Also picks the catalog's wording
+   * (t.unitCatalog[resource]): "New coin type" and "No coin types yet" are
+   * whole phrases per language, not a noun slotted into an English sentence.
+   */
   resource: "coins" | "ounces";
   /** Adjustment target_type for stock changes */
   adjustmentTarget: "COIN_STOCK" | "OUNCE_STOCK";
-  /** Display label, e.g. "Coin Type" / "Ounce Type" */
-  singular: string;
-  /** Display label, e.g. "Coin Types" / "Ounce Types" */
-  plural: string;
 }
 
-export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Props) {
+export function UnitCatalog({ resource, adjustmentTarget }: Props) {
+  const { t } = useLang();
+  const u = t.unitCatalog;
+  const noun = u[resource];
   const [search, setSearch] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
 
@@ -66,7 +71,8 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <input
-            placeholder={`Search ${plural.toLowerCase()}…`}
+            placeholder={noun.search}
+            aria-label={noun.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold w-64"
@@ -78,22 +84,21 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
               onChange={(e) => setIncludeInactive(e.target.checked)}
               className="rounded border-gray-300"
             />
-            Include inactive
+            {u.includeInactive}
           </label>
         </div>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          New {singular}
+          <Plus className="w-4 h-4" aria-hidden />
+          {noun.newType}
         </button>
       </div>
 
       {showForm && (
         <UnitTypeForm
           resource={resource}
-          singular={singular}
           existing={editing}
           onCancel={() => setShowForm(false)}
           onSaved={async () => {
@@ -107,29 +112,29 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="px-4 py-3 w-14" />
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Code
+              <th className="px-4 py-3 w-14" aria-label={u.photo} />
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.code}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Name
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {t.common.name}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Karat
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.karat}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Weight
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.weight}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Markup / Margin
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.markupMargin}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                On hand
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.onHand}
               </th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                Min
+              <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">
+                {u.min}
               </th>
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3" aria-label={t.common.actions} />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -140,7 +145,7 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
             ) : !data.items.length ? (
               <tr>
                 <td colSpan={9} className="p-8 text-center text-gray-400 text-sm">
-                  No {plural.toLowerCase()} yet
+                  {noun.empty}
                 </td>
               </tr>
             ) : (
@@ -158,11 +163,11 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
                         />
                       ) : (
                         <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5 text-gray-300" />
+                          <ImageIcon className="w-5 h-5 text-gray-300" aria-hidden />
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{row.code}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700"><Ltr>{row.code}</Ltr></td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800">{row.name_en}</div>
                       {row.name_ar && (
@@ -181,14 +186,16 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-700">
                       <div>
+                        {/* One LTR run: in RTL the sign and the "/g" otherwise drift to opposite ends. */}
                         <span className="text-gray-400">±</span>{" "}
-                        {Number(row.markup_per_gram) >= 0 ? "+" : ""}
-                        {Number(row.markup_per_gram).toFixed(4)}/g
+                        <Ltr>{`${Number(row.markup_per_gram) >= 0 ? "+" : ""}${Number(row.markup_per_gram).toFixed(4)}/g`}</Ltr>
                       </div>
                       <div className="text-gray-500 mt-0.5">
-                        {row.margin_mode === "USD"
-                          ? `+ ${formatUSD(Number(row.margin_value))}`
-                          : `+ ${Number(row.margin_value).toFixed(2)}%`}
+                        <Ltr>
+                          {row.margin_mode === "USD"
+                            ? `+ ${formatUSD(Number(row.margin_value))}`
+                            : `+ ${Number(row.margin_value).toFixed(2)}%`}
+                        </Ltr>
                       </div>
                     </td>
                     <td
@@ -198,44 +205,49 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
                     >
                       {row.on_hand_qty}
                       {!row.is_active && (
-                        <span className="ml-2 text-[10px] uppercase text-gray-400">inactive</span>
+                        <span className="ms-2 text-[10px] uppercase text-gray-400">{u.inactive}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
                       {row.min_stock_qty ?? "—"}
                     </td>
                     <td className="px-4 py-3">
+                      {/* The same four buttons on every row: each is named after its row's code. */}
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => setPriceFor(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
-                          title="Live price"
+                          title={u.livePrice}
+                          aria-label={u.rowAction(u.livePrice, row.code)}
                         >
-                          <DollarSign className="w-4 h-4" />
+                          <DollarSign className="w-4 h-4" aria-hidden />
                         </button>
                         <button
                           onClick={() => setAdjustRow(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
-                          title="Adjust stock"
+                          title={u.adjustStock}
+                          aria-label={u.rowAction(u.adjustStock, row.code)}
                         >
-                          <Sliders className="w-4 h-4" />
+                          <Sliders className="w-4 h-4" aria-hidden />
                         </button>
                         <button
                           onClick={() => openEdit(row)}
                           className="text-gray-400 hover:text-gold transition-colors"
-                          title="Edit"
+                          title={t.common.edit}
+                          aria-label={u.rowAction(t.common.edit, row.code)}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" aria-hidden />
                         </button>
                         <button
                           onClick={() => toggleActive(row)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
-                          title={row.is_active ? "Deactivate" : "Reactivate"}
+                          title={row.is_active ? u.deactivate : u.reactivate}
+                          aria-label={u.rowAction(row.is_active ? u.deactivate : u.reactivate, row.code)}
                         >
                           {row.is_active ? (
-                            <ToggleRight className="w-5 h-5 text-green-500" />
+                            <ToggleRight className="w-5 h-5 text-green-500 rtl:rotate-180" aria-hidden />
                           ) : (
-                            <ToggleLeft className="w-5 h-5" />
+                            <ToggleLeft className="w-5 h-5 rtl:rotate-180" aria-hidden />
                           )}
                         </button>
                       </div>
@@ -274,17 +286,18 @@ export function UnitCatalog({ resource, adjustmentTarget, singular, plural }: Pr
 
 function UnitTypeForm({
   resource,
-  singular,
   existing,
   onCancel,
   onSaved,
 }: {
   resource: "coins" | "ounces";
-  singular: string;
   existing: UnitType | null;
   onCancel: () => void;
   onSaved: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const u = t.unitCatalog;
+  const noun = u[resource];
   const [code, setCode] = useState(existing?.code ?? "");
   const [nameEn, setNameEn] = useState(existing?.name_en ?? "");
   const [nameAr, setNameAr] = useState(existing?.name_ar ?? "");
@@ -311,8 +324,8 @@ function UnitTypeForm({
       fd.append("file", file);
       const { url } = await uploadFile<{ url: string }>("/products/upload-image", fd);
       setPhotoUrl(url);
-    } catch (err: any) {
-      setUploadError(err?.message ?? "Upload failed");
+    } catch (err) {
+      setUploadError(errorMessage(err, u.uploadFailed));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -343,7 +356,7 @@ function UnitTypeForm({
       }
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(errorMessage(err, u.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -352,28 +365,31 @@ function UnitTypeForm({
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
       <div className="text-sm font-medium text-gray-700">
-        {existing ? `Edit ${singular}` : `New ${singular}`}
+        {existing ? noun.editType : noun.newType}
       </div>
+      {/* Every input sits inside its <label> (NEX-64): a click focuses the field
+          and a screen reader names it, with no ids to keep in sync. Display-only
+          values use a plain heading instead of a label with no control. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {existing ? (
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Code</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.code}</span>
             <input
               value={code}
               disabled
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm font-mono bg-gray-50 text-gray-500"
             />
-          </div>
+          </label>
         ) : (
           <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Code</label>
-            <div className="w-full border border-dashed border-gray-200 rounded px-3 py-2.5 text-sm font-mono text-gray-400">
-              auto-generated
+            <div className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.code}</div>
+            <div className="w-full border border-dashed border-gray-200 rounded px-3 py-2.5 text-sm ltr:font-mono text-gray-400">
+              {u.autoGenerated}
             </div>
           </div>
         )}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Karat</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.karat}</span>
           <select
             value={karat}
             onChange={(e) => setKarat(e.target.value as Karat)}
@@ -383,26 +399,26 @@ function UnitTypeForm({
               <option key={k} value={k}>{k}</option>
             ))}
           </select>
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Name (English)</label>
+        </label>
+        <label className="block col-span-2">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.common.nameEn}</span>
           <input
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Name (Arabic)</label>
+        </label>
+        <label className="block col-span-2">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.common.nameAr}</span>
           <input
             dir="rtl"
             value={nameAr}
             onChange={(e) => setNameAr(e.target.value)}
-            className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-right focus:outline-none focus:border-gold"
+            className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-start focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Weight (g)</label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.weightG}</span>
           <input
             type="number"
             step="0.001"
@@ -410,9 +426,9 @@ function UnitTypeForm({
             onChange={(e) => setWeight(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Markup / g (±)</label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.markupPerGram}</span>
           <input
             type="number"
             step="0.0001"
@@ -420,22 +436,22 @@ function UnitTypeForm({
             onChange={(e) => setMarkup(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Margin mode</label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.marginMode}</span>
           <select
             value={marginMode}
             onChange={(e) => setMarginMode(e.target.value as MarginMode)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           >
-            <option value="USD">Flat USD</option>
-            <option value="PERCENT">Percent</option>
+            <option value="USD">{u.flatUsd}</option>
+            <option value="PERCENT">{u.percent}</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Margin {marginMode === "USD" ? "(USD)" : "(%)"}
-          </label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {marginMode === "USD" ? u.marginUsd : u.marginPercent}
+          </span>
           <input
             type="number"
             step="0.01"
@@ -443,43 +459,44 @@ function UnitTypeForm({
             onChange={(e) => setMarginValue(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Min stock qty</label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.minStockQty}</span>
           <input
             type="number"
             min="0"
             value={minStock}
-            placeholder="(none)"
+            placeholder={u.none}
             onChange={(e) => setMinStock(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </label>
       </div>
 
       {/* Image upload */}
       <div className="space-y-2">
-        <label className="block text-xs text-gray-400 uppercase tracking-widest">Photo</label>
+        <div className="block text-xs text-gray-400 uppercase tracking-widest">{u.photo}</div>
         <div className="flex items-center gap-3">
           {photoUrl ? (
             <div className="relative">
               <img
                 src={photoUrl}
-                alt="Preview"
+                alt={u.photoPreview}
                 className="w-20 h-20 rounded object-cover border border-gray-200"
               />
               <button
                 type="button"
                 onClick={() => setPhotoUrl("")}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
-                title="Remove photo"
+                className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                title={u.removePhoto}
+                aria-label={u.removePhoto}
               >
                 ×
               </button>
             </div>
           ) : (
             <div className="w-20 h-20 rounded border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center">
-              <ImageIcon className="w-6 h-6 text-gray-300" />
+              <ImageIcon className="w-6 h-6 text-gray-300" aria-hidden />
             </div>
           )}
           <div className="space-y-1">
@@ -488,6 +505,7 @@ function UnitTypeForm({
               type="file"
               accept="image/*"
               className="hidden"
+              aria-label={u.photo}
               onChange={onPickImage}
             />
             <button
@@ -496,34 +514,32 @@ function UnitTypeForm({
               disabled={uploading}
               className="px-3 py-1.5 border border-gray-200 text-xs rounded hover:bg-gray-50 disabled:opacity-60 transition-colors"
             >
-              {uploading ? "Uploading…" : photoUrl ? "Change photo" : "Upload photo"}
+              {uploading ? u.uploading : photoUrl ? u.changePhoto : u.uploadPhoto}
             </button>
             {uploadError && (
-              <div className="text-xs text-red-600">{uploadError}</div>
+              <div role="alert" className="text-xs text-red-600">{uploadError}</div>
             )}
           </div>
         </div>
       </div>
 
-      {error && <div className="text-xs text-red-600">{error}</div>}
+      {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
           disabled={saving || !nameEn || !weight}
           className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
         >
-          {saving ? "Saving…" : existing ? "Save Changes" : `Create ${singular}`}
+          {saving ? u.saving : existing ? u.saveChanges : noun.createType}
         </button>
         <button
           onClick={onCancel}
           className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
-      <p className="text-xs text-gray-400">
-        Stock changes go through the adjust button — the catalog form only edits type definitions.
-      </p>
+      <p className="text-xs text-gray-400">{u.formHint}</p>
     </div>
   );
 }
@@ -541,6 +557,8 @@ function StockAdjustDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const u = t.unitCatalog;
   const [delta, setDelta] = useState("");
   const [reason, setReason] = useState<AdjustmentReason>("CORRECTION");
   const [notes, setNotes] = useState("");
@@ -560,7 +578,7 @@ function StockAdjustDialog({
       });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Adjustment failed");
+      setError(errorMessage(err, u.adjustFailed));
     } finally {
       setSaving(false);
     }
@@ -570,60 +588,65 @@ function StockAdjustDialog({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-5 space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-800">Adjust stock</div>
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">
-            {row.code} · on hand {row.on_hand_qty}
+          <div className="text-sm font-medium text-gray-800">{u.adjustStock}</div>
+          {/* Monospace in LTR only: .font-mono is laid out left-to-right in RTL
+              (globals.css), which would reverse a translated phrase. The code is
+              the machine value, and it keeps it. */}
+          <div className="text-xs text-gray-500 mt-0.5 ltr:font-mono">
+            <Ltr className="font-mono">{row.code}</Ltr> · {u.onHandInline} {row.on_hand_qty}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Delta (qty)</label>
-            <input
-              type="number"
-              step="1"
-              placeholder="e.g. -2 or 10"
-              value={delta}
-              onChange={(e) => setDelta(e.target.value)}
-              className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Whole numbers only.</p>
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.deltaQty}</span>
+              <input
+                type="number"
+                step="1"
+                placeholder={u.deltaPlaceholder}
+                value={delta}
+                onChange={(e) => setDelta(e.target.value)}
+                className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
+              />
+            </label>
+            <p className="text-[10px] text-gray-400 mt-1">{u.wholeNumbersOnly}</p>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Reason</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.reason}</span>
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value as AdjustmentReason)}
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
             >
               {REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>{u.reasons[r]}</option>
               ))}
             </select>
-          </div>
+          </label>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Notes</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{u.notes}</span>
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="What happened?"
+            placeholder={u.notesPlaceholder}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        </label>
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !delta || !notes}
             className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
           >
-            {saving ? "Saving…" : "Apply"}
+            {saving ? u.saving : u.apply}
           </button>
         </div>
       </div>
@@ -642,6 +665,8 @@ function LivePriceDialog({
   row: UnitType;
   onClose: () => void;
 }) {
+  const { t } = useLang();
+  const u = t.unitCatalog;
   const { data, isLoading, error } = useSWR<UnitPrice>(
     `/${resource}/${row.id}/price`,
     apiFetcher,
@@ -652,37 +677,38 @@ function LivePriceDialog({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-5 space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-800">Live price</div>
-          <div className="text-xs text-gray-500 mt-0.5 font-mono">{row.code}</div>
+          <div className="text-sm font-medium text-gray-800">{u.livePrice}</div>
+          <div className="text-xs text-gray-500 mt-0.5 font-mono"><Ltr>{row.code}</Ltr></div>
         </div>
-        {isLoading && <div className="text-sm text-gray-500">Pricing…</div>}
-        {error && <div className="text-sm text-red-600">{(error as Error).message}</div>}
+        {isLoading && <div className="text-sm text-gray-500">{u.pricing}</div>}
+        {error && <div role="alert" className="text-sm text-red-600">{errorMessage(error, t.errors.loadFailed)}</div>}
         {data && (
           <>
             <div className="text-center py-3">
               <div className="text-3xl font-semibold text-gray-900">
                 {formatUSD(data.final_price)}
               </div>
-              <div className="text-xs text-gray-500 mt-1">per unit · {row.karat}</div>
+              <div className="text-xs text-gray-500 mt-1">{u.perUnit} · <Ltr>{row.karat}</Ltr></div>
             </div>
             <div className="space-y-1.5 text-xs text-gray-600 border-t border-gray-100 pt-3">
-              <Row label="Spot 24K" value={`$${data.gold_rate_24k.toFixed(2)}/g`} />
+              <Row label={u.spot24k} value={`${formatRate(data.gold_rate_24k)}/g`} />
               <Row
-                label="Effective rate"
-                value={`$${Number(data.effective_rate).toFixed(2)}/g (markup applied)`}
+                label={u.effectiveRate}
+                value={`${formatRate(data.effective_rate)}/g`}
+                note={<>{" "}{u.markupApplied}</>}
               />
-              <Row label="Metal value" value={formatUSD(data.metal_value)} />
-              <Row label="Margin" value={formatUSD(data.margin_amount)} />
-              <Row label="On hand" value={String(data.on_hand_qty)} />
+              <Row label={u.metalValue} value={formatUSD(data.metal_value)} />
+              <Row label={u.margin} value={formatUSD(data.margin_amount)} />
+              <Row label={u.onHand} value={String(data.on_hand_qty)} />
               <Row
-                label="Source"
-                value={
-                  <span className="text-gray-600">
-                    {data.rate_source}
+                label={u.source}
+                note={
+                  <>
+                    {u.sources[data.rate_source as keyof typeof u.sources] ?? data.rate_source}
                     {data.rate_is_stale && (
-                      <span className="ml-1 text-amber-600">(stale)</span>
+                      <span className="ms-1 text-amber-600">{u.stale}</span>
                     )}
-                  </span>
+                  </>
                 }
               />
             </div>
@@ -692,18 +718,27 @@ function LivePriceDialog({
           onClick={onClose}
           className="w-full px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors"
         >
-          Close
+          {t.common.close}
         </button>
       </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+/**
+ * `value` is a machine value (a rate, an amount, a count); `note` is translated
+ * text beside it. The whole cell is monospace in LTR, as it always was. In RTL
+ * only the value keeps it: .font-mono is laid out left-to-right there
+ * (globals.css), which would reverse an Arabic note.
+ */
+function Row({ label, value, note }: { label: string; value?: string; note?: React.ReactNode }) {
   return (
     <div className="flex justify-between">
       <span className="text-gray-400">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="ltr:font-mono">
+        {value !== undefined && <Ltr className="font-mono">{value}</Ltr>}
+        {note}
+      </span>
     </div>
   );
 }

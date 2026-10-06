@@ -23,6 +23,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => { setUser(getStoredUser()); }, []);
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  // Escape closes the mobile drawer, like its close button and its backdrop.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSidebarOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sidebarOpen]);
 
   const ALL_NAV = [
     { href: "/admin/dashboard", icon: LayoutDashboard, label: t.nav.dashboard },
@@ -31,13 +38,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/qr-labels", icon: QrCode, label: t.nav.qrLabels },
     { href: "/admin/orders", icon: ShoppingCart, label: t.nav.orders },
     { href: "/admin/inventory", icon: Boxes, label: t.nav.inventory },
-    { href: "/admin/ledger", icon: ScrollText, label: (t.nav as Record<string, string>).auditLedger ?? "Audit Ledger" },
+    { href: "/admin/ledger", icon: ScrollText, label: t.nav.auditLedger },
     { href: "/admin/stock-take", icon: ClipboardCheck, label: t.nav.stockTake },
     { href: "/admin/suppliers", icon: Truck, label: t.nav.suppliers },
     { href: "/admin/accounts-payable", icon: Wallet, label: t.nav.accountsPayable },
     { href: "/admin/gold-price", icon: TrendingUp, label: t.nav.goldPrice },
     { href: "/admin/zakat", icon: Scale, label: t.nav.zakat },
-    { href: "/admin/accounting", icon: BookOpen, label: (t.nav as Record<string, string>).accounting ?? "Accounting" },
+    { href: "/admin/accounting", icon: BookOpen, label: t.nav.accounting },
     { href: "/admin/settings", icon: Settings, label: t.nav.settings },
   ];
   // Middleware is the gate; this just keeps the sidebar honest so an accountant
@@ -59,8 +66,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           className="ms-auto md:hidden text-white/40 hover:text-white"
           onClick={() => setSidebarOpen(false)}
+          aria-label={t.nav.closeMenu}
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden />
         </button>
       </div>
 
@@ -106,9 +114,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className={cn("flex h-screen bg-admin-canvas overflow-hidden", isRTL && "flex-row-reverse")}>
 
-      {/* Mobile overlay backdrop */}
+      {/* Mobile overlay backdrop. Not a control: it only catches a tap outside
+          the drawer. The close button and Escape are the keyboard path. */}
       {sidebarOpen && (
         <div
+          role="presentation"
           className="fixed inset-0 bg-black/50 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -137,8 +147,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             className="md:hidden text-gray-500 hover:text-gray-800 transition-colors shrink-0"
             onClick={() => setSidebarOpen(true)}
+            aria-label={t.nav.openMenu}
+            aria-expanded={sidebarOpen}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden />
           </button>
 
           <h1 className="font-semibold text-gray-800 text-sm flex-1 truncate">

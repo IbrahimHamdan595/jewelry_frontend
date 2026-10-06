@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { statements, StatementLineT } from "@/lib/accounting";
-import { downloadFile } from "@/lib/api-client";
+import { downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -36,7 +36,7 @@ export default function Statements() {
       if (tab === "pnl") setPnl(await statements.incomeStatement(start, end));
       else if (tab === "bs") setBs(await statements.balanceSheet(asOf));
       else setCf(await statements.cashFlow(start, end));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
   }
   useEffect(() => { run(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
 
@@ -49,7 +49,7 @@ export default function Statements() {
         await downloadFile(`/accounting/statements/balance-sheet?as_of=${asOf}&format=xlsx`, `balance-sheet-${asOf}.xlsx`);
       else
         await downloadFile(`/accounting/statements/cash-flow?start=${start}&end=${end}&format=xlsx`, `cash-flow-${start}-${end}.xlsx`);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.downloadFailed)); }
   }
 
   // PDF uses the active UI language so an Arabic session exports an RTL Arabic PDF.
@@ -62,7 +62,7 @@ export default function Statements() {
         await downloadFile(`/accounting/statements/balance-sheet?as_of=${asOf}&format=pdf&lang=${lang}`, `balance-sheet-${asOf}.pdf`);
       else
         await downloadFile(`/accounting/statements/cash-flow?start=${start}&end=${end}&format=pdf&lang=${lang}`, `cash-flow-${start}-${end}.pdf`);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.downloadFailed)); }
   }
 
   const tabs: { key: Tab; label: string }[] = [

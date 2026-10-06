@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { expenses, tax, ExpenseAccountT, TaxCodeT } from "@/lib/accounting";
-import { apiFetcher, downloadFile } from "@/lib/api-client";
+import { apiFetcher, downloadFile, errorMessage } from "@/lib/api-client";
 import { firstOfMonth, today } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
@@ -12,6 +12,7 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { Money } from "@/components/accounting/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Ltr } from "@/components/shared/Ltr";
 
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
@@ -21,6 +22,8 @@ export default function Expenses() {
   const { t, lang } = useLang();
   const a = t.accounting.expenses;
   const c = t.accounting.common;
+  // VendorBillStatus, named; a status this build does not know prints as sent.
+  const billStatus = (status: string) => a.billStatus[status as keyof typeof a.billStatus] ?? status;
 
   const [accts, setAccts] = useState<ExpenseAccountT[]>([]);
   const [taxCodes, setTaxCodes] = useState<TaxCodeT[]>([]);
@@ -39,7 +42,8 @@ export default function Expenses() {
   const [ccy, setCcy] = useState("USD");
   const [rate, setRate] = useState("1");
   const [lbpRate, setLbpRate] = useState("1");
-  const [ok, setOk] = useState<string | null>(null);
+  // The last bill as the server answered; worded when it is shown.
+  const [recorded, setRecorded] = useState<{ bill_no: string; status: string; total: string } | null>(null);
 
   async function load() {
     try {
@@ -50,7 +54,7 @@ export default function Expenses() {
       setBills((await expenses.listBills()).items);
       setCat(await expenses.byCategory(firstOfMonth(), today()));
       setTie(await expenses.verify());
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -66,14 +70,14 @@ export default function Expenses() {
   }
 
   async function record() {
-    setError(null); setOk(null);
+    setError(null); setRecorded(null);
     try {
       const b = await expenses.createBill({ vendor_name: vendor, bill_date: today(),
         payment_system_key: paid || null, tax_code_id: taxCode || undefined, memo: "",
         currency: ccy, fx_rate: ccy === "USD" ? "1" : (rate || "1"),
         lines: [{ description: "", expense_account_id: acct, amount: amt }] });
-      setOk(`Bill ${b.bill_no} (${b.status}, total ${b.total})`); setVendor(""); setAmt(""); await load();
-    } catch (e) { setError((e as Error).message); }
+      setRecorded(b); setVendor(""); setAmt(""); await load();
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (
@@ -84,7 +88,7 @@ export default function Expenses() {
         description={a.description}
         actions={tie && (
           <span className={`text-xs ${tie.matches ? "text-green-700" : "text-red-700"}`}>
-            {tie.matches ? "✓" : "✗"} {tie.gl} / {tie.subledger}
+            {tie.matches ? "✓" : "✗"} <Ltr>{tie.gl} / {tie.subledger}</Ltr>
           </span>
         )}
       />
@@ -112,7 +116,7 @@ export default function Expenses() {
           {taxCodes.map((tc) => <option key={tc.id} value={tc.id}>{tc.code} ({tc.rate}%)</option>)}
         </select>
         <Button onClick={record} disabled={!vendor || !acct || !amt}>{a.recordBtn}</Button>
-        {ok && <span className="text-sm text-green-700 ms-1">{ok}</span>}
+        {recorded && <span role="status" className="text-sm text-green-700 ms-1">{a.billRecorded(recorded.bill_no, billStatus(recorded.status), recorded.total)}</span>}
       </ActionBar>
 
       <SectionCard title={a.title} flush>
@@ -123,7 +127,7 @@ export default function Expenses() {
             { key: "bill_date", label: a.colDate },
             { key: "total", label: a.colTotal, align: "end", render: (b: BillT) => <Money value={b.total} dash /> },
             { key: "amount_paid", label: a.colPaid, align: "end", render: (b: BillT) => <Money value={b.amount_paid} dash /> },
-            { key: "status", label: a.colStatus },
+            { key: "status", label: a.colStatus, render: (b: BillT) => billStatus(b.status) },
             { key: "pdf", label: c.pdf, align: "end", render: (b: BillT) => (
               <button onClick={() => downloadFile(`/accounting/expenses/bills/${b.id}/pdf?lang=${lang}`, `bill-${b.bill_no}.pdf`)}
                       className="text-gold hover:underline text-xs">{c.pdf}</button>

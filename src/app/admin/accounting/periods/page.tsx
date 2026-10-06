@@ -10,14 +10,16 @@ import { DataTable } from "@/components/accounting/DataTable";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { errorMessage } from "@/lib/api-client";
+import { Ltr } from "@/components/shared/Ltr";
 
-const MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const SELECT = "border border-gray-200 rounded px-3 py-2.5 text-sm bg-white focus:border-gold focus:outline-none";
 
 export default function PeriodsPage() {
   const { t } = useLang();
   const a = t.accounting.periods;
   const c = t.accounting.common;
+  const x = t.accounting.extra;
 
   const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function PeriodsPage() {
   async function open() {
     setError(null);
     try { await accounting.openPeriod(year, month); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   async function check(p: Period) {
@@ -50,7 +52,7 @@ export default function PeriodsPage() {
     try {
       const r = await periodClose.readiness(p.year, p.period_no);
       setChecking((c) => ({ ...c, [p.id]: r }));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.loadFailed)); }
   }
   async function close(p: Period) {
     setError(null);
@@ -58,26 +60,26 @@ export default function PeriodsPage() {
       await accounting.closePeriod(p.id);
       setChecking((c) => { const n = { ...c }; delete n[p.id]; return n; });
       await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
   async function reopen(p: Period) {
     setError(null);
     try { await accounting.reopenPeriod(p.id); await load(); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   async function previewYear() {
     setYearMsg(null);
-    try { setPreview(await periodClose.yearPreview(yr)); } catch (e) { setYearMsg((e as Error).message); }
+    try { setPreview(await periodClose.yearPreview(yr)); } catch (e) { setYearMsg(errorMessage(e, t.errors.loadFailed)); }
   }
   async function doCloseYear() {
     setYearMsg(null);
     try {
       const r = await periodClose.closeYear(yr);
-      setYearMsg(`Year ${yr} closed — entry ${r.entry_no}. Opened ${r.opened_periods.length} periods for ${yr + 1}.`);
+      setYearMsg(x.yearClosed(yr, r.entry_no, r.opened_periods.length, yr + 1));
       setPreview(null);
       await load();
-    } catch (e) { setYearMsg((e as Error).message); }
+    } catch (e) { setYearMsg(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (
@@ -90,10 +92,11 @@ export default function PeriodsPage() {
           type="number"
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
+          aria-label={a.year}
           className="w-28"
         />
-        <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={SELECT}>
-          {MONTHS.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+        <select value={month} onChange={(e) => setMonth(Number(e.target.value))} aria-label={a.month} className={SELECT}>
+          {x.months.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
         </select>
         <Button onClick={open}>{a.openPeriod}</Button>
       </ActionBar>
@@ -106,7 +109,7 @@ export default function PeriodsPage() {
                 <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-start">{a.colYear}</th>
                 <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-start">{a.colMonth}</th>
                 <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-start">{a.colStatus}</th>
-                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end" />
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 text-end"><span className="sr-only">{t.common.actions}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -116,8 +119,8 @@ export default function PeriodsPage() {
                   <Fragment key={p.id}>
                     <tr className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-3 text-gray-700 text-start">{p.year}</td>
-                      <td className="px-4 py-3 text-gray-700 text-start">{MONTHS[p.period_no]}</td>
-                      <td className="px-4 py-3 text-gray-700 text-start">{p.status}</td>
+                      <td className="px-4 py-3 text-gray-700 text-start">{x.months[p.period_no - 1]}</td>
+                      <td className="px-4 py-3 text-gray-700 text-start">{x.periodStatus[p.status as keyof typeof x.periodStatus] ?? p.status}</td>
                       <td className="px-4 py-3 text-end">
                         {p.status === "OPEN"
                           ? <Button variant="ghost" size="sm" onClick={() => check(p)}>{a.checkClose}</Button>
@@ -160,6 +163,7 @@ export default function PeriodsPage() {
             type="number"
             value={yr}
             onChange={(e) => setYr(Number(e.target.value))}
+            aria-label={a.year}
             className="w-28"
           />
           <Button variant="outline" onClick={previewYear}>{a.preview}</Button>
@@ -167,7 +171,7 @@ export default function PeriodsPage() {
         {preview && (
           <div className="mt-4 space-y-3">
             <div className="text-sm">
-              {a.netIncome}: <b>{preview.net_income}</b>
+              {a.netIncome}: <b><Ltr>{preview.net_income}</Ltr></b>
               {preview.already_closed && <span className="text-amber-700"> · {a.alreadyClosed}</span>}
             </div>
             <DataTable

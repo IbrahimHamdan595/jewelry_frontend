@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { accounting, GLAccount, JournalEntry } from "@/lib/accounting";
-import { apiFetcher } from "@/lib/api-client";
+import { apiFetcher, errorMessage } from "@/lib/api-client";
 import { useLang } from "@/context/LanguageContext";
 import { PageHeader } from "@/components/accounting/PageHeader";
 import { SectionCard } from "@/components/accounting/SectionCard";
@@ -33,6 +33,7 @@ export default function Journal() {
   const { t } = useLang();
   const a = t.accounting.journal;
   const c = t.accounting.common;
+  const x = t.accounting.extra;
 
   const [accounts, setAccounts] = useState<GLAccount[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -108,10 +109,10 @@ export default function Journal() {
           };
         });
       const e = await accounting.postEntry({ entry_date: entryDate, memo, source_type: "MANUAL", lines });
-      setOk(`Posted ${e.entry_no}`);
+      setOk(x.posted(e.entry_no));
       setRows([{ ...EMPTY }, { ...EMPTY }]); setMemo("");
       await load();
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) { setError(errorMessage(e, t.errors.actionFailed)); }
   }
 
   return (
@@ -121,8 +122,8 @@ export default function Journal() {
       <SectionCard title={a.title}>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2 items-center">
-            <Input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="w-48" />
-            <Input placeholder={a.memoPlaceholder} value={memo} onChange={(e) => setMemo(e.target.value)} className="flex-1 min-w-[12rem]" />
+            <Input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} aria-label={c.date} className="w-48" />
+            <Input placeholder={a.memoPlaceholder} aria-label={a.memoPlaceholder} value={memo} onChange={(e) => setMemo(e.target.value)} className="flex-1 min-w-[12rem]" />
           </div>
 
           <div className="overflow-x-auto">
@@ -143,29 +144,29 @@ export default function Journal() {
                 {rows.map((r, i) => (
                   <tr key={i} className="border-b border-gray-50">
                     <td className="px-2 py-1.5">
-                      <select value={r.account_id} onChange={(e) => setRow(i, { account_id: e.target.value })} className={`${SELECT} w-full`}>
+                      <select value={r.account_id} onChange={(e) => setRow(i, { account_id: e.target.value })} aria-label={c.account} className={`${SELECT} w-full`}>
                         <option value="">—</option>
                         {accounts.map((ac) => <option key={ac.id} value={ac.id}>{ac.code} {ac.name}</option>)}
                       </select>
                     </td>
                     <td className="px-2 py-1.5">
-                      <select value={r.currency} onChange={(e) => setCurrency(i, e.target.value)} className={SELECT}>
+                      <select value={r.currency} onChange={(e) => setCurrency(i, e.target.value)} aria-label={c.currency} className={SELECT}>
                         {CURRENCIES.map((cy) => <option key={cy} value={cy}>{cy}</option>)}
                       </select>
                     </td>
                     <td className="px-2 py-1.5">
                       <Input value={r.fx_rate} onChange={(e) => setRow(i, { fx_rate: e.target.value })}
-                             disabled={r.currency === "USD"} className="w-28 text-end disabled:bg-gray-50 disabled:text-gray-400" />
+                             disabled={r.currency === "USD"} aria-label={c.fxRate} className="w-28 text-end disabled:bg-gray-50 disabled:text-gray-400" />
                     </td>
-                    <td className="px-2 py-1.5"><Input value={r.money_debit} onChange={(e) => setRow(i, { money_debit: e.target.value })} className="w-28 text-end" /></td>
-                    <td className="px-2 py-1.5"><Input value={r.money_credit} onChange={(e) => setRow(i, { money_credit: e.target.value })} className="w-28 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.money_debit} onChange={(e) => setRow(i, { money_debit: e.target.value })} aria-label={a.colDebit} className="w-28 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.money_credit} onChange={(e) => setRow(i, { money_credit: e.target.value })} aria-label={a.colCredit} className="w-28 text-end" /></td>
                     <td className="px-2 py-1.5">
-                      <select value={r.karat} onChange={(e) => setRow(i, { karat: e.target.value })} className={SELECT}>
+                      <select value={r.karat} onChange={(e) => setRow(i, { karat: e.target.value })} aria-label={a.colKarat} className={SELECT}>
                         {KARATS.map((k) => <option key={k} value={k}>{k || "—"}</option>)}
                       </select>
                     </td>
-                    <td className="px-2 py-1.5"><Input value={r.metal_debit_grams} onChange={(e) => setRow(i, { metal_debit_grams: e.target.value })} className="w-24 text-end" /></td>
-                    <td className="px-2 py-1.5"><Input value={r.metal_credit_grams} onChange={(e) => setRow(i, { metal_credit_grams: e.target.value })} className="w-24 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.metal_debit_grams} onChange={(e) => setRow(i, { metal_debit_grams: e.target.value })} aria-label={a.colGramsDr} className="w-24 text-end" /></td>
+                    <td className="px-2 py-1.5"><Input value={r.metal_credit_grams} onChange={(e) => setRow(i, { metal_credit_grams: e.target.value })} aria-label={a.colGramsCr} className="w-24 text-end" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -176,7 +177,7 @@ export default function Journal() {
 
           <div className="flex flex-wrap items-center gap-6 text-sm">
             <span className={moneyBalanced ? "text-green-700" : "text-red-700"}>
-              {c.balance} (USD): DR {totalDebit.toFixed(2)} / CR {totalCredit.toFixed(2)} {moneyBalanced ? "✓" : "✗"}
+              {x.moneyBalance(totalDebit.toFixed(2), totalCredit.toFixed(2))} {moneyBalanced ? "✓" : "✗"}
             </span>
             <span className={metalBalanced ? "text-green-700" : "text-red-700"}>
               {c.grams}: {Object.entries(metalByKarat).map(([k, v]) => `${k} ${v.d}/${v.c}`).join("  ") || "—"} {metalBalanced ? "✓" : "✗"}

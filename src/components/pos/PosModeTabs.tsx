@@ -3,17 +3,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Recycle } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { href: "/pos", label: "Sell", icon: ShoppingCart },
-  { href: "/pos/buyback", label: "Buy Back", icon: Recycle },
-];
+import { useLang } from "@/context/LanguageContext";
 
 export function PosModeTabs() {
   const pathname = usePathname();
+  const { t } = useLang();
+  // Labels reuse the wording these two modes already have elsewhere: the Sell
+  // tab of the orders screen and the buyback page's own heading.
+  const tabs = [
+    { href: "/pos", label: t.orders.tabSell, icon: ShoppingCart },
+    { href: "/pos/buyback", label: t.posBuyback.eyebrow, icon: Recycle },
+  ];
   return (
     <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
-      {TABS.map(({ href, label, icon: Icon }) => {
+      {tabs.map(({ href, label, icon: Icon }) => {
         const active =
           href === "/pos" ? pathname === "/pos" : pathname.startsWith(href);
         return (
@@ -27,7 +30,7 @@ export function PosModeTabs() {
                 : "text-pos-gray hover:text-pos-cream",
             )}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <Icon className="w-3.5 h-3.5" aria-hidden />
             {label}
           </Link>
         );

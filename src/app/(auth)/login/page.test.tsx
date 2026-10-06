@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import LoginPage from "@/app/(auth)/login/page";
+import { ApiError } from "@/lib/api-client";
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }) }));
@@ -97,7 +98,8 @@ describe("login accessibility (NEX-64)", () => {
   });
 
   it("announces a failed login to assistive technology", async () => {
-    auth.login.mockRejectedValue(new Error("Invalid credentials"));
+    // What the API client throws for POST /auth/login → 401 {"detail": "Invalid credentials"}.
+    auth.login.mockRejectedValue(new ApiError(401, "Invalid credentials"));
     render(<LoginPage />);
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "x@y.z" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "pw" } });

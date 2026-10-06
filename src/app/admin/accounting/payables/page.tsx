@@ -9,6 +9,8 @@ import { SectionCard } from "@/components/accounting/SectionCard";
 import { DataTable } from "@/components/accounting/DataTable";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { Money } from "@/components/accounting/Money";
+import { ErrorNote, type Failure } from "@/components/accounting/ErrorNote";
+import { Ltr } from "@/components/shared/Ltr";
 
 type Supplier = Awaited<ReturnType<typeof ap.balances>>["suppliers"][number];
 
@@ -20,7 +22,7 @@ export default function Payables() {
   const [tie, setTie] = useState<Awaited<ReturnType<typeof ap.verify>> | null>(null);
   const [aging, setAging] = useState<Awaited<ReturnType<typeof ap.aging>> | null>(null);
   const [sups, setSups] = useState<Awaited<ReturnType<typeof ap.balances>>["suppliers"]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function Payables() {
         setTie(await ap.verify());
         setAging(await ap.aging(today()));
         setSups((await ap.balances()).suppliers);
-      } catch (e) { setError((e as Error).message); }
+      } catch (e) { setFailure({ err: e, during: "load" }); }
       finally { setLoading(false); }
     })();
   }, []);
@@ -53,11 +55,11 @@ export default function Payables() {
         description={a.description}
         actions={tie && (
           <span className={`text-xs ${tie.ap.matches && tie.metal_ap.matches ? "text-green-700" : "text-red-700"}`}>
-            {tie.ap.matches ? "✓" : "✗"} {tie.ap.gl} / {tie.ap.subledger}
+            {tie.ap.matches ? "✓" : "✗"} <Ltr>{tie.ap.gl} / {tie.ap.subledger}</Ltr>
           </span>
         )}
       />
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      <ErrorNote failure={failure} />
 
       {loading && !aging && (
         <div className="space-y-6">

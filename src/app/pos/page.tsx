@@ -5,7 +5,7 @@ import { LogOut, Coins, Layers } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { useScanner } from "@/hooks/useScanner";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { ScanPanel } from "@/components/pos/ScanPanel";
+import { ScanPanel, type ScanErrorReason } from "@/components/pos/ScanPanel";
 import { CheckoutPanel } from "@/components/pos/CheckoutPanel";
 import { GoldRateCard } from "@/components/shared/GoldRateCard";
 import { PosModeTabs } from "@/components/pos/PosModeTabs";
@@ -13,10 +13,10 @@ import { AddUnitDialog } from "@/components/pos/AddUnitDialog";
 import { CheckoutConfirmDialog } from "@/components/pos/CheckoutConfirmDialog";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { TodayInBeirut } from "@/components/shared/TodayInBeirut";
-import { api, staleRateError } from "@/lib/api-client";
+import { api, errorMessage, staleRateError } from "@/lib/api-client";
 import { logout, getStoredUser } from "@/lib/auth";
 import { useLang } from "@/context/LanguageContext";
-import { cn } from "@/lib/utils";
+import { cn, toFiniteNumber } from "@/lib/utils";
 import type { OrderItemKind, ProductLookup, StaleRateAck } from "@/types/api";
 
 export default function POSPage() {
@@ -37,7 +37,7 @@ export default function POSPage() {
   // that gates the button. Both read the same SWR key, so refreshing from this
   // side flows straight through to the dialog's `required` / `fetchedAt`.
   const { refresh: refreshRate } = useGoldRate();
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<{ code: string; reason: ScanErrorReason } | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -49,11 +49,33 @@ export default function POSPage() {
     router.push("/login");
   }
 
+  const showScanError = useCallback((code: string, reason: ScanErrorReason) => {
+    setScanError({ code, reason });
+    setTimeout(() => setScanError(null), 5000);
+  }, []);
+
   const handleScan = useCallback(
     async (code: string) => {
       setScanError(null);
       try {
         const product = await api.get<ProductLookup>(`/products/lookup/${code}`);
+        // Money arrives as decimal strings or numbers (NEX-54). The cart does
+        // arithmetic on these for the rest of the sale, so they become numbers
+        // here, once. A lookup that cannot be priced is refused: adding it
+        // would put NaN — or a silent $0 — on the till.
+        const goldRate24k = toFiniteNumber(product.gold_rate_24k);
+        const unitPrice = toFiniteNumber(product.final_price);
+        if (goldRate24k === null || unitPrice === null) {
+          // The item exists, so this is not a mistyped barcode and must not
+          // read as one. It is a data fault: say so, and leave a line for
+          // whoever is asked to look.
+          console.error(`[pos] lookup for "${code}" returned no readable price or rate`, {
+            final_price: product.final_price,
+            gold_rate_24k: product.gold_rate_24k,
+          });
+          showScanError(code, "cannot-price");
+          return;
+        }
         addItem({
           cartId: `${product.id}-${Date.now()}`,
           kind: "PRODUCT",
@@ -63,18 +85,17 @@ export default function POSPage() {
           karat: product.karat,
           weightGrams: Number(product.weight_grams),
           quantity: 1,
-          goldRate24k: product.gold_rate_24k,
-          unitPrice: Number(product.final_price),
-          finalPrice: Number(product.final_price),
+          goldRate24k,
+          unitPrice,
+          finalPrice: unitPrice,
           available: product.on_hand_qty,
           imageUrl: product.photo_url ?? undefined,
         });
       } catch {
-        setScanError(code);
-        setTimeout(() => setScanError(null), 5000);
+        showScanError(code, "not-found");
       }
     },
-    [addItem]
+    [addItem, showScanError]
   );
 
   useScanner(handleScan);
@@ -116,9 +137,10 @@ export default function POSPage() {
       // this the dialog shows the server's message with no checkbox and a still-
       // enabled button, which just 409s again until the poll catches up.
       if (stale) refreshRate();
-      setCheckoutError(
-        stale ? stale.message : err instanceof Error ? err.message : "Checkout failed"
-      );
+      // The guard's own sentence when it is a stale-rate refusal (its `message`
+      // is the detail's readable part), any other reason the server gave, or
+      // the translated fallback when it gave none.
+      setCheckoutError(errorMessage(err, t.checkout.failed));
     } finally {
       setCheckingOut(false);
     }
@@ -165,7 +187,7 @@ export default function POSPage() {
       <div className={cn("flex flex-col md:flex-row flex-1 overflow-hidden", isRTL && "md:flex-row-reverse")}>
         {/* Scan/capture panel */}
         <aside className="w-full md:w-[22rem] border-b md:border-b-0 md:border-e border-white/10 p-4 md:p-6 shrink-0 overflow-y-auto">
-          <ScanPanel onScan={handleScan} scanError={scanError} />
+          <ScanPanel onScan={handleScan} scanError={scanError?.code ?? null} scanErrorReason={scanError?.reason} />
 
           <div className="mt-8 space-y-2">
             <p className="text-pos-gray text-[10px] uppercase tracking-widest">

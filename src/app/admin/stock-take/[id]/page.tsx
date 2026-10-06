@@ -1,24 +1,55 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import {
   ArrowLeft, ClipboardCheck, Save, ShieldCheck, ShieldAlert,
   CheckCircle2, XCircle, AlertTriangle, Info, Lock,
 } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
+import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import type { Translations } from "@/i18n/en";
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 import type {
   StockTake, StockTakeLine, StockTakeRefType,
 } from "@/types/stock-take";
 import type { UnitTypeListResponse, UnitType } from "@/types/api";
-import { describeApprovalEffect, describeVariance } from "@/lib/variance";
+import { describeVariance, type VarianceDescription } from "@/lib/variance";
+
+type StockTakeStrings = Translations["stockTake"];
+
+// lib/variance decides direction, magnitude and tone; the wording comes from
+// the dictionary so the operator reads it in the interface language.
+function varianceLabel(s: StockTakeStrings, v: VarianceDescription): string {
+  if (v.direction === "match") return s.varianceMatch;
+  return v.direction === "short" ? s.varianceShort(v.magnitude) : s.varianceOver(v.magnitude);
+}
+
+function varianceSentence(s: StockTakeStrings, name: string, counted: number, expected: number): string {
+  const v = describeVariance(counted, expected);
+  if (v.direction === "match") return s.sentenceMatch(name, expected);
+  return v.direction === "short"
+    ? s.sentenceShort(name, expected, counted, v.magnitude)
+    : s.sentenceOver(name, expected, counted, v.magnitude);
+}
+
+/** What approving does to on-hand quantity: shown before the operator confirms. */
+function approvalEffect(s: StockTakeStrings, counted: number, expected: number): string {
+  const v = describeVariance(counted, expected);
+  if (v.direction === "match") return s.effectNone;
+  return v.direction === "short"
+    ? s.effectDecrease(expected, counted, v.magnitude)
+    : s.effectIncrease(expected, counted, v.magnitude);
+}
 
 interface Props { params: { id: string } }
 
 export default function StockTakeDetailPage({ params }: Props) {
   const takeId = params.id;
+  const { t } = useLang();
   const { data: take, mutate, error, isValidating } = useSWR<StockTake>(
     `/stock-takes/${takeId}`,
     apiFetcher,
@@ -53,7 +84,7 @@ export default function StockTakeDetailPage({ params }: Props) {
           href="/admin/stock-take"
           className="text-gray-400 hover:text-gray-700 inline-flex items-center gap-1 text-xs"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to history
+          <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" /> {t.stockTake.backToHistory}
         </Link>
       </div>
 
@@ -76,6 +107,9 @@ export default function StockTakeDetailPage({ params }: Props) {
 // Header
 
 function Header({ take }: { take: StockTake }) {
+  const { t } = useLang();
+  const s = t.stockTake;
+  const { formatDateTime } = useFormat();
   const rejectedCount = take.lines.filter((l) => l.resolution === "REJECTED").length;
   const approvedCount = take.lines.filter((l) => l.resolution === "APPROVED").length;
 
@@ -85,12 +119,12 @@ function Header({ take }: { take: StockTake }) {
         <div>
           <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <ClipboardCheck className="w-5 h-5 text-gold" />
-            Stock-take · {take.id.slice(0, 8)}…
+            {t.nav.stockTake} · {take.id.slice(0, 8)}…
           </h2>
           <p className="text-xs text-gray-500 mt-1">
-            Started {new Date(take.started_at).toLocaleString()}
+            {s.startedAt(formatDateTime(take.started_at))}
             {take.closed_at && (
-              <> · Closed {new Date(take.closed_at).toLocaleString()}</>
+              <> · {s.closedAt(formatDateTime(take.closed_at))}</>
             )}
           </p>
           {take.notes && (
@@ -110,17 +144,17 @@ function Header({ take }: { take: StockTake }) {
 function StatusBadgeLarge({
   status, rejectedCount, approvedCount,
 }: { status: "DRAFT" | "SUBMITTED" | "CLOSED"; rejectedCount: number; approvedCount: number }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   if (status === "CLOSED" && rejectedCount > 0) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-right">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-end">
         <div className="text-xs uppercase tracking-widest text-red-700 font-semibold flex items-center gap-1.5 justify-end">
           <ShieldAlert className="w-3.5 h-3.5" />
-          Closed with rejection
+          {s.statusClosedRejected}
         </div>
         <div className="text-xs text-red-700/80 mt-1 max-w-xs">
-          {rejectedCount} variance{rejectedCount !== 1 ? "s" : ""} were
-          rejected — system stays knowingly different from physical count
-          on those lines.
+          {s.rejectedExplain(rejectedCount)}
         </div>
       </div>
     );
@@ -129,7 +163,7 @@ function StatusBadgeLarge({
     return (
       <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold rounded inline-flex items-center gap-1.5">
         <CheckCircle2 className="w-3.5 h-3.5" />
-        Closed
+        {s.statusClosed}
       </span>
     );
   }
@@ -137,13 +171,13 @@ function StatusBadgeLarge({
     return (
       <span className="px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold rounded inline-flex items-center gap-1.5">
         <AlertTriangle className="w-3.5 h-3.5" />
-        Awaiting review
+        {s.statusSubmitted}
       </span>
     );
   }
   return (
     <span className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded inline-flex items-center gap-1.5">
-      Draft
+      {s.statusDraft}
     </span>
   );
 }
@@ -152,6 +186,8 @@ function StatusBadgeLarge({
 // DRAFT — counting screen
 
 function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   const { data: coinData } = useSWR<UnitTypeListResponse>(
     "/coins?page_size=200&is_active=true",
     apiFetcher,
@@ -194,7 +230,7 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
     if (raw === undefined || raw === "") return;
     const counted = Number(raw);
     if (!Number.isInteger(counted) || counted < 0) {
-      setError(`Counted quantity must be a non-negative integer.`);
+      setError(s.countInvalid);
       return;
     }
     setError(null);
@@ -213,8 +249,8 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
         });
       }
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to save count");
+    } catch (e) {
+      setError(errorMessage(e, s.saveFailed));
     } finally {
       setSavingKey(null);
     }
@@ -224,14 +260,14 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
     try {
       await api.delete(`/stock-takes/${take.id}/lines/${lineId}`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to remove line");
+    } catch (e) {
+      setError(errorMessage(e, s.removeFailed));
     }
   }
 
   async function handleSubmit() {
     if (take.lines.length === 0) {
-      setError("Add at least one counted line before submitting.");
+      setError(s.needOneLine);
       return;
     }
     setError(null);
@@ -239,8 +275,8 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
     try {
       await api.post(`/stock-takes/${take.id}/submit`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to submit");
+    } catch (e) {
+      setError(errorMessage(e, s.submitFailed));
     } finally {
       setSubmitting(false);
     }
@@ -253,20 +289,16 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900 flex gap-3">
         <Info className="w-5 h-5 shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium">Two distinct steps</div>
+          <div className="font-medium">{s.stepsTitle}</div>
           <ol className="text-xs text-blue-800/90 mt-1.5 list-decimal list-inside space-y-0.5">
             <li>
-              <span className="font-medium">Save count</span> per row — records what
-              you physically counted. Does NOT change inventory.
+              <span className="font-medium">{s.saveCount}</span> {s.step1Body}
             </li>
             <li>
-              <span className="font-medium">Submit for review</span> — freezes the
-              count and computes variances. Still does NOT change inventory.
+              <span className="font-medium">{s.step2Title}</span> {s.step2Body}
             </li>
             <li>
-              <span className="font-medium">Approve each variance</span> on the next
-              screen — this is the ONLY step that mutates on-hand quantity.
-              Each approval is recorded as a fully-audited adjustment.
+              <span className="font-medium">{s.step3Title}</span> {s.step3Body}
             </li>
           </ol>
         </div>
@@ -279,7 +311,7 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
       )}
 
       <CountTable
-        title="Coins"
+        title={t.dashboard.coins}
         refType="COIN_STOCK"
         types={coinTypes}
         counts={counts}
@@ -290,7 +322,7 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
         onRemove={removeLine}
       />
       <CountTable
-        title="Ounce bars"
+        title={s.ounceBars}
         refType="OUNCE_STOCK"
         types={ounceTypes}
         counts={counts}
@@ -304,13 +336,11 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5 flex items-start justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-gray-800">
-            {take.lines.length} {take.lines.length === 1 ? "line" : "lines"} counted so far
+            {s.linesCounted(take.lines.length)}
           </div>
           <p className="text-xs text-gray-500 mt-1 max-w-md">
-            Submitting will freeze these counts and compute variances. You&apos;ll
-            then review each variance on the next screen and approve or reject
-            individually. <span className="font-medium">Inventory is NOT
-            changed by submit — only by approving variances afterwards.</span>
+            {s.submitNote}{" "}
+            <span className="font-medium">{s.submitNoteStrong}</span>
           </p>
         </div>
         <button
@@ -319,7 +349,7 @@ function DraftView({ take, onChange }: { take: StockTake; onChange: () => void }
           className="px-4 py-2.5 bg-gold text-white text-sm rounded hover:bg-gold-dark disabled:opacity-50 flex items-center gap-2 shrink-0"
         >
           <Lock className="w-4 h-4" />
-          {submitting ? "Submitting…" : "Submit count for review"}
+          {submitting ? s.submitting : s.submitForReview}
         </button>
       </div>
     </>
@@ -339,6 +369,8 @@ function CountTable({
   onSave: (rt: StockTakeRefType, id: string) => void;
   onRemove: (lineId: string) => void;
 }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   if (types.length === 0) return null;
 
   return (
@@ -350,17 +382,17 @@ function CountTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50/50">
             <tr className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-              <th className="text-left px-4 py-2">Code</th>
-              <th className="text-left px-4 py-2">Name</th>
-              <th className="text-right px-4 py-2">System says</th>
-              <th className="text-left px-4 py-2 w-32">Counted</th>
-              <th className="text-left px-4 py-2 w-40">Status</th>
-              <th className="px-4 py-2 w-32" />
+              <th className="text-start px-4 py-2">{t.accounting.common.code}</th>
+              <th className="text-start px-4 py-2">{t.common.name}</th>
+              <th className="text-end px-4 py-2">{s.colSystemSays}</th>
+              <th className="text-start px-4 py-2 w-32">{s.colCounted}</th>
+              <th className="text-start px-4 py-2 w-40">{t.common.status}</th>
+              <th className="px-4 py-2 w-32"><span className="sr-only">{t.common.actions}</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {types.map((t) => {
-              const key = `${refType}:${t.id}`;
+            {types.map((unit) => {
+              const key = `${refType}:${unit.id}`;
               const line = lineByKey.get(key);
               const raw = counts[key] ?? "";
               const dirty =
@@ -368,11 +400,11 @@ function CountTable({
                   ? raw !== ""
                   : raw !== String(line.counted_qty);
               return (
-                <tr key={t.id}>
-                  <td className="px-4 py-2 font-mono text-xs">{t.code}</td>
-                  <td className="px-4 py-2 text-gray-700">{t.name_en}</td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">
-                    {t.on_hand_qty}
+                <tr key={unit.id}>
+                  <td className="px-4 py-2 font-mono text-xs">{unit.code}</td>
+                  <td className="px-4 py-2 text-gray-700">{unit.name_en}</td>
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">
+                    {unit.on_hand_qty}
                   </td>
                   <td className="px-4 py-2">
                     <input
@@ -385,27 +417,28 @@ function CountTable({
                       }
                       className="w-24 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-gold"
                       placeholder="—"
+                      aria-label={s.countFor(unit.name_en)}
                     />
                   </td>
                   <td className="px-4 py-2 text-xs">
                     {line ? (
                       <span className="text-emerald-700 inline-flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        Saved (count = {line.counted_qty})
+                        {s.savedCount(line.counted_qty)}
                       </span>
                     ) : (
-                      <span className="text-gray-400">Not yet counted</span>
+                      <span className="text-gray-400">{s.notCounted}</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-end">
                     {dirty && (
                       <button
-                        onClick={() => onSave(refType, t.id)}
+                        onClick={() => onSave(refType, unit.id)}
                         disabled={savingKey === key}
                         className="px-2.5 py-1 bg-gray-800 text-white text-xs rounded hover:bg-black disabled:opacity-50 inline-flex items-center gap-1"
                       >
                         <Save className="w-3 h-3" />
-                        {savingKey === key ? "…" : "Save count"}
+                        {savingKey === key ? "…" : s.saveCount}
                       </button>
                     )}
                     {!dirty && line && (
@@ -413,7 +446,7 @@ function CountTable({
                         onClick={() => onRemove(line.id)}
                         className="text-xs text-gray-400 hover:text-red-700"
                       >
-                        Remove
+                        {s.remove}
                       </button>
                     )}
                   </td>
@@ -431,6 +464,8 @@ function CountTable({
 // SUBMITTED — review screen
 
 function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => void }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   // Group lines by resolution status; PENDING surfaces at the top.
   const pending = take.lines.filter((l) => l.resolution === "PENDING");
   const resolved = take.lines.filter((l) => l.resolution !== "PENDING");
@@ -443,11 +478,11 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
   async function handleApprove(line: StockTakeLine) {
     const counted = line.counted_qty;
     const expected = line.expected_qty_at_submit ?? 0;
-    const v = describeVariance(counted, expected);
-    const effect = describeApprovalEffect(counted, expected);
-    const refLabel = nameForLine(line);
     const ok = window.confirm(
-      `Approve this variance?\n\n${v.sentence(refLabel)}\n\n${effect}\n\nThis writes a permanent adjustment to the audit ledger.`,
+      s.approveConfirm(
+        varianceSentence(s, nameForLine(s, line), counted, expected),
+        approvalEffect(s, counted, expected),
+      ),
     );
     if (!ok) return;
     setError(null);
@@ -455,8 +490,8 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
     try {
       await api.post(`/stock-takes/${take.id}/lines/${line.id}/approve`);
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? "Approve failed");
+    } catch (e) {
+      setError(errorMessage(e, s.approveFailed));
     } finally {
       setActingLineId(null);
     }
@@ -465,7 +500,7 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
   async function handleReject() {
     if (!rejectingLine) return;
     if (rejectReason.trim().length < 3) {
-      setError("Reason is required (min 3 characters).");
+      setError(s.reasonRequired);
       return;
     }
     setError(null);
@@ -478,8 +513,8 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
       setRejectingLine(null);
       setRejectReason("");
       onChange();
-    } catch (e: any) {
-      setError(e.message ?? "Reject failed");
+    } catch (e) {
+      setError(errorMessage(e, s.rejectFailed));
     } finally {
       setActingLineId(null);
     }
@@ -490,13 +525,9 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900 flex gap-3">
         <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium">Variances awaiting decision</div>
+          <div className="font-medium">{s.awaitingTitle}</div>
           <p className="text-xs text-amber-800/90 mt-1">
-            Each variance is described in plain words below
-            (e.g. &quot;short by 2&quot;, &quot;over by 1&quot;). Approving applies the
-            adjustment to inventory; rejecting leaves the system
-            knowingly different from your physical count and records the
-            reason. Both actions are permanent and audited.
+            {s.awaitingBody}
           </p>
         </div>
       </div>
@@ -509,7 +540,7 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
 
       {pending.length > 0 && (
         <VarianceTable
-          title={`${pending.length} pending variance${pending.length !== 1 ? "s" : ""}`}
+          title={s.pendingTitle(pending.length)}
           lines={pending}
           isPending
           actingLineId={actingLineId}
@@ -520,7 +551,7 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
 
       {resolved.length > 0 && (
         <VarianceTable
-          title="Already resolved"
+          title={s.resolvedTitle}
           lines={resolved}
           isPending={false}
           actingLineId={null}
@@ -551,6 +582,8 @@ function SubmittedView({ take, onChange }: { take: StockTake; onChange: () => vo
 // CLOSED — read-only, rejected lines loud
 
 function ClosedView({ take }: { take: StockTake }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   const rejected = take.lines.filter((l) => l.resolution === "REJECTED");
   const approved = take.lines.filter((l) => l.resolution === "APPROVED");
   const noVariance = take.lines.filter((l) => l.resolution === "NO_VARIANCE");
@@ -568,14 +601,10 @@ function ClosedView({ take }: { take: StockTake }) {
             <ShieldAlert className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
             <div>
               <div className="text-sm font-bold text-red-900">
-                {rejected.length} variance{rejected.length !== 1 ? "s" : ""} were
-                rejected — inventory stays knowingly different from physical count
+                {s.rejectedTitle(rejected.length)}
               </div>
               <p className="text-xs text-red-800/90 mt-1 max-w-2xl">
-                These differences were physically observed but not corrected
-                in the system. They will continue to surface in
-                Inventory → Reconcile as drift until a future stock-take
-                approves an adjustment or the underlying issue is fixed.
+                {s.rejectedBody}
               </p>
             </div>
           </div>
@@ -583,11 +612,11 @@ function ClosedView({ take }: { take: StockTake }) {
             <table className="w-full text-sm">
               <thead className="bg-red-50/50">
                 <tr className="text-xs text-red-700 uppercase tracking-widest font-medium">
-                  <th className="text-left px-4 py-2">Item</th>
-                  <th className="text-right px-4 py-2">System said</th>
-                  <th className="text-right px-4 py-2">Counted</th>
-                  <th className="text-left px-4 py-2">Variance</th>
-                  <th className="text-left px-4 py-2">Reason for rejecting</th>
+                  <th className="text-start px-4 py-2">{s.colItem}</th>
+                  <th className="text-end px-4 py-2">{s.colSystemSaid}</th>
+                  <th className="text-end px-4 py-2">{s.colCounted}</th>
+                  <th className="text-start px-4 py-2">{s.colVariance}</th>
+                  <th className="text-start px-4 py-2">{s.colRejectReason}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-red-100">
@@ -597,11 +626,11 @@ function ClosedView({ take }: { take: StockTake }) {
                     <tr key={l.id}>
                       <td className="px-4 py-2 text-xs">
                         <KindBadge ref_type={l.ref_type} />
-                        <span className="ml-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
+                        <span className="ms-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
                       </td>
-                      <td className="px-4 py-2 text-right text-gray-800">{l.expected_qty_at_submit}</td>
-                      <td className="px-4 py-2 text-right text-gray-800">{l.counted_qty}</td>
-                      <td className="px-4 py-2 text-red-800 font-medium">{v.label}</td>
+                      <td className="px-4 py-2 text-end text-gray-800">{l.expected_qty_at_submit}</td>
+                      <td className="px-4 py-2 text-end text-gray-800">{l.counted_qty}</td>
+                      <td className="px-4 py-2 text-red-800 font-medium">{varianceLabel(s, v)}</td>
                       <td className="px-4 py-2 text-xs text-red-900 italic">
                         &quot;{l.rejection_reason}&quot;
                       </td>
@@ -616,7 +645,7 @@ function ClosedView({ take }: { take: StockTake }) {
 
       {approved.length > 0 && (
         <VarianceTable
-          title={`${approved.length} approved adjustment${approved.length !== 1 ? "s" : ""}`}
+          title={s.approvedTitle(approved.length)}
           lines={approved}
           isPending={false}
           actingLineId={null}
@@ -629,11 +658,10 @@ function ClosedView({ take }: { take: StockTake }) {
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
           <div className="px-5 py-3 border-b border-gray-100 text-sm font-semibold text-gray-800 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            {noVariance.length} matched (no variance)
+            {s.matchedTitle(noVariance.length)}
           </div>
           <div className="px-5 py-3 text-xs text-gray-500">
-            Physical count matched system on these {noVariance.length} items —
-            no action needed.
+            {s.matchedBody(noVariance.length)}
           </div>
         </div>
       )}
@@ -654,6 +682,8 @@ function VarianceTable({
   onApprove: (l: StockTakeLine) => void;
   onRejectClick: (l: StockTakeLine) => void;
 }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
       <div className="px-5 py-3 border-b border-gray-100 text-sm font-semibold text-gray-800">
@@ -663,12 +693,12 @@ function VarianceTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50/50">
             <tr className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-              <th className="text-left px-4 py-2">Item</th>
-              <th className="text-right px-4 py-2">System said</th>
-              <th className="text-right px-4 py-2">Counted</th>
-              <th className="text-left px-4 py-2">Variance (plain)</th>
-              <th className="text-left px-4 py-2">Status</th>
-              {isPending && <th className="text-right px-4 py-2 w-48">Action</th>}
+              <th className="text-start px-4 py-2">{s.colItem}</th>
+              <th className="text-end px-4 py-2">{s.colSystemSaid}</th>
+              <th className="text-end px-4 py-2">{s.colCounted}</th>
+              <th className="text-start px-4 py-2">{s.colVariancePlain}</th>
+              <th className="text-start px-4 py-2">{t.common.status}</th>
+              {isPending && <th className="text-end px-4 py-2 w-48">{s.colAction}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -679,10 +709,10 @@ function VarianceTable({
                 <tr key={l.id} className={v.tone === "shortage" ? "bg-red-50/30" : ""}>
                   <td className="px-4 py-2 text-xs">
                     <KindBadge ref_type={l.ref_type} />
-                    <span className="ml-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
+                    <span className="ms-1.5 font-mono">{l.ref_id.slice(0, 8)}…</span>
                   </td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">{expected}</td>
-                  <td className="px-4 py-2 text-right text-gray-800 tabular-nums">{l.counted_qty}</td>
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">{expected}</td>
+                  <td className="px-4 py-2 text-end text-gray-800 tabular-nums">{l.counted_qty}</td>
                   <td className="px-4 py-2">
                     <VarianceLabel counted={l.counted_qty} expected={expected} />
                   </td>
@@ -695,15 +725,15 @@ function VarianceTable({
                     )}
                   </td>
                   {isPending && (
-                    <td className="px-4 py-2 text-right">
-                      <div className="flex justify-end gap-1.5">
+                    <td className="px-4 py-2 text-end">
+                      <div role="group" aria-label={s.colAction} className="flex justify-end gap-1.5">
                         <button
                           onClick={() => onApprove(l)}
                           disabled={actingLineId === l.id}
                           className="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 disabled:opacity-50 inline-flex items-center gap-1"
                         >
                           <ShieldCheck className="w-3 h-3" />
-                          Approve
+                          {s.approve}
                         </button>
                         <button
                           onClick={() => onRejectClick(l)}
@@ -711,7 +741,7 @@ function VarianceTable({
                           className="px-3 py-1 border border-gray-300 text-gray-700 text-xs rounded hover:bg-gray-50 disabled:opacity-50 inline-flex items-center gap-1"
                         >
                           <XCircle className="w-3 h-3" />
-                          Reject
+                          {s.reject}
                         </button>
                       </div>
                     </td>
@@ -727,6 +757,7 @@ function VarianceTable({
 }
 
 function VarianceLabel({ counted, expected }: { counted: number; expected: number }) {
+  const { t } = useLang();
   const v = describeVariance(counted, expected);
   const cls =
     v.tone === "shortage"
@@ -734,15 +765,17 @@ function VarianceLabel({ counted, expected }: { counted: number; expected: numbe
       : v.tone === "surplus"
       ? "text-amber-700 font-semibold"
       : "text-gray-400";
-  return <span className={cls}>{v.label}</span>;
+  return <span className={cls}>{varianceLabel(t.stockTake, v)}</span>;
 }
 
 function ResolutionBadge({ resolution }: { resolution: StockTakeLine["resolution"] }) {
+  const { t } = useLang();
+  const s = t.stockTake;
   const map = {
-    PENDING: { cls: "bg-amber-50 text-amber-800 border-amber-200", icon: AlertTriangle, label: "Pending" },
-    APPROVED: { cls: "bg-emerald-50 text-emerald-800 border-emerald-200", icon: ShieldCheck, label: "Approved" },
-    REJECTED: { cls: "bg-red-50 text-red-800 border-red-200", icon: ShieldAlert, label: "Rejected" },
-    NO_VARIANCE: { cls: "bg-gray-100 text-gray-600 border-gray-200", icon: CheckCircle2, label: "No variance" },
+    PENDING: { cls: "bg-amber-50 text-amber-800 border-amber-200", icon: AlertTriangle, label: s.resPending },
+    APPROVED: { cls: "bg-emerald-50 text-emerald-800 border-emerald-200", icon: ShieldCheck, label: s.resApproved },
+    REJECTED: { cls: "bg-red-50 text-red-800 border-red-200", icon: ShieldAlert, label: s.resRejected },
+    NO_VARIANCE: { cls: "bg-gray-100 text-gray-600 border-gray-200", icon: CheckCircle2, label: s.resNoVariance },
   } as const;
   const m = map[resolution];
   return (
@@ -754,15 +787,16 @@ function ResolutionBadge({ resolution }: { resolution: StockTakeLine["resolution
 }
 
 function KindBadge({ ref_type }: { ref_type: StockTakeRefType }) {
+  const { t } = useLang();
   return (
     <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 uppercase text-[10px] tracking-wide rounded">
-      {ref_type === "COIN_STOCK" ? "Coin" : "Ounce"}
+      {ref_type === "COIN_STOCK" ? t.stockTake.kindCoin : t.stockTake.kindOunce}
     </span>
   );
 }
 
-function nameForLine(l: StockTakeLine): string {
-  return `${l.ref_type === "COIN_STOCK" ? "Coin" : "Ounce"} ${l.ref_id.slice(0, 8)}…`;
+function nameForLine(s: StockTakeStrings, l: StockTakeLine): string {
+  return `${l.ref_type === "COIN_STOCK" ? s.kindCoin : s.kindOunce} ${l.ref_id.slice(0, 8)}…`;
 }
 
 function RejectModal({
@@ -775,54 +809,85 @@ function RejectModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const v = describeVariance(line.counted_qty, line.expected_qty_at_submit ?? 0);
+  const { t } = useLang();
+  const s = t.stockTake;
+  const expected = line.expected_qty_at_submit ?? 0;
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // A modal dialog: focus moves to its one field when it opens, Tab stays
+  // inside it, and focus goes back to whatever opened it when it closes.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    reasonRef.current?.focus();
+    return () => opener?.focus();
+  }, []);
+  useFocusTrap(panelRef);
+
+  // Escape closes it, like the backdrop and Cancel: not while a rejection is
+  // being submitted.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !submitting) onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [submitting, onCancel]);
+
   return (
+    // The backdrop is not a control: it only catches clicks that land outside
+    // the dialog. Escape and the Cancel button are the keyboard path.
     <div
+      role="presentation"
       className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={() => !submitting && onCancel()}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) onCancel();
+      }}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={s.rejectVariance}
         className="bg-white rounded-lg w-full max-w-md p-5 space-y-4 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="text-sm font-semibold text-gray-800">
-          Reject variance
+          {s.rejectVariance}
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-900">
-          <div className="font-medium mb-1">{v.sentence(nameForLine(line))}</div>
+          <div className="font-medium mb-1">{varianceSentence(s, nameForLine(s, line), line.counted_qty, expected)}</div>
           <div className="text-amber-800/90">
-            Rejecting leaves the system at {line.expected_qty_at_submit} (not
-            {line.counted_qty}). This drift will continue to show up on
-            Inventory → Reconcile until resolved.
+            {s.rejectEffect(expected, line.counted_qty)}
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Reason (required, recorded in audit log)
-          </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {s.reasonLabel}
+          </span>
           <textarea
+            ref={reasonRef}
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             maxLength={500}
             className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold resize-none"
-            placeholder="e.g. acceptable shrinkage, suspected miscount — investigating"
+            placeholder={s.reasonPlaceholder}
           />
-        </div>
+        </label>
         <div className="flex gap-2 justify-end">
           <button
             onClick={onCancel}
             disabled={submitting}
             className="px-4 py-2 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={onConfirm}
             disabled={submitting || reason.trim().length < 3}
             className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
           >
-            {submitting ? "Rejecting…" : "Reject variance"}
+            {submitting ? s.rejecting : s.rejectVariance}
           </button>
         </div>
       </div>

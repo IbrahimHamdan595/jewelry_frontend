@@ -3,14 +3,26 @@ import { useState } from "react";
 import { ScanLine, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLang } from "@/context/LanguageContext";
+
+/**
+ * Why a scan did not add a line. "not-found" is a code the server does not
+ * know — usually a mistyped or damaged barcode. "cannot-price" is an item
+ * that exists but came back without a readable price: a data fault, which the
+ * cashier cannot fix by scanning again.
+ */
+export type ScanErrorReason = "not-found" | "cannot-price";
 
 interface Props {
   onScan: (code: string) => Promise<void>;
+  /** The code that failed, or null. */
   scanError: string | null;
+  scanErrorReason?: ScanErrorReason;
 }
 
-export function ScanPanel({ onScan, scanError }: Props) {
+export function ScanPanel({ onScan, scanError, scanErrorReason = "not-found" }: Props) {
   const [manual, setManual] = useState("");
+  const { t } = useLang();
 
   async function handleManual() {
     const code = manual.trim();
@@ -24,10 +36,10 @@ export function ScanPanel({ onScan, scanError }: Props) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="text-pos-gray text-[10px] uppercase tracking-widest">
-            Capture
+            {t.pos.capture}
           </p>
           <p className="text-pos-gray/60 text-[10px] uppercase tracking-widest">
-            Step 01
+            {t.pos.step01}
           </p>
         </div>
 
@@ -41,20 +53,23 @@ export function ScanPanel({ onScan, scanError }: Props) {
           {scanError ? (
             <>
               <p className="text-red-400 text-xs uppercase tracking-widest mb-2">
-                Item not found
+                {scanErrorReason === "cannot-price" ? t.pos.cannotPrice : t.pos.itemNotFound}
               </p>
               <p className="text-red-300/70 text-sm font-mono break-all">
                 {scanError}
               </p>
+              {scanErrorReason === "cannot-price" && (
+                <p className="text-red-300 text-xs mt-2">{t.pos.cannotPriceHint}</p>
+              )}
             </>
           ) : (
             <>
               <ScanLine className="w-10 h-10 mx-auto text-gold/60 mb-3" />
               <p className="text-pos-cream text-sm tracking-widest uppercase">
-                Ready to scan
+                {t.pos.readyToScan}
               </p>
               <p className="text-pos-gray text-xs mt-1.5">
-                Point scanner at barcode or enter code below
+                {t.pos.scanHint}
               </p>
             </>
           )}
@@ -63,18 +78,19 @@ export function ScanPanel({ onScan, scanError }: Props) {
 
       <div>
         <p className="text-pos-gray text-[10px] uppercase tracking-widest mb-2">
-          Manual entry
+          {t.pos.manualEntry}
         </p>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-gray/60 pointer-events-none" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-gray/60 pointer-events-none" />
             <Input
               dark
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleManual()}
-              placeholder="Product code…"
-              className="pl-9"
+              placeholder={t.pos.productCodePlaceholder}
+              aria-label={t.pos.manualEntry}
+              className="ps-9"
             />
           </div>
           <Button
@@ -82,7 +98,7 @@ export function ScanPanel({ onScan, scanError }: Props) {
             disabled={!manual.trim()}
             className="shrink-0 px-5"
           >
-            Find
+            {t.pos.find}
           </Button>
         </div>
       </div>

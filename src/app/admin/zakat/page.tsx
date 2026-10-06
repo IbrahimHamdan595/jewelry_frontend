@@ -1,21 +1,21 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { Scale, RefreshCw, ShieldCheck, ShieldAlert, AlertTriangle, Save } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState, RetryButton } from "@/components/ui/error-state";
 import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { formatUSD } from "@/lib/utils";
 import type { ZakatSnapshot, ZakatSnapshotList, ZakatSummary } from "@/types/zakat";
 
 // ── formatting helpers ────────────────────────────────────────────────────────
-const usd = (n: string | number) =>
-  Number(n).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+// Money goes through formatUSD and dates through useFormat(), like the rest of
+// the app. Weights are pinned to the same digits and separators as the money
+// beside them, instead of whatever the viewer's browser locale would print.
 const grams = (n: string | number, dp = 3) =>
-  Number(n).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
-
-const rate = (n: string | number) =>
-  Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  Number(n).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 
 function todayISO(): string {
   const d = new Date();
@@ -27,6 +27,10 @@ function todayISO(): string {
 export default function ZakatPage() {
   const { t } = useLang();
   const z = t.zakat;
+  // "live" or "override" (the gold-rate source enum), in the wording the rate
+  // cards use. Anything else — an older snapshot's value — prints as stored.
+  const rateSource = (source: string) => t.goldRate.sources[source as keyof typeof t.goldRate.sources] ?? source;
+  const { formatDateTime } = useFormat();
 
   const { data: summary, error: summaryErr, mutate: mutateSummary, isLoading: loadingSummary, isValidating: validatingSummary } =
     useSWR<ZakatSummary>("/zakat", apiFetcher);
@@ -40,6 +44,29 @@ export default function ZakatPage() {
   const [snapNotes, setSnapNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const snapDateRef = useRef<HTMLInputElement>(null);
+  const snapPanelRef = useRef<HTMLDivElement>(null);
+
+  // The snapshot dialog is modal: focus moves to its first field when it
+  // opens, Tab stays inside it, and focus goes back to whatever opened it
+  // when it closes.
+  useEffect(() => {
+    if (!snapModalOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    snapDateRef.current?.focus();
+    return () => opener?.focus();
+  }, [snapModalOpen]);
+  useFocusTrap(snapPanelRef, snapModalOpen);
+
+  // Escape closes it, like the backdrop and Cancel: not while a save is in flight.
+  useEffect(() => {
+    if (!snapModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !saving) setSnapModalOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [snapModalOpen, saving]);
 
   const filteredSnapshots: ZakatSnapshot[] = useMemo(() => {
     const items = snapshotsData?.items ?? [];
@@ -64,8 +91,8 @@ export default function ZakatPage() {
       setSnapModalOpen(false);
       setSnapNotes("");
       await Promise.all([mutateSummary(), mutateSnapshots()]);
-    } catch (e: any) {
-      setSaveError(e.message ?? "Failed to save snapshot");
+    } catch (e) {
+      setSaveError(errorMessage(e, z.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -74,8 +101,9 @@ export default function ZakatPage() {
   // ── render ─────────────────────────────────────────────────────────────────
 
   if (summaryErr && !summary) {
-    const msg = summaryErr.message ?? String(summaryErr);
-    const isRateUnavail = msg.includes("Gold rate") || msg.toLowerCase().includes("rate");
+    // Only what the backend itself said; a dropped connection has no message here.
+    const msg = errorMessage(summaryErr, "");
+    const isRateUnavail = msg.toLowerCase().includes("rate");
     // The rate-unavailable case is a deliberate backend message for the admin;
     // anything else is a generic failure and gets the generic state.
     if (!isRateUnavail) {
@@ -100,7 +128,7 @@ export default function ZakatPage() {
   }
 
   if (loadingSummary || !summary) {
-    return <div className="text-sm text-gray-500">Loading…</div>;
+    return <div className="text-sm text-gray-500">{t.common.loading}</div>;
   }
 
   return (
@@ -128,19 +156,19 @@ export default function ZakatPage() {
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
           <div className="text-xs text-gray-400 uppercase tracking-widest">{z.totalAuCardTitle}</div>
           <div className="text-3xl font-semibold text-gray-800 mt-2">
-            {grams(summary.holdings.total_au_grams)} <span className="text-base text-gray-400">g</span>
+            {grams(summary.holdings.total_au_grams)} <span className="text-base text-gray-400">{t.dashboard.grams}</span>
           </div>
           <div className="text-xs text-gray-500 mt-3 flex justify-between">
             <span>{z.cashValue}</span>
-            <span className="font-medium text-gray-700">{usd(summary.total_au_value_usd)}</span>
+            <span className="font-medium text-gray-700">{formatUSD(summary.total_au_value_usd)}</span>
           </div>
           <div className="text-xs text-gray-400 mt-2 flex justify-between">
             <span>{z.rateLabel}</span>
             <span>
-              ${rate(summary.gold_rate_24k)}/g
-              <span className="ml-1.5 inline-flex items-center gap-1 text-[10px]">
+              {formatUSD(summary.gold_rate_24k)}{t.products.perGram}
+              <span className="ms-1.5 inline-flex items-center gap-1 text-[10px]">
                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                  {summary.gold_rate_source}
+                  {rateSource(summary.gold_rate_source)}
                 </span>
                 {summary.gold_rate_is_stale && (
                   <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded uppercase">
@@ -156,14 +184,14 @@ export default function ZakatPage() {
         <div className="bg-white rounded-lg border border-gold/30 shadow-sm p-5">
           <div className="text-xs text-gold uppercase tracking-widest">{z.zakatDueCardTitle}</div>
           <div className="text-3xl font-semibold text-gray-800 mt-2">
-            {grams(summary.zakat_au_grams)} <span className="text-base text-gray-400">g</span>
+            {grams(summary.zakat_au_grams)} <span className="text-base text-gray-400">{t.dashboard.grams}</span>
           </div>
           <div className="text-xs text-gray-500 mt-3 flex justify-between">
             <span>{z.zakatDueCash}</span>
-            <span className="font-medium text-gold">{usd(summary.zakat_value_usd)}</span>
+            <span className="font-medium text-gold">{formatUSD(summary.zakat_value_usd)}</span>
           </div>
           <div className="text-xs text-gray-400 mt-2">
-            2.5% × {z.totalAuCardTitle.toLowerCase()}
+            {z.dueFormula(z.totalAuCardTitle.toLowerCase())}
           </div>
         </div>
 
@@ -171,7 +199,7 @@ export default function ZakatPage() {
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
           <div className="text-xs text-gray-400 uppercase tracking-widest">{z.nisabCardTitle}</div>
           <div className="text-3xl font-semibold text-gray-800 mt-2">
-            {grams(summary.nisab_grams)} <span className="text-base text-gray-400">g</span>
+            {grams(summary.nisab_grams)} <span className="text-base text-gray-400">{t.dashboard.grams}</span>
           </div>
           <div
             className={`text-xs mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded ${
@@ -201,33 +229,33 @@ export default function ZakatPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                <th className="text-left font-normal px-5 py-2">{z.karat}</th>
-                <th className="text-right font-normal px-3 py-2">{z.products}</th>
-                <th className="text-right font-normal px-3 py-2">{z.coins}</th>
-                <th className="text-right font-normal px-3 py-2">{z.ounces}</th>
-                <th className="text-right font-normal px-3 py-2">{z.lots}</th>
-                <th className="text-right font-normal px-3 py-2">{z.totalWeight}</th>
-                <th className="text-right font-normal px-5 py-2">{z.auGrams}</th>
+                <th className="text-start font-normal px-5 py-2">{z.karat}</th>
+                <th className="text-end font-normal px-3 py-2">{z.products}</th>
+                <th className="text-end font-normal px-3 py-2">{z.coins}</th>
+                <th className="text-end font-normal px-3 py-2">{z.ounces}</th>
+                <th className="text-end font-normal px-3 py-2">{z.lots}</th>
+                <th className="text-end font-normal px-3 py-2">{z.totalWeight}</th>
+                <th className="text-end font-normal px-5 py-2">{z.auGrams}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {summary.holdings.by_karat.map((b) => (
                 <tr key={b.karat} className="hover:bg-gray-50/50">
                   <td className="px-5 py-2.5 font-medium text-gray-800">{b.karat}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.products)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.coins)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.ounces)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">{grams(b.grams_by_source.lots)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-800 font-medium">{grams(b.total_weight_grams)}</td>
-                  <td className="px-5 py-2.5 text-right text-gold font-semibold">{grams(b.au_grams)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.products)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.coins)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.ounces)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-700">{grams(b.grams_by_source.lots)}</td>
+                  <td className="px-3 py-2.5 text-end text-gray-800 font-medium">{grams(b.total_weight_grams)}</td>
+                  <td className="px-5 py-2.5 text-end text-gold font-semibold">{grams(b.au_grams)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="border-t border-gray-200 text-sm font-semibold">
                 <td className="px-5 py-3 text-gray-800">{z.grandTotal}</td>
-                <td colSpan={5} />
-                <td className="px-5 py-3 text-right text-gold">{grams(summary.holdings.total_au_grams)}</td>
+                <td colSpan={5} aria-hidden="true" />
+                <td className="px-5 py-3 text-end text-gold">{grams(summary.holdings.total_au_grams)}</td>
               </tr>
             </tfoot>
           </table>
@@ -278,14 +306,14 @@ export default function ZakatPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                  <th className="text-left font-normal px-5 py-2">{z.snapAssessment}</th>
-                  <th className="text-left font-normal px-3 py-2">{z.snapTaken}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapTotalAu}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapZakatGrams}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapZakatCash}</th>
-                  <th className="text-right font-normal px-3 py-2">{z.snapRate}</th>
-                  <th className="text-left font-normal px-3 py-2">{z.snapSource}</th>
-                  <th className="text-left font-normal px-5 py-2">{z.nisabCardTitle}</th>
+                  <th className="text-start font-normal px-5 py-2">{z.snapAssessment}</th>
+                  <th className="text-start font-normal px-3 py-2">{z.snapTaken}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapTotalAu}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapZakatGrams}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapZakatCash}</th>
+                  <th className="text-end font-normal px-3 py-2">{z.snapRate}</th>
+                  <th className="text-start font-normal px-3 py-2">{z.snapSource}</th>
+                  <th className="text-start font-normal px-5 py-2">{z.nisabCardTitle}</th>
                   <th className="text-center font-normal px-3 py-2">{z.snapIntegrityOk}</th>
                 </tr>
               </thead>
@@ -294,21 +322,21 @@ export default function ZakatPage() {
                   <tr key={s.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-2.5 font-medium text-gray-800">{s.assessment_date}</td>
                     <td className="px-3 py-2.5 text-gray-500 text-xs">
-                      {new Date(s.taken_at).toLocaleString()}
+                      {formatDateTime(s.taken_at)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-gray-700">{grams(s.total_au_grams)}</td>
-                    <td className="px-3 py-2.5 text-right text-gold font-medium">{grams(s.zakat_au_grams)}</td>
-                    <td className="px-3 py-2.5 text-right text-gold font-medium">{usd(s.zakat_value_usd)}</td>
-                    <td className="px-3 py-2.5 text-right text-gray-600">${rate(s.gold_rate_24k_usd_per_gram)}</td>
+                    <td className="px-3 py-2.5 text-end text-gray-700">{grams(s.total_au_grams)}</td>
+                    <td className="px-3 py-2.5 text-end text-gold font-medium">{grams(s.zakat_au_grams)}</td>
+                    <td className="px-3 py-2.5 text-end text-gold font-medium">{formatUSD(s.zakat_value_usd)}</td>
+                    <td className="px-3 py-2.5 text-end text-gray-600">{formatUSD(s.gold_rate_24k_usd_per_gram)}</td>
                     <td className="px-3 py-2.5 text-xs">
                       <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase">
-                        {s.gold_rate_source}
+                        {rateSource(s.gold_rate_source)}
                       </span>
                     </td>
                     <td className="px-5 py-2.5 text-gray-600">
                       {grams(s.nisab_grams_used)}{" "}
                       {s.meets_nisab ? (
-                        <span className="text-emerald-600">✓</span>
+                        <span className="text-emerald-600">{"✓"}</span>
                       ) : (
                         <span className="text-gray-400">·</span>
                       )}
@@ -334,32 +362,41 @@ export default function ZakatPage() {
 
       {/* Save snapshot modal */}
       {snapModalOpen && (
+        // The backdrop is not a control: it only catches clicks that land
+        // outside the dialog. Escape and the Cancel button are the keyboard path.
         <div
+          role="presentation"
           className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => !saving && setSnapModalOpen(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !saving) setSnapModalOpen(false);
+          }}
         >
           <div
+            ref={snapPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={z.saveSnapshotModalTitle}
             className="bg-white rounded-lg w-full max-w-sm p-5 space-y-4 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="text-sm font-semibold text-gray-800">{z.saveSnapshotModalTitle}</div>
 
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
                 {z.assessmentDate}
-              </label>
+              </span>
               <input
+                ref={snapDateRef}
                 type="date"
                 value={snapDate}
                 onChange={(e) => setSnapDate(e.target.value)}
                 className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
+            <label className="block">
+              <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">
                 {z.notesOptional}
-              </label>
+              </span>
               <textarea
                 rows={3}
                 value={snapNotes}
@@ -367,7 +404,7 @@ export default function ZakatPage() {
                 maxLength={1000}
                 className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold resize-none"
               />
-            </div>
+            </label>
 
             {saveError && (
               <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">

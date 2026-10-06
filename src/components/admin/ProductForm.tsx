@@ -4,8 +4,8 @@ import { useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 import { ImagePlus, Star, Trash2, Loader2 } from "lucide-react";
 import { useGoldRate } from "@/hooks/useGoldRate";
-import { apiFetcher, uploadFile } from "@/lib/api-client";
-import { calculatePrice, formatUSD, KARAT_LABEL } from "@/lib/utils";
+import { apiFetcher, uploadFile, errorMessage } from "@/lib/api-client";
+import { calculatePrice, formatUSD, KARAT_LABEL, toFiniteNumber } from "@/lib/utils";
 import { useLang } from "@/context/LanguageContext";
 import type { Category, Product, Settings } from "@/types/api";
 
@@ -41,6 +41,25 @@ interface Props {
   onSave: (data: FormValues & { photos: Photo[] }) => Promise<void>;
 }
 
+/**
+ * Whether a stored product has stones. Its Decimal fields arrive as strings,
+ * and "0.00" is a truthy string, so the value is read as a number: a stone
+ * value above zero is a stone. So is any other stone detail on record — a
+ * piece saved with carats and a certificate but no value yet must not open
+ * with the box clear, because saving with it clear nulls every stone field.
+ */
+function hasStones(product: Product): boolean {
+  const positive = (n: unknown) => (toFiniteNumber(n) ?? 0) > 0;
+  return (
+    positive(product.stone_value_usd) ||
+    positive(product.stone_cost_usd) ||
+    positive(product.stone_carats) ||
+    positive(product.stone_count) ||
+    Boolean(product.stone_cert?.trim()) ||
+    Boolean(product.stone_note?.trim())
+  );
+}
+
 export function ProductForm({ initial, onSave }: Props) {
   const { t } = useLang();
   const p = t.products;
@@ -72,7 +91,7 @@ export function ProductForm({ initial, onSave }: Props) {
           making_charge: Number(initial.making_charge),
           on_hand_qty: Number(initial.on_hand_qty ?? 1),
           min_stock_qty: initial.min_stock_qty ?? null,
-          has_stones: Boolean(initial.stone_value_usd),
+          has_stones: hasStones(initial),
           stone_value_usd: Number(initial.stone_value_usd ?? 0),
           stone_cost_usd: Number(initial.stone_cost_usd ?? 0),
           stone_carats: Number(initial.stone_carats ?? 0),
@@ -106,9 +125,12 @@ export function ProductForm({ initial, onSave }: Props) {
     K24: Number(settings?.markup_k24 ?? 0),
   };
 
-  const priced = rate && watched.karat && watched.weight_grams
+  // The rate arrives as a decimal string or a number (NEX-54); read it once.
+  // No readable rate means no preview at all, never a price built on zero.
+  const rate24k = toFiniteNumber(rate?.rate_24k);
+  const priced = rate24k !== null && watched.karat && watched.weight_grams
     ? calculatePrice({
-        rate24k: rate.rate_24k,
+        rate24k,
         karat: watched.karat,
         weightGrams: Number(watched.weight_grams),
         marginPercent: Number(watched.margin_percent ?? 0),
@@ -133,8 +155,8 @@ export function ProductForm({ initial, onSave }: Props) {
           { url, isHero: prev.length === 0, order: prev.length },
         ]);
       }
-    } catch (err: any) {
-      setUploadError(err.message ?? p.uploadFailed);
+    } catch (err) {
+      setUploadError(errorMessage(err, p.uploadFailed));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -432,7 +454,7 @@ export function ProductForm({ initial, onSave }: Props) {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-white/40">
                 <span>{p.marketRate24k}</span>
-                <span>{formatUSD(rate?.rate_24k ?? 0)}{p.perGram}</span>
+                <span>{formatUSD(rate24k)}{p.perGram}</span>
               </div>
               <div className="flex justify-between text-white/40">
                 <span>{p.purityRate} ({KARAT_LABEL[watched.karat ?? ""] ?? ""})</span>

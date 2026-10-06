@@ -2,21 +2,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { href: "/admin/inventory/lots", label: "Pure Gold Lots" },
-  { href: "/admin/inventory/buybacks", label: "Buybacks" },
-  { href: "/admin/inventory/alerts", label: "Alerts" },
-  { href: "/admin/inventory/reconcile", label: "Reconcile" },
-];
+import { useLang } from "@/context/LanguageContext";
 
 export default function InventoryLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { t } = useLang();
+  // Each tab's label lives with its own screen's strings.
+  const tabs = [
+    { href: "/admin/inventory/lots", label: t.lots.tab },
+    { href: "/admin/inventory/buybacks", label: t.buybacks.tab },
+    { href: "/admin/inventory/alerts", label: t.stockAlerts.tab },
+    { href: "/admin/inventory/reconcile", label: t.reconcile.tab },
+  ];
   return (
     <div className="space-y-5">
       <div className="border-b border-gray-200">
         <nav className="flex gap-6 -mb-px">
-          {TABS.map(({ href, label }) => {
+          {tabs.map(({ href, label }) => {
             const active = pathname.startsWith(href);
             return (
               <Link

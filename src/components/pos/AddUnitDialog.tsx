@@ -1,10 +1,11 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import useSWR from "swr";
 import { apiFetcher } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
-import { formatUSD } from "@/lib/utils";
+import { formatUSD, toFiniteNumber } from "@/lib/utils";
 import { useCart } from "@/hooks/useCart";
+import { useLang } from "@/context/LanguageContext";
 import type { UnitPrice, UnitTypeListResponse } from "@/types/api";
 
 interface Props {
@@ -19,8 +20,16 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
   const [quantity, setQuantity] = useState("1");
   const [search, setSearch] = useState("");
   const { addItem } = useCart();
+  const { t } = useLang();
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+
+  // The dialog opens on the search box, as `autoFocus` did — done from an
+  // effect so the focus move is explicit rather than a mount side effect.
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    searchRef.current?.focus();
+  }, []);
 
   const { data: types, error: typesError, isValidating: typesValidating, mutate: mutateTypes } = useSWR<UnitTypeListResponse>(
     `/${resource}?is_active=true&page_size=200`,
@@ -32,7 +41,7 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
     if (!search.trim()) return all;
     const q = search.toLowerCase();
     return all.filter(
-      (t) => t.code.toLowerCase().includes(q) || t.name_en.toLowerCase().includes(q),
+      (u) => u.code.toLowerCase().includes(q) || u.name_en.toLowerCase().includes(q),
     );
   }, [types, search]);
 
@@ -42,13 +51,18 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
     apiFetcher,
   );
 
-  const selected = types?.items.find((t) => t.id === selectedId);
+  // Decimal strings or numbers (NEX-54): read once, as numbers, before they
+  // reach the cart. A quote that cannot be read cannot be added — never at $0.
+  const unitPrice = toFiniteNumber(price?.final_price);
+  const goldRate24k = toFiniteNumber(price?.gold_rate_24k);
+
+  const selected = types?.items.find((u) => u.id === selectedId);
   const qty = Math.max(1, Number(quantity) || 1);
   const exceedsCap = qty > 100;
   const insufficientStock = selected && selected.on_hand_qty < qty;
 
   async function handleAdd() {
-    if (!selected || !price) return;
+    if (!selected || unitPrice === null || goldRate24k === null) return;
     setError(null);
     if (exceedsCap) {
       setError("Quantity capped at 100 per line. Add a second line for more.");
@@ -70,9 +84,9 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
         karat: selected.karat,
         weightGrams: Number(selected.weight_grams),
         quantity: qty,
-        goldRate24k: price.gold_rate_24k,
-        unitPrice: Number(price.final_price),
-        finalPrice: Number(price.final_price) * qty,
+        goldRate24k,
+        unitPrice,
+        finalPrice: unitPrice * qty,
         imageUrl: selected.photo_url ?? undefined,
       });
       onAdded();
@@ -81,18 +95,21 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
     }
   }
 
+  const searchLabel = kind === "COIN" ? t.pos.searchCoinTypes : t.pos.searchOunceTypes;
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-pos-card border border-white/10 rounded-xl w-full max-w-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto text-pos-cream">
         <div>
           <div className="text-sm uppercase tracking-widest text-gold">
-            Add {kind === "COIN" ? "coin" : "ounce bar"} to cart
+            {kind === "COIN" ? t.pos.addCoinToCart : t.pos.addOunceToCart}
           </div>
         </div>
 
         <input
-          autoFocus
-          placeholder={`Search ${kind === "COIN" ? "coin" : "ounce"} types…`}
+          ref={searchRef}
+          placeholder={searchLabel}
+          aria-label={searchLabel}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold placeholder:text-pos-gray/50"
@@ -102,33 +119,33 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
           {typesError && !types ? (
             <ErrorState variant="dark" className="m-2 p-4" error={typesError} onRetry={() => mutateTypes()} retrying={typesValidating} />
           ) : !types ? (
-            <div className="p-4 text-center text-pos-gray text-sm animate-pulse">Loading…</div>
+            <div className="p-4 text-center text-pos-gray text-sm animate-pulse">{t.common.loading}</div>
           ) : filtered.length === 0 ? (
             <div className="p-4 text-center text-pos-gray text-sm">
-              No {kind.toLowerCase()} types found
+              {kind === "COIN" ? t.pos.noCoinTypes : t.pos.noOunceTypes}
             </div>
           ) : (
-            filtered.map((t) => {
-              const low = t.min_stock_qty != null && t.on_hand_qty <= t.min_stock_qty;
+            filtered.map((u) => {
+              const low = u.min_stock_qty != null && u.on_hand_qty <= u.min_stock_qty;
               return (
                 <button
-                  key={t.id}
-                  onClick={() => setSelectedId(t.id)}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors ${
-                    selectedId === t.id ? "bg-gold/10" : "hover:bg-white/5"
+                  key={u.id}
+                  onClick={() => setSelectedId(u.id)}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-start transition-colors ${
+                    selectedId === u.id ? "bg-gold/10" : "hover:bg-white/5"
                   }`}
                 >
                   <span className="text-[11px] px-2 py-0.5 rounded bg-gold/15 text-gold font-mono shrink-0">
-                    {t.karat}
+                    {u.karat}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{t.name_en}</div>
+                    <div className="text-sm truncate">{u.name_en}</div>
                     <div className="text-xs text-pos-gray font-mono mt-0.5">
-                      {t.code} · {Number(t.weight_grams).toFixed(3)}g
+                      {u.code} · {Number(u.weight_grams).toFixed(3)}g
                     </div>
                   </div>
-                  <div className={`text-xs text-right shrink-0 ${low ? "text-amber-400" : "text-pos-gray"}`}>
-                    on hand: <span className="font-semibold">{t.on_hand_qty}</span>
+                  <div className={`text-xs text-end shrink-0 ${low ? "text-amber-400" : "text-pos-gray"}`}>
+                    {t.pos.onHand} <span className="font-semibold">{u.on_hand_qty}</span>
                   </div>
                 </button>
               );
@@ -143,26 +160,29 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
                 <div className="text-sm">{selected.name_en}</div>
                 <div className="text-xs text-pos-gray font-mono">{selected.code}</div>
               </div>
-              <div className="text-right">
-                <div className="text-[10px] text-pos-gray uppercase tracking-widest">Unit price</div>
+              <div className="text-end">
+                <div className="text-[10px] text-pos-gray uppercase tracking-widest">{t.pos.unitPrice}</div>
                 <div className="text-lg font-semibold text-gold">
                   {price ? formatUSD(price.final_price) : "…"}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-xs text-pos-gray uppercase tracking-widest">Qty</label>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-24 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
-              />
-              {price && (
+              {/* The input sits inside its label (NEX-64); same row, same gap. */}
+              <label className="flex items-center gap-3">
+                <span className="text-xs text-pos-gray uppercase tracking-widest">{t.pos.qty}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-24 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold"
+                />
+              </label>
+              {unitPrice !== null && (
                 <span className="text-sm text-pos-gray">
-                  = <span className="text-pos-cream font-semibold">{formatUSD(Number(price.final_price) * qty)}</span>
+                  = <span className="text-pos-cream font-semibold">{formatUSD(unitPrice * qty)}</span>
                 </span>
               )}
             </div>
@@ -177,14 +197,14 @@ export function AddUnitDialog({ kind, onClose, onAdded }: Props) {
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-sm text-pos-gray hover:text-pos-cream">
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={handleAdd}
-            disabled={!selected || !price || adding || exceedsCap || !!insufficientStock}
+            disabled={!selected || unitPrice === null || goldRate24k === null || adding || exceedsCap || !!insufficientStock}
             className="px-5 py-2 bg-gold hover:bg-gold-dark text-black text-sm font-semibold rounded disabled:opacity-50 transition-colors"
           >
-            {adding ? "Adding…" : "Add to cart"}
+            {adding ? t.pos.adding : t.pos.addToCart}
           </button>
         </div>
       </div>

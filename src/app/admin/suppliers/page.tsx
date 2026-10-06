@@ -4,12 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { Plus, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { useLang } from "@/context/LanguageContext";
+import { cn } from "@/lib/utils";
 import type { Supplier, SupplierListResponse } from "@/types/api";
 
 export default function SuppliersPage() {
+  const { t } = useLang();
+  const su = t.suppliers;
   const [search, setSearch] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
 
@@ -28,26 +32,27 @@ export default function SuppliersPage() {
       await api.patch(`/suppliers/${s.id}`, { is_active: !s.is_active });
       mutate();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Toggle failed");
+      alert(errorMessage(err, su.toggleFailed));
     }
   }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold text-gray-800">Suppliers</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{su.title}</h2>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          New Supplier
+          <Plus className="w-4 h-4" aria-hidden />
+          {su.newSupplier}
         </button>
       </div>
 
       <div className="flex items-center gap-3">
         <input
-          placeholder="Search suppliers…"
+          aria-label={su.searchPlaceholder}
+          placeholder={su.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold w-64"
@@ -59,7 +64,7 @@ export default function SuppliersPage() {
             onChange={(e) => setIncludeInactive(e.target.checked)}
             className="rounded border-gray-300"
           />
-          Include inactive
+          <span>{su.includeInactive}</span>
         </label>
       </div>
 
@@ -81,12 +86,12 @@ export default function SuppliersPage() {
             <table className="w-full min-w-[560px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Name</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Contact</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Phone</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Terms</th>
-                  <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Status</th>
-                  <th className="px-4 py-3" />
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
+                  <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                  <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -95,18 +100,18 @@ export default function SuppliersPage() {
             </table>
           </div>
         ) : !data.items.length ? (
-          <div className="p-8 text-center text-gray-400 text-sm">No suppliers yet</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{su.empty}</div>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Name</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Contact</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Phone</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Terms</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Status</th>
-                <th className="px-4 py-3" />
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.name}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.contact}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.phone}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.terms}</th>
+                <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{t.common.status}</th>
+                <th className="px-4 py-3"><span className="sr-only">{t.common.actions}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -122,7 +127,7 @@ export default function SuppliersPage() {
                   <td className="px-4 py-3 text-gray-500 text-xs truncate max-w-xs">{s.payment_terms ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {s.is_active ? "Active" : "Inactive"}
+                      {s.is_active ? su.active : su.inactive}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -130,12 +135,18 @@ export default function SuppliersPage() {
                       <button
                         onClick={() => toggleActive(s)}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
-                        title={s.is_active ? "Deactivate" : "Reactivate"}
+                        title={s.is_active ? su.deactivate : su.reactivate}
+                        aria-label={s.is_active ? su.deactivate : su.reactivate}
                       >
-                        {s.is_active ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5" />}
+                        {/* Mirrored in RTL like the shared Switch: "on" sits at the reading end. */}
+                        {s.is_active ? <ToggleRight className="w-5 h-5 text-green-500 rtl:rotate-180" aria-hidden /> : <ToggleLeft className="w-5 h-5 rtl:rotate-180" aria-hidden />}
                       </button>
-                      <Link href={`/admin/suppliers/${s.id}`} className="text-gray-400 hover:text-gold transition-colors">
-                        <ChevronRight className="w-4 h-4" />
+                      <Link
+                        href={`/admin/suppliers/${s.id}`}
+                        aria-label={su.openSupplier(s.name)}
+                        className="text-gray-400 hover:text-gold transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4 rtl:rotate-180" aria-hidden />
                       </Link>
                     </div>
                   </td>
@@ -151,6 +162,8 @@ export default function SuppliersPage() {
 }
 
 function SupplierForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => void | Promise<void> }) {
+  const { t } = useLang();
+  const su = t.suppliers;
   const [form, setForm] = useState({
     name: "",
     contact_name: "",
@@ -171,7 +184,7 @@ function SupplierForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: ()
       await api.post("/suppliers", form);
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(errorMessage(err, su.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -179,27 +192,27 @@ function SupplierForm({ onCancel, onSaved }: { onCancel: () => void; onSaved: ()
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
-      <div className="text-sm font-medium text-gray-700">New Supplier</div>
+      <div className="text-sm font-medium text-gray-700">{su.newSupplier}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-        <Field label="Contact name" value={form.contact_name} onChange={(v) => setForm({ ...form, contact_name: v })} />
-        <Field label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-        <Field label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-        <Field label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} className="col-span-2" />
-        <Field label="Payment terms" value={form.payment_terms} onChange={(v) => setForm({ ...form, payment_terms: v })} className="col-span-2" placeholder='e.g. "net 30, gold-for-gold preferred"' />
-        <Field label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} className="col-span-2" />
+        <Field label={t.common.name} value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+        <Field label={su.contactName} value={form.contact_name} onChange={(v) => setForm({ ...form, contact_name: v })} />
+        <Field label={su.phone} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+        <Field label={su.email} value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+        <Field label={su.address} value={form.address} onChange={(v) => setForm({ ...form, address: v })} className="col-span-2" />
+        <Field label={su.paymentTerms} value={form.payment_terms} onChange={(v) => setForm({ ...form, payment_terms: v })} className="col-span-2" placeholder={su.paymentTermsPlaceholder} />
+        <Field label={su.notes} value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} className="col-span-2" />
       </div>
-      {error && <div className="text-xs text-red-600">{error}</div>}
+      {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
           disabled={saving || !form.name}
           className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60 transition-colors"
         >
-          {saving ? "Saving…" : "Create Supplier"}
+          {saving ? su.saving : su.createSupplier}
         </button>
         <button onClick={onCancel} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50 transition-colors">
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </div>
@@ -215,15 +228,17 @@ function Field({
   className?: string;
   placeholder?: string;
 }) {
+  // The input sits inside its <label>: a click on the text focuses the field
+  // and a screen reader announces it by name, with no ids to keep in sync.
   return (
-    <div className={className}>
-      <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{label}</label>
+    <label className={cn("block", className)}>
+      <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
       />
-    </div>
+    </label>
   );
 }

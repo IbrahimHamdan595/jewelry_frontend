@@ -29,6 +29,10 @@ export function TableSkeleton({ cols, rows = 6 }: { cols: number; rows?: number 
       {Array.from({ length: rows }).map((_, r) => (
         <tr key={r} className="border-b border-gray-50">
           {Array.from({ length: cols }).map((_, c) => (
+            // A placeholder table cell, not a control: jsx-a11y maps <td> to the
+            // interactive `gridcell` role and then asks it for a text label. An
+            // empty pulse block is the whole point of a skeleton.
+            // eslint-disable-next-line jsx-a11y/control-has-associated-label
             <td key={c} className="px-4 py-3">
               <div className="h-4 animate-pulse rounded bg-gray-100" />
             </td>

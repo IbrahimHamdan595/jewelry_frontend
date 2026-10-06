@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { ArrowLeft, Plus, Banknote, Coins } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { Skeleton, SkeletonText, CardSkeleton } from "@/components/ui/skeleton";
+import { useLang } from "@/context/LanguageContext";
+import { useFormat } from "@/hooks/useFormat";
+import { Ltr } from "@/components/shared/Ltr";
 import type {
   Karat,
   Lot,
@@ -21,6 +24,8 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 
 export default function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useLang();
+  const su = t.suppliers;
   const { data, error, isValidating, mutate } = useSWR<SupplierDetail>(`/suppliers/${id}`, apiFetcher);
   const [payCash, setPayCash] = useState(false);
   const [payGold, setPayGold] = useState(false);
@@ -67,8 +72,8 @@ export default function SupplierDetailPage() {
         href="/admin/suppliers"
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to suppliers
+        <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
+        {su.backToList}
       </Link>
 
       {/* Header */}
@@ -77,10 +82,10 @@ export default function SupplierDetailPage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-800">{supplier.name}</h2>
             <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-xs text-gray-600">
-              {supplier.contact_name && <Meta label="Contact" value={supplier.contact_name} />}
-              {supplier.phone && <Meta label="Phone" value={supplier.phone} />}
-              {supplier.email && <Meta label="Email" value={supplier.email} />}
-              {supplier.payment_terms && <Meta label="Terms" value={supplier.payment_terms} />}
+              {supplier.contact_name && <Meta label={su.contact} value={supplier.contact_name} />}
+              {supplier.phone && <Meta label={su.phone} value={<Ltr>{supplier.phone}</Ltr>} />}
+              {supplier.email && <Meta label={su.email} value={<Ltr>{supplier.email}</Ltr>} />}
+              {supplier.payment_terms && <Meta label={su.terms} value={supplier.payment_terms} />}
             </div>
             {supplier.address && (
               <div className="text-xs text-gray-500 mt-2">{supplier.address}</div>
@@ -90,7 +95,7 @@ export default function SupplierDetailPage() {
             )}
           </div>
           <span className={`text-xs px-2 py-0.5 rounded-full ${supplier.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-            {supplier.is_active ? "Active" : "Inactive"}
+            {supplier.is_active ? su.active : su.inactive}
           </span>
         </div>
       </div>
@@ -98,8 +103,8 @@ export default function SupplierDetailPage() {
       {/* Balances */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <BalanceCard
-          icon={<Banknote className="w-5 h-5" />}
-          label="Cash owed"
+          icon={<Banknote className="w-5 h-5" aria-hidden />}
+          label={su.cashOwed}
           value={cashBalance ? formatUSD(Number(cashBalance.balance)) : formatUSD(0)}
           accent={cashBalance && Number(cashBalance.balance) > 0}
           action={
@@ -107,24 +112,28 @@ export default function SupplierDetailPage() {
               onClick={() => setPayCash(true)}
               className="text-xs text-gold hover:text-gold-dark"
             >
-              Record cash payment →
+              {su.recordCashPaymentLink}
             </button>
           }
         />
         <BalanceCard
-          icon={<Coins className="w-5 h-5" />}
-          label="Gold owed (grams by karat)"
+          icon={<Coins className="w-5 h-5" aria-hidden />}
+          label={su.goldOwedByKarat}
           value={
             goldBalances.length === 0 ? (
-              <span className="text-lg text-gray-400">None</span>
+              <span className="text-lg text-gray-400">{su.none}</span>
             ) : (
               <div className="space-y-1">
                 {goldBalances.map((b) => (
                   <div key={b.karat ?? "k"} className="flex items-baseline gap-2">
                     <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold font-medium">{b.karat}</span>
                     <span className="text-lg font-semibold text-gray-800">
-                      {Number(b.balance).toFixed(3)}
-                      <span className="text-xs text-gray-400 ml-1">g</span>
+                      {/* A number and its unit read left-to-right in both
+                          languages: isolated, so the gap stays between them. */}
+                      <Ltr>
+                        {Number(b.balance).toFixed(3)}
+                        <span className="text-xs text-gray-400 ms-1">g</span>
+                      </Ltr>
                     </span>
                   </div>
                 ))}
@@ -138,16 +147,16 @@ export default function SupplierDetailPage() {
               disabled={goldBalances.length === 0}
               className="text-xs text-gold hover:text-gold-dark disabled:text-gray-400 disabled:hover:text-gray-400"
             >
-              Record gold payment →
+              {su.recordGoldPaymentLink}
             </button>
           }
         />
         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
           <div>
-            <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">Actions</div>
+            <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.common.actions}</div>
             {hasDebt && (
               <div className="text-xs text-amber-600 mb-2">
-                Cannot deactivate while debt is outstanding.
+                {su.cannotDeactivate}
               </div>
             )}
           </div>
@@ -155,21 +164,21 @@ export default function SupplierDetailPage() {
             href={`/admin/suppliers/${id}/purchases/new`}
             className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            New Purchase
+            <Plus className="w-4 h-4" aria-hidden />
+            {su.newPurchase}
           </Link>
         </div>
       </div>
 
       {/* Purchases */}
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-700">Purchase history</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{su.purchaseHistory}</h3>
         <PurchasesTable purchases={purchases} />
       </section>
 
       {/* Payments */}
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-700">Payment history</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{su.paymentHistory}</h3>
         <PaymentsTable payments={payments} />
       </section>
 
@@ -200,10 +209,10 @@ export default function SupplierDetailPage() {
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <span className="text-gray-400 uppercase tracking-widest text-[10px] mr-1">{label}</span>
+      <span className="text-gray-400 uppercase tracking-widest text-[10px] me-1">{label}</span>
       <span className="text-gray-700">{value}</span>
     </div>
   );
@@ -231,10 +240,13 @@ function BalanceCard({
 }
 
 function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
+  const { t } = useLang();
+  const su = t.suppliers;
+  const { formatDateTime } = useFormat();
   if (purchases.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-        No purchases yet
+        {su.noPurchases}
       </div>
     );
   }
@@ -243,19 +255,19 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Date</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Mode</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Cash due / paid</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Gold due / paid</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Items</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Notes</th>
-            <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Receipt</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colMode}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colCashDuePaid}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colGoldDuePaid}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colItems}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
+            <th className="text-end px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colReceipt}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {purchases.map((p) => (
             <tr key={p.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-xs text-gray-600">{new Date(p.occurred_at).toLocaleString()}</td>
+              <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(p.occurred_at)}</td>
               <td className="px-4 py-3"><ModePill mode={p.payment_mode} /></td>
               <td className="px-4 py-3 text-xs font-mono text-gray-700">
                 {formatUSD(Number(p.total_cash_due))} / {formatUSD(Number(p.cash_paid_at_creation))}
@@ -269,24 +281,24 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
                     return (
                       <div key={k}>
                         <span className="text-gray-500">{k}</span>{" "}
-                        {Number(due).toFixed(3)}g / {Number(paid).toFixed(3)}g
+                        {`${Number(due).toFixed(3)}g / ${Number(paid).toFixed(3)}g`}
                       </div>
                     );
                   })
                 )}
               </td>
               <td className="px-4 py-3 text-xs text-gray-600">
-                {p.items.length} item{p.items.length !== 1 ? "s" : ""}
+                {su.itemCount(p.items.length)}
               </td>
               <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">{p.notes ?? "—"}</td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-end">
                 <a
                   href={`/admin/suppliers/purchases/${p.id}/receipt`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-gold hover:text-gold-dark"
                 >
-                  Receipt →
+                  {su.receiptLink}
                 </a>
               </td>
             </tr>
@@ -298,10 +310,13 @@ function PurchasesTable({ purchases }: { purchases: SupplierPurchase[] }) {
 }
 
 function PaymentsTable({ payments }: { payments: SupplierPayment[] }) {
+  const { t } = useLang();
+  const su = t.suppliers;
+  const { formatDateTime } = useFormat();
   if (payments.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-        No payments yet
+        {su.noPayments}
       </div>
     );
   }
@@ -310,20 +325,20 @@ function PaymentsTable({ payments }: { payments: SupplierPayment[] }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Date</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Unit</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Amount</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Source lots</th>
-            <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">Notes</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colDate}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colUnit}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colAmount}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.colSourceLots}</th>
+            <th className="text-start px-4 py-3 text-xs text-gray-400 uppercase tracking-widest font-medium">{su.notes}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {payments.map((p) => (
             <tr key={p.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-xs text-gray-600">{new Date(p.paid_at).toLocaleString()}</td>
+              <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(p.paid_at)}</td>
               <td className="px-4 py-3">
                 {p.unit === "CASH" ? (
-                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">CASH</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">{su.unitCash}</span>
                 ) : (
                   <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold">{p.karat}</span>
                 )}
@@ -344,12 +359,13 @@ function PaymentsTable({ payments }: { payments: SupplierPayment[] }) {
 }
 
 function ModePill({ mode }: { mode: "CASH" | "GOLD" | "MIXED" }) {
+  const { t } = useLang();
   const colors: Record<typeof mode, string> = {
     CASH: "bg-emerald-50 text-emerald-700",
     GOLD: "bg-gold/10 text-gold",
     MIXED: "bg-violet-50 text-violet-700",
   };
-  return <span className={`text-xs px-2 py-0.5 rounded ${colors[mode]}`}>{mode}</span>;
+  return <span className={`text-xs px-2 py-0.5 rounded ${colors[mode]}`}>{t.suppliers.mode[mode] ?? mode}</span>;
 }
 
 // ── Cash payment dialog ────────────────────────────────────────────────────────
@@ -363,6 +379,8 @@ function PaymentDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const su = t.suppliers;
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -375,7 +393,7 @@ function PaymentDialog({
       await api.post(`/suppliers/${supplierId}/payments`, { unit, amount, notes });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
+      setError(errorMessage(err, su.paymentFailed));
     } finally {
       setSaving(false);
     }
@@ -385,13 +403,15 @@ function PaymentDialog({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-5 space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-800">Record cash payment</div>
+          <div className="text-sm font-medium text-gray-800">{su.recordCashPayment}</div>
           <div className="text-xs text-gray-500 mt-0.5">
-            Outstanding: <span className="font-mono">{formatUSD(outstanding)}</span>
+            {su.outstanding} <span className="font-mono">{formatUSD(outstanding)}</span>
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Amount (USD)</label>
+        {/* Inputs live inside their labels: a click on the text focuses the
+            field and a screen reader announces it by name, with no ids. */}
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{su.amountUsd}</span>
           <input
             type="number"
             step="0.01"
@@ -399,20 +419,20 @@ function PaymentDialog({
             onChange={(e) => setAmount(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Notes (optional)</label>
+        </label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{su.notesOptional}</span>
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        </label>
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">{t.common.cancel}</button>
           <button onClick={handleSave} disabled={saving || !amount} className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60">
-            {saving ? "Saving…" : "Record Payment"}
+            {saving ? su.saving : su.recordPayment}
           </button>
         </div>
       </div>
@@ -433,6 +453,8 @@ function GoldPaymentDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const su = t.suppliers;
   const firstKarat = (goldBalances[0]?.karat ?? "K21") as Karat;
   const [karat, setKarat] = useState<Karat>(firstKarat);
   const [picks, setPicks] = useState<{ lot_id: string; grams: string }[]>([]);
@@ -469,7 +491,7 @@ function GoldPaymentDialog({
       });
       await onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
+      setError(errorMessage(err, su.paymentFailed));
     } finally {
       setSaving(false);
     }
@@ -479,14 +501,14 @@ function GoldPaymentDialog({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-5 space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-800">Record gold payment</div>
+          <div className="text-sm font-medium text-gray-800">{su.recordGoldPayment}</div>
           <div className="text-xs text-gray-500 mt-0.5">
-            Choose which lot(s) the gold leaves from.
+            {su.goldPaymentHint}
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Karat</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{su.karat}</span>
             <select
               value={karat}
               onChange={(e) => {
@@ -499,16 +521,16 @@ function GoldPaymentDialog({
                 const owed = Number(goldBalances.find((b) => b.karat === k)?.balance ?? 0);
                 return (
                   <option key={k} value={k} disabled={owed === 0}>
-                    {k} {owed > 0 ? `(owe ${owed.toFixed(3)}g)` : "(none owed)"}
+                    {owed > 0 ? su.karatOwed(k, owed.toFixed(3)) : su.karatNoneOwed(k)}
                   </option>
                 );
               })}
             </select>
-          </div>
+          </label>
           <div className="col-span-2 flex items-center justify-between bg-gray-50 rounded px-4 py-2 text-xs">
-            <span className="text-gray-500">Outstanding {karat}:</span>
+            <span className="text-gray-500">{su.outstandingKarat(karat)}</span>
             <span className="font-mono font-semibold text-gray-800">{outstandingForKarat.toFixed(3)}g</span>
-            <span className="text-gray-500">Total picked:</span>
+            <span className="text-gray-500">{su.totalPicked}</span>
             <span className={`font-mono font-semibold ${totalGrams > outstandingForKarat ? "text-red-600" : "text-gray-800"}`}>
               {totalGrams.toFixed(3)}g
             </span>
@@ -516,39 +538,42 @@ function GoldPaymentDialog({
         </div>
 
         <div className="border border-gray-200 rounded p-3 space-y-2 max-h-72 overflow-y-auto">
-          <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Pick lot(s)</div>
+          <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">{su.pickLots}</div>
           {!lots?.items.length ? (
-            <div className="text-xs text-gray-400">No active {karat} lots</div>
+            <div className="text-xs text-gray-400">{su.noActiveLots(karat)}</div>
           ) : (
             lots.items.map((lot: Lot) => {
               const pickIdx = picks.findIndex((p) => p.lot_id === lot.id);
               const picked = pickIdx >= 0;
               return (
                 <div key={lot.id} className={`flex items-center gap-3 p-2 rounded ${picked ? "bg-gold/5" : "hover:bg-gray-50"}`}>
-                  <input
-                    type="checkbox"
-                    checked={picked}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setPicks([...picks, { lot_id: lot.id, grams: "" }]);
-                      } else {
-                        setPicks(picks.filter((p) => p.lot_id !== lot.id));
-                      }
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  <div className="flex-1 text-xs">
-                    <div className="font-mono">{lot.id.slice(0, 12)}…</div>
-                    <div className="text-gray-500">
-                      remaining {Number(lot.weight_remaining_grams).toFixed(3)}g · {lot.source}
-                    </div>
-                  </div>
+                  {/* The lot's id and remaining weight are the checkbox's label:
+                      the checkbox spans both text rows of a two-column grid. */}
+                  <label className="grid flex-1 grid-cols-[auto_1fr] items-center gap-x-3 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={picked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPicks([...picks, { lot_id: lot.id, grams: "" }]);
+                        } else {
+                          setPicks(picks.filter((p) => p.lot_id !== lot.id));
+                        }
+                      }}
+                      className="row-span-2 rounded border-gray-300"
+                    />
+                    <span className="font-mono">{`${lot.id.slice(0, 12)}…`}</span>
+                    <span className="text-gray-500">
+                      {`${su.lotRemaining(Number(lot.weight_remaining_grams).toFixed(3))} · ${su.lotSource[lot.source] ?? lot.source}`}
+                    </span>
+                  </label>
                   {picked && (
                     <input
                       type="number"
                       step="0.001"
                       max={lot.weight_remaining_grams}
-                      placeholder="grams"
+                      placeholder={su.gramsPlaceholder}
+                      aria-label={su.gramsFromLot(`${lot.id.slice(0, 12)}…`)}
                       value={picks[pickIdx]?.grams ?? ""}
                       onChange={(e) => {
                         const newPicks = [...picks];
@@ -564,25 +589,25 @@ function GoldPaymentDialog({
           )}
         </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Notes (optional)</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{su.notesOptional}</span>
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </label>
 
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        {error && <div role="alert" className="text-xs text-red-600">{error}</div>}
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">{t.common.cancel}</button>
           <button
             onClick={handleSave}
             disabled={saving || picks.length === 0 || totalGrams <= 0 || totalGrams > outstandingForKarat}
             className="px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm rounded disabled:opacity-60"
           >
-            {saving ? "Saving…" : `Pay ${totalGrams.toFixed(3)}g ${karat}`}
+            {saving ? su.saving : su.payGold(totalGrams.toFixed(3), karat)}
           </button>
         </div>
       </div>

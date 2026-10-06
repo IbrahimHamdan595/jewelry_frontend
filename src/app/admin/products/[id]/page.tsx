@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import useSWR from "swr";
 import { Flame, Recycle, AlertCircle, Gem } from "lucide-react";
-import { apiFetcher, api } from "@/lib/api-client";
+import { apiFetcher, api, errorMessage } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatUSD } from "@/lib/utils";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { useLang } from "@/context/LanguageContext";
 import type { Karat, Product, ProductStatus } from "@/types/api";
 
 const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
@@ -15,6 +16,8 @@ const KARATS: Karat[] = ["K18", "K21", "K22", "K24"];
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLang();
+  const pr = t.products;
   const { data: product, error, isValidating, mutate } = useSWR<Product>(`/products/${id}`, apiFetcher);
   const [melting, setMelting] = useState(false);
 
@@ -56,26 +59,31 @@ export default function EditProductPage() {
 
   const meltable =
     product.status === "AVAILABLE" || product.status === "INACTIVE";
+  // globals.css lays every .font-mono run out left-to-right in RTL, which is
+  // right for a machine reference and wrong for the Arabic words around it.
+  // So the sentence is split where the reference goes: only the reference is
+  // .font-mono, and the wrapper is monospace in LTR alone (ltr:font-mono).
+  const [beforeSource, afterSource = ""] = pr.sourceFrom("\u0000").split("\u0000");
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-800">
-          {product.is_used ? "Used Product" : "Product"} — {product.code}
+          {product.is_used ? pr.usedProduct : pr.product} — {product.code}
         </h2>
         <div className="flex flex-wrap items-center gap-2 mt-2">
           <StatusPill status={product.status} />
           {product.is_used && (
-            <span className="text-xs px-2 py-0.5 rounded bg-violet-50 text-violet-700">Used</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-violet-50 text-violet-700">{pr.used}</span>
           )}
           {product.cost_basis_usd != null && (
             <span className="text-xs text-gray-500">
-              Cost basis: <span className="font-mono">{formatUSD(product.cost_basis_usd)}</span>
+              {pr.costBasis}: <span className="font-mono">{formatUSD(product.cost_basis_usd)}</span>
             </span>
           )}
           {product.source_ref_type && (
-            <span className="text-xs text-gray-400 font-mono">
-              from {product.source_ref_type}:{(product.source_ref_id ?? "").slice(0, 8)}…
+            <span className="text-xs text-gray-400 ltr:font-mono">
+              {beforeSource}<span className="font-mono">{product.source_ref_type}:{(product.source_ref_id ?? "").slice(0, 8)}…</span>{afterSource}
             </span>
           )}
         </div>
@@ -86,23 +94,23 @@ export default function EditProductPage() {
         <div className="bg-sky-50 border border-sky-100 shadow-sm rounded-lg p-4">
           <div className="text-sm font-medium text-sky-800 flex items-center gap-2 mb-2">
             <Gem className="w-4 h-4" />
-            Stone / Diamond Details
+            {pr.stoneDetails}
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-sky-900">
             {product.stone_carats != null && (
-              <span><span className="text-sky-500 font-medium">Carats:</span> {product.stone_carats} ct</span>
+              <span><span className="text-sky-500 font-medium">{pr.carats}:</span> {product.stone_carats} {pr.caratUnit}</span>
             )}
             {product.stone_count != null && (
-              <span><span className="text-sky-500 font-medium">Stone count:</span> {product.stone_count}</span>
+              <span><span className="text-sky-500 font-medium">{pr.stoneCount}:</span> {product.stone_count}</span>
             )}
             {product.stone_cert != null && product.stone_cert !== "" && (
-              <span><span className="text-sky-500 font-medium">Certificate:</span> {product.stone_cert}</span>
+              <span><span className="text-sky-500 font-medium">{pr.certificateLabel}:</span> {product.stone_cert}</span>
             )}
             {product.stone_value_usd != null && (
-              <span><span className="text-sky-500 font-medium">Stone value:</span> {formatUSD(product.stone_value_usd)}</span>
+              <span><span className="text-sky-500 font-medium">{pr.stoneValueLabel}:</span> {formatUSD(product.stone_value_usd)}</span>
             )}
             {product.stone_note != null && product.stone_note !== "" && (
-              <span className="w-full mt-1"><span className="text-sky-500 font-medium">Note:</span> {product.stone_note}</span>
+              <span className="w-full mt-1"><span className="text-sky-500 font-medium">{pr.noteLabel}:</span> {product.stone_note}</span>
             )}
           </div>
         </div>
@@ -113,14 +121,14 @@ export default function EditProductPage() {
         <div>
           <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
             <Recycle className="w-4 h-4 text-gray-500" />
-            Melt this piece into a pure-gold lot
+            {pr.meltTitle}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Reduces the piece to {product.karat} weight {Number(product.weight_grams).toFixed(3)}g and creates a new lot.
+            {pr.meltHint(product.karat, Number(product.weight_grams).toFixed(3))}
             {!meltable && (
-              <span className="text-amber-600 ml-2 inline-flex items-center gap-1">
+              <span className="text-amber-600 ms-2 inline-flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                Only AVAILABLE or INACTIVE products can be melted (status: {product.status}).
+                {pr.meltOnlyWhen(pr.status[product.status] ?? product.status)}
               </span>
             )}
           </div>
@@ -131,7 +139,7 @@ export default function EditProductPage() {
           className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Flame className="w-4 h-4" />
-          Melt
+          {pr.melt}
         </button>
       </div>
 
@@ -152,6 +160,7 @@ export default function EditProductPage() {
 }
 
 function StatusPill({ status }: { status: ProductStatus }) {
+  const { t } = useLang();
   const map: Record<ProductStatus, string> = {
     AVAILABLE: "bg-green-50 text-green-700",
     SOLD: "bg-blue-50 text-blue-700",
@@ -161,7 +170,7 @@ function StatusPill({ status }: { status: ProductStatus }) {
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded font-medium ${map[status]}`}>
-      {status}
+      {t.products.status[status] ?? status}
     </span>
   );
 }
@@ -173,6 +182,12 @@ function MeltProductDialog({
   onClose: () => void;
   onDone: () => void | Promise<void>;
 }) {
+  const { t } = useLang();
+  const pr = t.products;
+  // The sentence decides where the status goes; split it there so the status
+  // keeps its monospace styling wherever the language puts it. A translated
+  // status is a word, not a machine value: monospace in LTR only.
+  const [beforeStatus, afterStatus = ""] = pr.meltStatusNote("\u0000").split("\u0000");
   const [overrideWeight, setOverrideWeight] = useState("");
   const [overrideKarat, setOverrideKarat] = useState<Karat | "">("");
   const [notes, setNotes] = useState("");
@@ -191,7 +206,7 @@ function MeltProductDialog({
       });
       await onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Melt failed");
+      setError(errorMessage(err, pr.meltFailed));
     } finally {
       setSaving(false);
     }
@@ -203,59 +218,59 @@ function MeltProductDialog({
         <div>
           <div className="text-sm font-medium text-gray-800 flex items-center gap-2">
             <Flame className="w-4 h-4 text-amber-600" />
-            Melt {product.code}
+            {pr.meltHeading(product.code)}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Current: {product.karat} · {Number(product.weight_grams).toFixed(3)}g.
-            Product status will flip to <span className="font-mono">MELTED</span>; a new lot is created.
+            {pr.meltCurrent(product.karat, Number(product.weight_grams).toFixed(3))}{" "}
+            {beforeStatus}<span className="ltr:font-mono">{pr.status.MELTED}</span>{afterStatus}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Override weight (g)</label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{pr.overrideWeight}</span>
             <input
               type="number"
               step="0.001"
               value={overrideWeight}
               onChange={(e) => setOverrideWeight(e.target.value)}
-              placeholder={`(keep ${Number(product.weight_grams).toFixed(3)})`}
+              placeholder={pr.keep(Number(product.weight_grams).toFixed(3))}
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Override karat</label>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{pr.overrideKarat}</span>
             <select
               value={overrideKarat}
               onChange={(e) => setOverrideKarat(e.target.value as Karat | "")}
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
             >
-              <option value="">(keep {product.karat})</option>
+              <option value="">{pr.keep(product.karat)}</option>
               {KARATS.map((k) => <option key={k} value={k}>{k}</option>)}
             </select>
-          </div>
+          </label>
         </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-widest mb-1">Notes (optional)</label>
+        <label className="block">
+          <span className="block text-xs text-gray-400 uppercase tracking-widest mb-1">{t.zakat.notesOptional}</span>
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-gold"
           />
-        </div>
+        </label>
 
         {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</div>}
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-sm rounded hover:bg-gray-50">{t.common.cancel}</button>
           <button
             onClick={submit}
             disabled={saving}
             className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded disabled:opacity-60"
           >
             <Flame className="w-4 h-4" />
-            {saving ? "Melting…" : "Confirm melt"}
+            {saving ? pr.melting : pr.confirmMelt}
           </button>
         </div>
       </div>

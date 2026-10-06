@@ -1,7 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/context/LanguageContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface DialogProps {
   open: boolean;
@@ -11,24 +13,68 @@ interface DialogProps {
   className?: string;
 }
 
+/**
+ * A modal dialog: role="dialog" + aria-modal, named by its title. Focus moves
+ * into it when it opens, Tab stays inside it while it is open, and focus goes
+ * back to whatever opened it when it closes. It closes three ways — the X
+ * button, Escape, and a click on the backdrop.
+ */
 export function Dialog({ open, onClose, title, children, className }: DialogProps) {
+  const { t } = useLang();
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // What had the focus when the dialog was asked to open. Noted during the
+  // render in which `open` flips, not in an effect: by the time this
+  // component's effects run, a child has already focused itself (its own
+  // effect runs first, and autoFocus is applied at commit), and the "opener"
+  // would be a field inside the dialog. `wasOpen` starts false so a dialog
+  // that is open from its first render counts as opening too.
+  const [wasOpen, setWasOpen] = useState(false);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setOpener(typeof document !== "undefined" && document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    // A child that focused itself (an autofocused field) keeps the focus.
+    if (panel && !panel.contains(document.activeElement)) panel.focus();
+    return () => opener?.focus();
+  }, [open, opener]);
+
+  useFocusTrap(panelRef, open);
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={cn("relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6", className)}>
+      {/* The backdrop is not a control: it only catches clicks that land
+          outside the dialog. Escape and the close button are the keyboard path. */}
+      <div role="presentation" className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        // Focusable from script only, so the dialog itself can take focus; no
+        // ring, because nothing about its look changes when it does.
+        tabIndex={-1}
+        className={cn("relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 focus:outline-none", className)}
+      >
         {title && (
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-              <X className="w-4 h-4" />
+            <h2 id={titleId} className="text-base font-semibold text-gray-800">{title}</h2>
+            <button onClick={onClose} aria-label={t.common.close} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-4 h-4" aria-hidden />
             </button>
           </div>
         )}
